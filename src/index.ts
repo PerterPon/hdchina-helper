@@ -7,6 +7,8 @@ import { parse as parseUrl, UrlWithParsedQuery } from 'url';
 import * as qs from 'qs';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as filesize from 'filesize';
+import * as moment from 'moment';
 
 config.init();
 
@@ -131,7 +133,7 @@ async function downloadItem(items: TItem[]): Promise<void> {
   const { downloadUrl, uid, downloadPath } = configInfo.hdchina;
   let downloadCount: number = 0;
   for (const item of items) {
-    const { hash, title, id } = item;
+    const { hash, title, id, size, freeUntil } = item;
     const fileName: string = path.join(downloadPath, `${id}_${title}.torrent`);
     if (false === fs.existsSync(fileName)) {
       try {
@@ -144,10 +146,11 @@ async function downloadItem(items: TItem[]): Promise<void> {
           responseType: 'stream'
         });
         await writeFile(res.data, fileWriter);
-        console.log(`[${displayTime()}] download torrent: [${fileName}]`);
+        const leftTime: number = moment(freeUntil).unix() - moment().unix();
+        console.log(`[${displayTime()}] download torrent: [${fileName}], size: [${filesize(size)}], free time: [${moment(freeUntil).diff(moment(), 'hours')} H]`);
         downloadCount++;
       } catch (e) {
-        console.error(`[ERROR][${displayTime()}] download file: [${fileName}] with error: [${e.message}]`)
+        console.error(`[ERROR][${displayTime()}] download file: [${fileName}] with error: [${e.message}]`);
       }
     }
   }
