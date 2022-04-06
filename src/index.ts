@@ -136,13 +136,22 @@ async function downloadItem(items: TItem[]): Promise<void> {
     // not exist, download
     if (false === fs.existsSync(fileName)) {
       const downloadLink = `${downloadUrl}?hash=${hash}&uid=${uid}`;
-      const res = await axios(downloadLink);
-      fs.writeFileSync(fileName, res.data);
+      const fileWriter = fs.createWriteStream(fileName);
+      const res: AxiosResponse = await axios(downloadLink);
+      await writeFile(res.data, fileWriter);
       console.log(`[${displayTime()}] download torrent: [${fileName}]`);
       downloadCount ++;
     }
   }
   console.log(`[${displayTime()}] all torrents download complete! download number: [${downloadCount}]`);
+}
+
+function writeFile(from: fs.ReadStream, to: fs.WriteStream): Promise<void> {
+  from.pipe(to);
+  return new Promise((resolve, reject) => {
+    to.on('finish', resolve);
+    to.on('error', reject);
+  });
 }
 
 main();
