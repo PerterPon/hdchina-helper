@@ -1,5 +1,5 @@
 
-import * as config from 'src/config';
+import * as config from './config';
 import { sleep, displayTime } from './utils';
 import axios, { AxiosResponse } from 'axios';
 import { XMLParser } from 'fast-xml-parser';
