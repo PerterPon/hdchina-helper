@@ -108,7 +108,11 @@ async function filterFreeItem(items: TItem[]): Promise<TItem[]> {
     const item: TItem = items[i];
     const ddlItem = resData.message[item.id];
     const { sp_state, timeout } = ddlItem;
-    if (-1 < sp_state.indexOf('pro_free')) {
+    if (
+      -1 === sp_state.indexOf('display: none') && 
+      -1 < sp_state.indexOf('pro_free') &&
+      '' !== timeout
+    ) {
       const [ ddl ] = timeout.match(/\d\d\d\d-\d\d-\d\d\s\d\d:\d\d:\d\d/);
       const ddlTime: Date = new Date(ddl);
       item.freeUntil = ddlTime;
@@ -125,6 +129,7 @@ async function downloadItem(items: TItem[]): Promise<void> {
   console.log(`[${displayTime()}] downloadItem: [${JSON.stringify(items)}]`);
   const configInfo = config.getConfig();
   const { downloadUrl, uid, downloadPath } = configInfo.hdchina;
+  let downloadCount: number = 0;
   for (const item of items) {
     const { hash, title, id } = item;
     const fileName: string = path.join(downloadPath, `${id}_${title}.torrent`);
@@ -134,8 +139,10 @@ async function downloadItem(items: TItem[]): Promise<void> {
       const res = await axios(downloadLink);
       fs.writeFileSync(fileName, res.data);
       console.log(`[${displayTime()}] download torrent: [${fileName}]`);
+      downloadCount ++;
     }
   }
+  console.log(`[${displayTime()}] all torrents download complete! download number: [${downloadCount}]`);
 }
 
 main();
