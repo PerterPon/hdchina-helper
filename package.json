@@ -30,6 +30,7 @@
 		"test": "make test",
 		"test-cov": "make test-cov",
 		"dev": "make dev",
-		"start": "make start"
+		"start": "make start",
+		"build": "rm -rf ./build && tsc && cp -r etc build"
 	}
 }
