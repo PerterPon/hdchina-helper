@@ -78,7 +78,8 @@ async function filterFreeItem(items: TItem[]): Promise<TItem[]> {
     ids.push(item.id);
   }
   const configInfo = config.getConfig();
-  const { cookie, csrfToken, checkFreeUrl } = configInfo.hdchina;
+  const { cookie, checkFreeUrl } = configInfo.hdchina;
+  const csrfToken: string = await fetchCsrfToken();
   const res: AxiosResponse = await axios({
     method: 'post',
     url: checkFreeUrl,
@@ -87,18 +88,7 @@ async function filterFreeItem(items: TItem[]): Promise<TItem[]> {
       csrf: csrfToken
     }),
     headers: {
-      "accept": "*/*",
-      "accept-language": "zh-CN,zh;q=0.9,en;q=0.8,ja;q=0.7,zh-TW;q=0.6",
-      "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
-      "sec-ch-ua": "\" Not A;Brand\";v=\"99\", \"Chromium\";v=\"99\", \"Google Chrome\";v=\"99\"",
-      "sec-ch-ua-mobile": "?0",
-      "sec-ch-ua-platform": "\"macOS\"",
-      "sec-fetch-dest": "empty",
-      "sec-fetch-mode": "cors",
-      "sec-fetch-site": "same-origin",
-      "x-requested-with": "XMLHttpRequest",
-      "Referer": "https://hdchina.org/torrents.php",
-      "Referrer-Policy": "strict-origin-when-cross-origin",
+      ...ajaxHeader,
       "cookie": cookie,
     },
     responseType: 'json'
@@ -133,6 +123,7 @@ async function downloadItem(items: TItem[]): Promise<void> {
   const { downloadUrl, uid, downloadPath } = configInfo.hdchina;
   let downloadCount: number = 0;
   for (const item of items) {
+    await sleep(2 * 1000);
     const { hash, title, id, size, freeUntil } = item;
     const fileName: string = path.join(downloadPath, `${id}_${title}.torrent`);
     if (false === fs.existsSync(fileName)) {
@@ -164,5 +155,52 @@ function writeFile(from: fs.ReadStream, to: fs.WriteStream): Promise<void> {
     to.on('error', reject);
   });
 }
+
+async function fetchCsrfToken(): Promise<string> {
+  console.log(`[${displayTime()}] fetch csrf token`);
+  const configInfo = config.getConfig();
+  const { cookie, indexPage } = configInfo.hdchina;
+  const res: AxiosResponse = await axios.get(indexPage, {
+    headers: {
+      ...htmlHeader,
+      cookie
+    }
+  });
+  const html: string = res.data;
+  const [_, csrfToken] = html.match(/name="x-csrf"\scontent="(.*)"/);
+  console.log(`[${displayTime()}] got token: [${csrfToken}]`);
+  return csrfToken;
+}
+
+const ajaxHeader = {
+  "accept": "*/*",
+    "accept-language": "zh-CN,zh;q=0.9,en;q=0.8,ja;q=0.7,zh-TW;q=0.6",
+    "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
+    "sec-ch-ua": "\" Not A;Brand\";v=\"99\", \"Chromium\";v=\"99\", \"Google Chrome\";v=\"99\"",
+    "sec-ch-ua-mobile": "?0",
+    "sec-ch-ua-platform": "\"macOS\"",
+    "sec-fetch-dest": "empty",
+    "sec-fetch-mode": "cors",
+    "sec-fetch-site": "same-origin",
+    "x-requested-with": "XMLHttpRequest",
+    "Referer": "https://hdchina.org/torrents.php",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+};
+
+const htmlHeader = {
+  "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
+  "accept-language": "zh-CN,zh;q=0.9,en;q=0.8,ja;q=0.7,zh-TW;q=0.6",
+  "cache-control": "max-age=0",
+  "sec-ch-ua": "\" Not A;Brand\";v=\"99\", \"Chromium\";v=\"99\", \"Google Chrome\";v=\"99\"",
+  "sec-ch-ua-mobile": "?0",
+  "sec-ch-ua-platform": "\"macOS\"",
+  "sec-fetch-dest": "document",
+  "sec-fetch-mode": "navigate",
+  "sec-fetch-site": "same-origin",
+  "sec-fetch-user": "?1",
+  "upgrade-insecure-requests": "1",
+  "Referer": "https://hdchina.org/torrents.php",
+  "Referrer-Policy": "strict-origin-when-cross-origin"
+};
 
 main();
