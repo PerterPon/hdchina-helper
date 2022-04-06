@@ -1,0 +1,5 @@
+node_modules
+build
+test_output
+etc/default.yaml
+torrents
