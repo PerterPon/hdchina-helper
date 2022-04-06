@@ -133,14 +133,22 @@ async function downloadItem(items: TItem[]): Promise<void> {
   for (const item of items) {
     const { hash, title, id } = item;
     const fileName: string = path.join(downloadPath, `${id}_${title}.torrent`);
-    // not exist, download
     if (false === fs.existsSync(fileName)) {
-      const downloadLink = `${downloadUrl}?hash=${hash}&uid=${uid}`;
-      const fileWriter = fs.createWriteStream(fileName);
-      const res: AxiosResponse = await axios(downloadLink);
-      await writeFile(res.data, fileWriter);
-      console.log(`[${displayTime()}] download torrent: [${fileName}]`);
-      downloadCount ++;
+      try {
+        // not exist, download
+        const downloadLink = `${downloadUrl}?hash=${hash}&uid=${uid}`;
+        const fileWriter = fs.createWriteStream(fileName);
+        const res: AxiosResponse = await axios({
+          url: downloadLink,
+          method: 'get',
+          responseType: 'stream'
+        });
+        await writeFile(res.data, fileWriter);
+        console.log(`[${displayTime()}] download torrent: [${fileName}]`);
+        downloadCount++;
+      } catch (e) {
+        console.error(`[ERROR][${displayTime()}] download file: [${fileName}] with error: [${e.message}]`)
+      }
     }
   }
   console.log(`[${displayTime()}] all torrents download complete! download number: [${downloadCount}]`);
