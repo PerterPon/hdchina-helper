@@ -189,17 +189,17 @@ async function fetchCsrfToken(): Promise<string> {
 
 const ajaxHeader = {
   "accept": "*/*",
-    "accept-language": "zh-CN,zh;q=0.9,en;q=0.8,ja;q=0.7,zh-TW;q=0.6",
-    "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
-    "sec-ch-ua": "\" Not A;Brand\";v=\"99\", \"Chromium\";v=\"99\", \"Google Chrome\";v=\"99\"",
-    "sec-ch-ua-mobile": "?0",
-    "sec-ch-ua-platform": "\"macOS\"",
-    "sec-fetch-dest": "empty",
-    "sec-fetch-mode": "cors",
-    "sec-fetch-site": "same-origin",
-    "x-requested-with": "XMLHttpRequest",
-    "Referer": "https://hdchina.org/torrents.php",
-    "Referrer-Policy": "strict-origin-when-cross-origin",
+  "accept-language": "zh-CN,zh;q=0.9,en;q=0.8,ja;q=0.7,zh-TW;q=0.6",
+  "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
+  "sec-ch-ua": "\" Not A;Brand\";v=\"99\", \"Chromium\";v=\"99\", \"Google Chrome\";v=\"99\"",
+  "sec-ch-ua-mobile": "?0",
+  "sec-ch-ua-platform": "\"macOS\"",
+  "sec-fetch-dest": "empty",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-site": "same-origin",
+  "x-requested-with": "XMLHttpRequest",
+  "Referer": "https://hdchina.org/torrents.php",
+  "Referrer-Policy": "strict-origin-when-cross-origin"
 };
 
 const htmlHeader = {
