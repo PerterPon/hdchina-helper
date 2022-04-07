@@ -71,14 +71,19 @@ async function getItemInfo(rss: any): Promise<TItem[]> {
   return items;
 }
 
-async function filterFreeItem(items: TItem[]): Promise<TItem[]> {
-  console.log(`[${displayTime()}] filterFreeItem`);
+async function filterFreeItem(items: TItem[], retryTime: number = 0): Promise<TItem[]> {
+  const configInfo = config.getConfig();
+  const { cookie, checkFreeUrl, globalRetryTime } = configInfo.hdchina;
+  if (retryTime >= globalRetryTime) {
+    console.warn(`[${displayTime()}] exceed max filter free time!`);
+    return [];
+  }
+  retryTime++;
+  console.log(`[${displayTime()}] filterFreeItem with time: [${retryTime}]`);
   const ids: string[] = [];
   for (const item of items) {
     ids.push(item.id);
   }
-  const configInfo = config.getConfig();
-  const { cookie, checkFreeUrl } = configInfo.hdchina;
   const csrfToken: string = await fetchCsrfToken();
   const res: AxiosResponse = await axios({
     method: 'post',
@@ -96,6 +101,7 @@ async function filterFreeItem(items: TItem[]): Promise<TItem[]> {
   const resData = res.data as any;
   console.log(res.data);;
   const freeItem: TItem[] = [];
+  let noneFreeCount: number = 0;
   for (let i = 0; i < items.length; i++) {
     const item: TItem = items[i];
     const ddlItem = resData.message[item.id];
@@ -111,8 +117,12 @@ async function filterFreeItem(items: TItem[]): Promise<TItem[]> {
       item.free = true;
       freeItem.push(item);
     } else {
+      noneFreeCount++;
       item.free = false;
     }
+  }
+  if (noneFreeCount === items.length) {
+    return await filterFreeItem(items, retryTime);
   }
   return freeItem;
 }
@@ -122,6 +132,8 @@ async function downloadItem(items: TItem[]): Promise<void> {
   const configInfo = config.getConfig();
   const { downloadUrl, uid, downloadPath } = configInfo.hdchina;
   let downloadCount: number = 0;
+  let existsTorrentCount: number = 0;
+  let downloadErrorCount: number = 0;
   for (const item of items) {
     await sleep(2 * 1000);
     const { hash, title, id, size, freeUntil } = item;
@@ -141,11 +153,14 @@ async function downloadItem(items: TItem[]): Promise<void> {
         console.log(`[${displayTime()}] download torrent: [${fileName}], size: [${filesize(size)}], free time: [${moment(freeUntil).diff(moment(), 'hours')} H]`);
         downloadCount++;
       } catch (e) {
+        downloadErrorCount++;
         console.error(`[ERROR][${displayTime()}] download file: [${fileName}] with error: [${e.message}]`);
       }
+    } else {
+      existsTorrentCount++;
     }
   }
-  console.log(`[${displayTime()}] all torrents download complete! download number: [${downloadCount}]`);
+  console.log(`[${displayTime()}] all torrents download complete! download number: [${downloadCount}], exists torrent count: [${existsTorrentCount}], download error count: [${downloadErrorCount}]`);
 }
 
 function writeFile(from: fs.ReadStream, to: fs.WriteStream): Promise<void> {
