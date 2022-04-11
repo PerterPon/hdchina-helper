@@ -1,15 +1,22 @@
-// const Transmission = require('transmission');
-// const transmission = new Transmission({
-//   host: '192.168.1.102',
-//   port: 9091,
-//   username: 'perterpon', 
-//   password: 'pon423904',
-//   ssl: false
+const Transmission = require('transmission');
+const transmission = new Transmission({
+  host: 'home.perterpon.com',
+  port: 9091,
+  username: 'perterpon', 
+  password: 'pon423904',
+  ssl: false
+});
+
+// transmission.session((error, data) => {
+//   console.log(error, data);
 // });
 
 // transmission.active((error, data) => {
 //   console.log(data);
 // });
+transmission.freeSpace('/volume1',(error, data) => {
+  console.log(data);
+});
 
 // transmission.addUrl('http://hdchina.org/download.php?hash=uC26eXwFjP0SzXn32-Va3A&uid=325966', function(error, data) {
 //   console.log(transmission.status, data);
@@ -23,15 +30,15 @@
 
 
 
-const mysql = require('mysql2');
+// const mysql = require('mysql2');
 
-const connection = mysql.createConnection({
-  host: 'home.perterpon.com',
-  user: 'pt',
-  password: 'hello1234',
-  database: 'pt'
-});
+// const connection = mysql.createConnection({
+//   host: 'home.perterpon.com',
+//   user: 'pt',
+//   password: 'hello1234',
+//   database: 'pt'
+// });
 
-connection.query('select * from torrent', (error, data) => {
-  console.log(error, data);
-});
+// connection.query('select * from torrent', (error, data) => {
+//   console.log(error, data);
+// });

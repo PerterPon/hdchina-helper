@@ -1,18 +1,19 @@
 
 import * as config from './config';
 import * as utils from './utils';
+import * as transmission from './transmission';
+import * as oss from './oss';
+import * as message from './message';
+
 import axios, { AxiosResponse } from 'axios';
+import * as _ from 'lodash';
 import { XMLParser } from 'fast-xml-parser';
 import { parse as parseUrl, UrlWithParsedQuery } from 'url';
-import * as qs from 'qs';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as filesize from 'filesize';
 import * as moment from 'moment';
 import * as mysql from './mysql';
-import * as transmission from './transmission';
-import * as oss from './oss';
-import * as message from './message';
 
 config.init();
 
@@ -41,6 +42,7 @@ async function start(): Promise<void> {
   } catch(e) {
     console.log(e.message);
     console.log(e.stack);
+    botMessage.unshift('[ERROR!]');
     await message.sendMessage(botMessage.join('\n'));
     await utils.sleep(2 * 1000);
     process.exit(1);
@@ -80,6 +82,8 @@ async function main(): Promise<void> {
   // 11. 
   await removeItemFromTransmission(beyondFreeItems);
   console.log(`[${utils.displayTime()}] all task done!!!!\n`);
+  // 12.
+  await reduceLeftSpace();
 
   await message.sendMessage(botMessage.join('\n'));
   await utils.sleep(5 * 1000);
@@ -282,8 +286,37 @@ async function filterBeyondFreeItems(items: TItem[]): Promise<TItem[]> {
 async function removeItemFromTransmission(items: TItem[]): Promise<void> {
   console.log(`[${utils.displayTime()}] removeItemFromTransmission: [${JSON.stringify(items)}]`);
   const transIds: string[] = await mysql.getTransIdByItem(items);
-  for (const transId of transIds) {
-    await transmission.removeItem(transId);
+  for (let i = 0; i < items.length; i++) {
+    const transId: string = transIds[i];
+    const item: TItem = items[i];
+    console.log(`[${utils.displayTime()}] removing torrent: [${item.title}]`);
+    await transmission.removeItem(Number(transId));
+  }
+  botMessage.unshift(`[${utils.displayTime()}] remove torrent count: [${items.length}]`);
+}
+
+async function reduceLeftSpace(): Promise<void> {
+  console.log(`[${utils.displayTime()}] reduceLeftSpace`);
+  const configInfo = config.getConfig();
+  let freeSpace: number = await transmission.freeSpace();
+  const { minSpaceLeft, fileDownloadPath, minStayFileSize } = configInfo.hdchina.transmission;
+  const allItems: transmission.TTransItem[] = await transmission.getAllItems();
+  const datedItems: transmission.TTransItem[] = _.orderBy(allItems, ['activityDate']);
+  while (freeSpace < minSpaceLeft) {
+    if (0 === datedItems.length) {
+      break;
+    }
+    const item = datedItems.shift();
+    const { id, status, downloadDir, size, name } = item;
+    if (
+      -1 === [transmission.status.DOWNLOAD, transmission.status.CHECK_WAIT, transmission.status.CHECK, transmission.status.DOWNLOAD_WAIT].indexOf(status) &&
+      size > minStayFileSize &&
+      downloadDir === fileDownloadPath
+    ) {
+      console.log(`[${utils.displayTime()}] remove item because of min left space: [${name}], size: [${filesize(size)}]`);
+      await transmission.removeItem(id);
+      freeSpace += size;
+    }
   }
 }
 

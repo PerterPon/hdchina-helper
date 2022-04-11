@@ -1,5 +1,6 @@
 
-const Tranmission = require('transmission');
+const Transmission = require('transmission');
+import * as _ from 'lodash';
 import { promisify } from 'util';
 import * as config from './config';
 import { displayTime } from './utils';
@@ -10,6 +11,9 @@ export interface TTransItem {
   name: string;
   hash: string;
   status: number;
+  size: number;
+  activityDate: Date;
+  isFinished: boolean;
 }
 
 let transmission: any = null;
@@ -17,13 +21,16 @@ let transmission: any = null;
 export async function init(): Promise<void> {
   const configInfo = config.getConfig();
   const { host, port, username, password, ssl } = configInfo.hdchina.transmission;
-  transmission = new Tranmission({
+  transmission = new Transmission({
     host, port, username, password, ssl
   });
-  transmission.active = promisify(transmission.active);
-  transmission.get = promisify(transmission.get);
-  transmission.addUrl = promisify(transmission.addUrl);
-  transmission.remove = promisify(transmission.remove);
+  Object.assign(status, transmission.status);
+  for (const fnName in transmission) {
+    const fn = transmission[fnName];
+    if (true === _.isFunction(fn)) {
+      transmission[fnName] = promisify(fn);
+    }
+  }
 }
 
 export async function getDownloadingItems(): Promise<TTransItem[]> {
@@ -32,9 +39,9 @@ export async function getDownloadingItems(): Promise<TTransItem[]> {
   const downloadingItems: TTransItem[] = [];
   for (const item of data.torrents) {
     if( transmission.status.DOWNLOAD === item.status) {
-      const { status, id, name, downloadDir, hashString } = item;
+      const { status, id, name, downloadDir, hashString, sizeWhenDone: size, activityDate, isFinished } = item;
       downloadingItems.push({
-        id, name, downloadDir, status,
+        id, name, downloadDir, status, size, activityDate, isFinished,
         hash: hashString
       });
     }
@@ -42,7 +49,21 @@ export async function getDownloadingItems(): Promise<TTransItem[]> {
   return downloadingItems;
 }
 
-export async function removeItem(id: string): Promise<void> {
+export async function getAllItems(): Promise<TTransItem[]> {
+  console.log(`[${displayTime()}] [Transmission] getAllItems`);
+  const data = await transmission.get();
+  const downloadingItems: TTransItem[] = [];
+  for (const item of data.torrents) {
+    const { status, id, name, downloadDir, hashString, sizeWhenDone: size, activityDate, isFinished } = item;
+    downloadingItems.push({
+      id, name, downloadDir, status, size, activityDate, isFinished,
+      hash: hashString
+    });
+  }
+  return downloadingItems;
+}
+
+export async function removeItem(id: number): Promise<void> {
   console.log(`[${displayTime()}] [Transmission] remove item: [${id}]`);
   const result = await transmission.remove(id, true);
   console.log(`[${displayTime()}] [Transmission] remove item: [${id}] with result: [${JSON.stringify(result)}]`);
@@ -62,3 +83,10 @@ export async function addUrl(url: string): Promise<{transId: string; hash: strin
     hash: hashString
   };
 }
+
+export async function freeSpace(): Promise<number> {
+  const res = await transmission.freeSpace('/volume1');
+  return res['size-bytes'];
+}
+
+export const status: any = {};
