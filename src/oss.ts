@@ -7,12 +7,9 @@ let store: OSS = null;
 
 export async function init(): Promise<void> {
   const configInfo = config.getConfig();
-  const { accessKeyId, accessKeySecret, bucket, endpoint } = configInfo;
+  const { accessKeyId, accessKeySecret, bucket, endpoint } = configInfo.hdchina.aliOss;
   store = new OSS({
-    accessKeyId: 'your access key',
-    accessKeySecret: 'your access secret',
-    bucket: 'your bucket name',
-    endpoint: 'oss-accelerate.aliyuncs.com',
+    accessKeyId,accessKeySecret,bucket,endpoint
   });
   
 }
@@ -20,5 +17,5 @@ export async function init(): Promise<void> {
 export async function uploadFile(name: string, filePath: string): Promise<void> {
   console.log(`[${displayTime()}] [OSS] put file: [${name}], file path: [${filePath}]`);
   const res: OSS.PutObjectResult = await store.put(name, filePath);
-  console.log(`[${displayTime()}] [OSS] put file with result: [JSO${res}]`);
+  console.log(`[${displayTime()}] [OSS] put file with result: [${JSON.stringify(res)}]`);
 }

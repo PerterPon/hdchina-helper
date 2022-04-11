@@ -127,3 +127,10 @@ export async function getItemByHash(hash: string[]): Promise<TItem[]> {
   }
   return items;
 }
+
+export async function setItemDownloading(items: TItem[]): Promise<void> {
+  for (const item of items) {
+    const { hash } = item;
+    
+  }
+}
