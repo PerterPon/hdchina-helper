@@ -50,6 +50,7 @@ async function main(): Promise<void> {
   const trans: { transId: string; hash: string; }[] = await addItemToTransmission(canDownloadItem);
   // 8.
   await updateTrans2Item(trans, canDownloadItem);
+  await mysql.setItemDownloading(canDownloadItem);
   await utils.sleep(5 * 1000);
   // 9. 
   const downloadingItems: TItem[] = await getDownloadingItems();
@@ -198,8 +199,9 @@ async function addItemToTransmission(items: TItem[]): Promise<{transId: string; 
   const configInfo = config.getConfig();
   const { cdnHost } = configInfo.hdchina.aliOss;
   for (const item of items) {
-    const { transHash } = item;
+    const { transHash, title } = item;
     const torrentUrl: string = `http://${cdnHost}/${transHash}.torrent`;
+    console.log(`[${utils.displayTime()}] add file to transmission: [${title}]`);
     const transRes: { transId: string; hash: string } = await transmission.addUrl(torrentUrl);
     transIds.push(transRes);
   }

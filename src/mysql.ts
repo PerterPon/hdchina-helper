@@ -36,10 +36,10 @@ export async function getFreeItems(): Promise<TItem[]> {
   const [data]: any = await pool.query(`
     SELECT 
       *
-    FROM 
+    FROM
       torrent
     WHERE
-      free_until > NOW();
+      free_until > NOW() AND status = 0;
     `);
   console.log(console.log(`[${displayTime()}] [MYSQL] get free item: [${JSON.stringify(data)}]`));
   const freeItems: TItem[] = [];
@@ -129,8 +129,16 @@ export async function getItemByHash(hash: string[]): Promise<TItem[]> {
 }
 
 export async function setItemDownloading(items: TItem[]): Promise<void> {
+  console.log(`[${displayTime()}] [MYSQL] setItemDownloading: [${JSON.stringify(items)}]`);
   for (const item of items) {
-    const { hash } = item;
-    
+    const { transHash } = item;
+    await pool.query(`
+    UPDATE
+      torrent
+    SET
+      status = 1
+    WHERE
+      trans_hash = ?;
+    `, [ transHash ]);
   }
 }
