@@ -54,7 +54,6 @@ async function main(): Promise<void> {
   const parser: XMLParser = new XMLParser({
     ignoreAttributes: false
   });
-  throw new Error('123 error');
   // 2. 
   const rss: object = parser.parse(rssString);
   // 3.
