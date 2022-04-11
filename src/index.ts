@@ -138,7 +138,7 @@ async function filterFreeItem(items: TItem[], retryTime: number = 0): Promise<TI
     ids.push(item.id);
   }
   const itemDetail = await utils.getItemDetailByIds(ids);
-  console.log('getItemDetailByIds', itemDetail);
+  console.log('getItemDetailByIds', JSON.stringify(itemDetail, null, 4));
   const freeItem: TItem[] = [];
   let noneFreeCount: number = 0;
   for (let i = 0; i < items.length; i++) {
@@ -202,7 +202,7 @@ async function downloadItem(items: TItem[]): Promise<void> {
       existsTorrentCount++;
     }
   }
-  console.log(`[${utils.displayTime()}] all torrents download complete! download number: [${downloadCount}], exists torrent count: [${existsTorrentCount}], download error count: [${downloadErrorCount}]`);
+  botMessage.unshift(`[${utils.displayTime()}] all torrents download complete! download number: [${downloadCount}], exists torrent count: [${existsTorrentCount}], download error count: [${downloadErrorCount}]`);
 }
 
 async function uploadItem(items: TItem[]): Promise<void> {
