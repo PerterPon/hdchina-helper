@@ -1,6 +1,7 @@
 {
 	"name": "tbs-name",
 	"devDependencies": {
+		"@types/ali-oss": "^6.16.3",
 		"@types/fs-extra": "*",
 		"@types/js-yaml": "*",
 		"@types/lodash": "*",
@@ -12,6 +13,7 @@
 		"mocha": "5.2.0"
 	},
 	"dependencies": {
+		"ali-oss": "^6.17.1",
 		"axios": "^0.26.1",
 		"chalk": "~2.4.1",
 		"cheerio": "^1.0.0-rc.10",
@@ -20,11 +22,14 @@
 		"filesize": "^8.0.7",
 		"fs-extra": "~6.0.1",
 		"js-yaml": "~3.12.0",
-		"lodash": "^4.17.10",
+		"lodash": "^4.17.21",
 		"log4js": "2.9.0",
 		"moment": "^2.29.2",
+		"mysql2": "^2.3.3",
 		"pm2": "2.10.4",
 		"qs": "^6.10.3",
+		"string-similarity": "^4.0.4",
+		"transmission": "^0.4.10",
 		"typescript": "^3.5.3",
 		"yargs": "~11.0.0"
 	},

@@ -1,6 +1,6 @@
 
 import * as config from './config';
-import { sleep, displayTime } from './utils';
+import * as utils from './utils';
 import axios, { AxiosResponse } from 'axios';
 import { XMLParser } from 'fast-xml-parser';
 import { parse as parseUrl, UrlWithParsedQuery } from 'url';
@@ -9,24 +9,25 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as filesize from 'filesize';
 import * as moment from 'moment';
+import * as mysql from './mysql';
+import * as transmission from './transmission';
+import { uploadFile } from './oss';
 
 config.init();
 
-interface TItem {
+export interface TItem {
   id: string;
   hash: string;
   free?: boolean;
   freeUntil?: Date;
   size: number;
   title: string;
+  torrentUrl: string;
+  transHash: string;
 }
 
-const configInfo: config.TTBSConfig = config.getConfig();
-
-let totalItems: TItem[] = [];
-
 async function main(): Promise<void> {
-  await config.init();
+  await init();
   // 1. 
   const rssString: string = await getRssContent();
   const parser: XMLParser = new XMLParser({
@@ -36,27 +37,48 @@ async function main(): Promise<void> {
   const rss: object = parser.parse(rssString);
   // 3.
   const items: TItem[] = await getItemInfo(rss);
-  totalItems = items;
   // 4.
   const freeItems: TItem[] = await filterFreeItem(items);
-  console.log(`[${displayTime()}] free items: [${JSON.stringify(freeItems)}]`);
+  console.log(`[${utils.displayTime()}] free items: [${JSON.stringify(freeItems)}]`);
+  await mysql.storeItem(freeItems);
   // 5.
-  await downloadItem(freeItems);
+  const canDownloadItem: TItem[] = await mysql.getFreeItems();
+
+  // 6. 
+  await downloadItem(canDownloadItem);
+  await uploadItem(canDownloadItem);
+  const trans: { transId: string; hash: string; }[] = await addItemToTransmission(canDownloadItem);
+  await updateTrans2Item(trans, canDownloadItem);
+  await utils.sleep(5 * 1000);
+  // 7. 
+  const downloadingItems: TItem[] = await getDownloadingItems();
+  // 8. 
+  const beyondFreeItems: TItem[] = await filterBeyondFreeItems(downloadingItems);
+  // 9. 
+  await removeItemFromTransmission(beyondFreeItems);
+  console.log(`[${utils.displayTime()}] all task done!!!!\n`);
+  process.exit(0);
+}
+
+async function init(): Promise<void> {
+  await config.init();
+  await mysql.init();
+  await transmission.init();
 }
 
 async function getRssContent(): Promise<string> {
-  console.log(`[${displayTime()}] get rss content`);
+  console.log(`[${utils.displayTime()}] get rss content`);
   const configInfo: config.TTBSConfig = config.getConfig();
   const res: AxiosResponse = await axios.get(configInfo.hdchina.rssLink);
   return res.data;
 }
 
 async function getItemInfo(rss: any): Promise<TItem[]> {
-  console.log(`[${displayTime()}] get item info`);
+  console.log(`[${utils.displayTime()}] get item info`);
   const { item } = rss.rss.channel;
   const items: TItem[] = [];
   for(const it of item) {
-    const { link, enclosure, title } = it;
+    const { link, enclosure, title, guid } = it;
     const linkRes: UrlWithParsedQuery = parseUrl(link, true);
     const id: string = linkRes.query.id as string;
     const { '@_url': enclosureUrl, '@_length': length } = enclosure;
@@ -65,50 +87,39 @@ async function getItemInfo(rss: any): Promise<TItem[]> {
     items.push({
       id, hash,
       size: length,
-      title
+      title,
+      torrentUrl: enclosureUrl,
+      transHash: guid['#text']
     });
   }
   return items;
 }
 
 async function filterFreeItem(items: TItem[], retryTime: number = 0): Promise<TItem[]> {
+  console.log(`[${utils.displayTime()}] filterFreeItem`);
   const configInfo = config.getConfig();
-  const { cookie, checkFreeUrl, globalRetryTime } = configInfo.hdchina;
+  const { globalRetryTime } = configInfo.hdchina;
   if (retryTime >= globalRetryTime) {
-    console.warn(`[${displayTime()}] exceed max filter free time!`);
+    console.warn(`[${utils.displayTime()}] exceed max filter free time!`);
     return [];
   }
   retryTime++;
-  console.log(`[${displayTime()}] filterFreeItem with time: [${retryTime}]`);
+  console.log(`[${utils.displayTime()}] filterFreeItem with time: [${retryTime}]`);
   const ids: string[] = [];
   for (const item of items) {
     ids.push(item.id);
   }
-  const csrfToken: string = await fetchCsrfToken();
-  const res: AxiosResponse = await axios({
-    method: 'post',
-    url: checkFreeUrl,
-    data: qs.stringify({
-      ids,
-      csrf: csrfToken
-    }),
-    headers: {
-      ...ajaxHeader,
-      "cookie": cookie,
-    },
-    responseType: 'json'
-  });
-  const resData = res.data as any;
-  console.log(res.data);;
+  const itemDetail = await utils.getItemDetailByIds(ids);
+  console.log('getItemDetailByIds', itemDetail);
   const freeItem: TItem[] = [];
   let noneFreeCount: number = 0;
   for (let i = 0; i < items.length; i++) {
     const item: TItem = items[i];
-    const ddlItem = resData.message[item.id];
+    const ddlItem = itemDetail.message[item.id];
     const { sp_state, timeout } = ddlItem;
     if (
       -1 === sp_state.indexOf('display: none') && 
-      -1 < sp_state.indexOf('pro_free') &&
+      (-1 < sp_state.indexOf('pro_free') || -1 < sp_state.indexOf('pro_free2up') ) &&
       '' !== timeout
     ) {
       const [ ddl ] = timeout.match(/\d\d\d\d-\d\d-\d\d\s\d\d:\d\d:\d\d/);
@@ -128,16 +139,16 @@ async function filterFreeItem(items: TItem[], retryTime: number = 0): Promise<TI
 }
 
 async function downloadItem(items: TItem[]): Promise<void> {
-  console.log(`[${displayTime()}] downloadItem: [${JSON.stringify(items)}]`);
+  console.log(`[${utils.displayTime()}] downloadItem: [${JSON.stringify(items)}]`);
   const configInfo = config.getConfig();
   const { downloadUrl, uid, downloadPath } = configInfo.hdchina;
   let downloadCount: number = 0;
   let existsTorrentCount: number = 0;
   let downloadErrorCount: number = 0;
   for (const item of items) {
-    await sleep(2 * 1000);
-    const { hash, title, id, size, freeUntil } = item;
-    const fileName: string = path.join(downloadPath, `${id}_${title}.torrent`);
+    await utils.sleep(2 * 1000);
+    const { hash, title, id, size, freeUntil, transHash } = item;
+    const fileName: string = path.join(downloadPath, `${transHash}.torrent`);
     if (false === fs.existsSync(fileName)) {
       try {
         // not exist, download
@@ -146,76 +157,109 @@ async function downloadItem(items: TItem[]): Promise<void> {
         const res: AxiosResponse = await axios({
           url: downloadLink,
           method: 'get',
-          responseType: 'stream'
+          responseType: 'stream',
+          headers: {
+            ...utils.downloadHeader
+          }
         });
-        await writeFile(res.data, fileWriter);
+        await utils.writeFile(res.data, fileWriter);
         const leftTime: number = moment(freeUntil).unix() - moment().unix();
-        console.log(`[${displayTime()}] download torrent: [${fileName}], size: [${filesize(size)}], free time: [${moment(freeUntil).diff(moment(), 'hours')} H]`);
+        console.log(`[${utils.displayTime()}] download torrent: [${fileName}], size: [${filesize(size)}], free time: [${moment(freeUntil).diff(moment(), 'hours')} H]`);
         downloadCount++;
       } catch (e) {
         downloadErrorCount++;
-        console.error(`[ERROR][${displayTime()}] download file: [${fileName}] with error: [${e.message}]`);
+        console.error(`[ERROR][${utils.displayTime()}] download file: [${fileName}] with error: [${e.message}]`);
       }
     } else {
       existsTorrentCount++;
     }
   }
-  console.log(`[${displayTime()}] all torrents download complete! download number: [${downloadCount}], exists torrent count: [${existsTorrentCount}], download error count: [${downloadErrorCount}]`);
+  console.log(`[${utils.displayTime()}] all torrents download complete! download number: [${downloadCount}], exists torrent count: [${existsTorrentCount}], download error count: [${downloadErrorCount}]`);
 }
 
-function writeFile(from: fs.ReadStream, to: fs.WriteStream): Promise<void> {
-  from.pipe(to);
-  return new Promise((resolve, reject) => {
-    to.on('finish', resolve);
-    to.on('error', reject);
-  });
-}
-
-async function fetchCsrfToken(): Promise<string> {
-  console.log(`[${displayTime()}] fetch csrf token`);
+async function uploadItem(items: TItem[]): Promise<void> {
+  console.log(`[${utils.displayTime()}] upload items: [${JSON.stringify(items)}]`);
   const configInfo = config.getConfig();
-  const { cookie, indexPage } = configInfo.hdchina;
-  const res: AxiosResponse = await axios.get(indexPage, {
-    headers: {
-      ...htmlHeader,
-      cookie
-    }
-  });
-  const html: string = res.data;
-  const [_, csrfToken] = html.match(/name="x-csrf"\scontent="(.*)"/);
-  console.log(`[${displayTime()}] got token: [${csrfToken}]`);
-  return csrfToken;
+  const { downloadPath } = configInfo.hdchina;
+  for (const item of items) {
+    const { transHash } = item;
+    const filePath: string = path.join(downloadPath, `${transHash}.torrent`);
+    await uploadFile(transHash, filePath);
+  }
 }
 
-const ajaxHeader = {
-  "accept": "*/*",
-  "accept-language": "zh-CN,zh;q=0.9,en;q=0.8,ja;q=0.7,zh-TW;q=0.6",
-  "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
-  "sec-ch-ua": "\" Not A;Brand\";v=\"99\", \"Chromium\";v=\"99\", \"Google Chrome\";v=\"99\"",
-  "sec-ch-ua-mobile": "?0",
-  "sec-ch-ua-platform": "\"macOS\"",
-  "sec-fetch-dest": "empty",
-  "sec-fetch-mode": "cors",
-  "sec-fetch-site": "same-origin",
-  "x-requested-with": "XMLHttpRequest",
-  "Referer": "https://hdchina.org/torrents.php",
-  "Referrer-Policy": "strict-origin-when-cross-origin"
-};
+async function addItemToTransmission(items: TItem[]): Promise<{transId: string; hash: string;}[]> {
+  console.log(`[${utils.displayTime()}] addItemToTransmission: [${JSON.stringify(items)}]`);
+  const transIds: {transId: string; hash: string;}[] = [];
+  const configInfo = config.getConfig();
+  const { cdnHost } = configInfo.hdchina.aliOss;
+  for (const item of items) {
+    const { transHash } = item;
+    const torrentUrl: string = `${cdnHost}/${transHash}.torrent`;
+    const transRes: { transId: string; hash: string } = await transmission.addUrl(torrentUrl);
+    transIds.push(transRes);
+  }
+  return transIds;
+}
 
-const htmlHeader = {
-  "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
-  "accept-language": "zh-CN,zh;q=0.9,en;q=0.8,ja;q=0.7,zh-TW;q=0.6",
-  "cache-control": "max-age=0",
-  "sec-ch-ua": "\" Not A;Brand\";v=\"99\", \"Chromium\";v=\"99\", \"Google Chrome\";v=\"99\"",
-  "sec-ch-ua-mobile": "?0",
-  "sec-ch-ua-platform": "\"macOS\"",
-  "sec-fetch-dest": "document",
-  "sec-fetch-mode": "navigate",
-  "sec-fetch-site": "same-origin",
-  "sec-fetch-user": "?1",
-  "upgrade-insecure-requests": "1",
-  "Referer": "https://hdchina.org/torrents.php",
-  "Referrer-Policy": "strict-origin-when-cross-origin"
-};
+async function updateTrans2Item(transIds: {transId: string; hash: string}[], items: TItem[]): Promise<void> {
+  console.log(`[${utils.displayTime()}] updateTransId2Item transIds: [${JSON.stringify(transIds)}], items: [${JSON.stringify(items)}]`);
+
+  for (let i = 0; i < transIds.length; i++) {
+    const { transId, hash } = transIds[i];
+    const item: TItem = items[i];
+    const { transHash } = item;
+    await mysql.updateItemByTransHash(transHash, {
+      trans_id: transId
+    });
+  }
+}
+
+async function getDownloadingItems(): Promise<TItem[]> {
+  console.log(`[${utils.displayTime()}] getDownloadingItems`);
+  const downloadingTransItems: transmission.TTransItem[] = await transmission.getDownloadingItems();
+  const downloadingHash: string[] = [];
+  for (const item of downloadingTransItems) {
+    const { hash } = item;
+    downloadingHash.push(hash);
+  }
+  const downloadingItems: TItem[] = await mysql.getItemByHash(downloadingHash);
+  const downloadingItemNames: string[] = [];
+  for (const downloadingItem of downloadingItems) {
+    downloadingItemNames.push(downloadingItem.title);
+  }
+  console.log(`[${utils.displayTime()}] downloading item names: [${downloadingItemNames.join('\n')}]`);
+  return downloadingItems;
+}
+
+async function filterBeyondFreeItems(items: TItem[]): Promise<TItem[]> {
+  console.log(`[${utils.displayTime()}] filterBeyondFreeItems: [${JSON.stringify(items)}]`);
+  const beyondFreeItems: TItem[] = [];
+  for (const item of items) {
+    const { freeUntil } = item;
+    if (moment(freeUntil) < moment()) {
+      beyondFreeItems.push(item);
+    }
+  }
+  return beyondFreeItems;
+}
+
+async function removeItemFromTransmission(items: TItem[]): Promise<void> {
+  console.log(`[${utils.displayTime()}] removeItemFromTransmission: [${JSON.stringify(items)}]`);
+  const transIds: string[] = await mysql.getTransIdByItem(items);
+  for (const transId of transIds) {
+    await transmission.removeItem(transId);
+  }
+}
 
 main();
+
+process.on('uncaughtException', (e) => {
+  console.log(e);
+  throw e;
+});
+
+process.on('uncaughtException', (e) => {
+  console.error(e);
+  process.exit(1);
+})
