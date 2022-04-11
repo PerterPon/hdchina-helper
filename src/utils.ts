@@ -51,53 +51,24 @@ export async function fetchCsrfTokenAndPHPSessionId(): Promise<{csrfToken: strin
 
 export async function getItemDetailByIds(ids: string[]): Promise<any> {
   console.log(`[${displayTime()}] [Utils], getItemDetailByIds: [${ids}]`);
-  return {
-    status: 200,
-    message: {
-      '586505': { sp_state: '', timeout: '' },
-      '587937': { sp_state: '', timeout: '' },
-      '587944': { sp_state: '', timeout: '' },
-      '587969': {
-        sp_state: ' <img class="pro_50pctdown" src="pic/trans.gif" alt="50%"  ' +
-          `onmouseover="domTT_activate(this, event, 'content', ` +
-          "'&lt;b&gt;&lt;font " +
-          'class=&quot;halfdown&quot;&gt;50%&lt;/font&gt;&lt;/b&gt;　' +
-          '剩余时间：&lt;b&gt;&lt;span title=&quot;2022-04-11 ' +
-          "21:09:19&quot;&gt;5时23分&lt;/span&gt;&lt;/b&gt;', 'trail', false, " +
-          "'delay',500,'lifetime',3000,'fade','both','styleClass','niceTitle', " +
-          `'fadeMax',87, 'maxWidth', 300);" />`,
-        timeout: '<span title="2022-04-11 21:09:19">5时23分</span>'
-      },
-      '587975': {
-        sp_state: ' <img class="pro_free" src="pic/trans.gif" alt="Free"  ' +
-          `onmouseover="domTT_activate(this, event, 'content', ` +
-          "'&lt;b&gt;&lt;font " +
-          'class=&quot;free&quot;&gt;免费&lt;/font&gt;&lt;/b&gt;　' +
-          '剩余时间：&lt;b&gt;&lt;span title=&quot;2022-04-11 ' +
-          "21:22:30&quot;&gt;5时36分&lt;/span&gt;&lt;/b&gt;', 'trail', false, " +
-          "'delay',500,'lifetime',3000,'fade','both','styleClass','niceTitle', " +
-          `'fadeMax',87, 'maxWidth', 300);" />`,
-        timeout: '<span title="2022-04-11 21:22:30">5时36分</span>'
-      }
-    }
-  }
-  // const configInfo = config.getConfig();
-  // const { cookie, checkFreeUrl } = configInfo.hdchina;
-  // const { csrfToken, phpSessionId } = await fetchCsrfTokenAndPHPSessionId();
-  // const res: AxiosResponse = await axios({
-  //   method: 'post',
-  //   url: checkFreeUrl,
-  //   data: qs.stringify({
-  //     ids,
-  //     csrf: csrfToken
-  //   }),
-  //   headers: {
-  //     ...ajaxHeader,
-  //     "cookie": `${cookie}; ${phpSessionId}`,
-  //   },
-  //   responseType: 'json'
-  // });
-  // return res.data;
+
+  const configInfo = config.getConfig();
+  const { cookie, checkFreeUrl } = configInfo.hdchina;
+  const { csrfToken, phpSessionId } = await fetchCsrfTokenAndPHPSessionId();
+  const res: AxiosResponse = await axios({
+    method: 'post',
+    url: checkFreeUrl,
+    data: qs.stringify({
+      ids,
+      csrf: csrfToken
+    }),
+    headers: {
+      ...ajaxHeader,
+      "cookie": `${cookie}; ${phpSessionId}`,
+    },
+    responseType: 'json'
+  });
+  return res.data;
 }
 
 export async function writeFile(from: fs.ReadStream, to: fs.WriteStream): Promise<void> {
