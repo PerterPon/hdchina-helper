@@ -15,6 +15,7 @@ import * as filesize from 'filesize';
 import * as moment from 'moment';
 import * as mysql from './mysql';
 import * as puppeteer from './puppeteer';
+import { mkdirpSync } from 'fs-extra';
 
 config.init();
 
@@ -25,6 +26,7 @@ console.log = (...messages: any[]) => {
 }
 
 const botMessage: string[] = [];
+let tempFolder: string = null;
 
 export interface TItem {
   id: string;
@@ -102,6 +104,15 @@ async function init(): Promise<void> {
   await oss.init();
   await message.init();
   await puppeteer.init();
+  await initTempFolder();
+}
+
+async function initTempFolder(): Promise<void> {
+  const configInfo = config.getConfig();
+  const { tempFolder: tempFolderConfig } = configInfo.hdchina;
+  const fullTempFolder = path.join(__dirname, tempFolderConfig);
+  mkdirpSync(fullTempFolder);
+  tempFolder = fullTempFolder;
 }
 
 async function getRssContent(): Promise<string> {
@@ -179,14 +190,14 @@ async function filterFreeItem(items: TItem[], retryTime: number = 0): Promise<TI
 async function downloadItem(items: TItem[]): Promise<void> {
   console.log(`[${utils.displayTime()}] downloadItem: [${JSON.stringify(items)}]`);
   const configInfo = config.getConfig();
-  const { downloadUrl, uid, downloadPath } = configInfo.hdchina;
+  const { downloadUrl, uid } = configInfo.hdchina;
   let downloadCount: number = 0;
   let existsTorrentCount: number = 0;
   let downloadErrorCount: number = 0;
   for (const item of items) {
     await utils.sleep(2 * 1000);
     const { hash, title, id, size, freeUntil, transHash } = item;
-    const fileName: string = path.join(downloadPath, `${transHash}.torrent`);
+    const fileName: string = path.join(tempFolder, `${transHash}.torrent`);
     if (false === fs.existsSync(fileName)) {
       try {
         // not exist, download
@@ -218,11 +229,10 @@ async function downloadItem(items: TItem[]): Promise<void> {
 async function uploadItem(items: TItem[]): Promise<void> {
   console.log(`[${utils.displayTime()}] upload items: [${JSON.stringify(items)}]`);
   const configInfo = config.getConfig();
-  const { downloadPath } = configInfo.hdchina;
   for (const item of items) {
     const { transHash } = item;
     const fileName: string = `${transHash}.torrent`;
-    const filePath: string = path.join(downloadPath, `${transHash}.torrent`);
+    const filePath: string = path.join(tempFolder, `${transHash}.torrent`);
     await oss.uploadFile(fileName, filePath);
   }
 }
