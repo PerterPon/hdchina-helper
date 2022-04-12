@@ -55,22 +55,8 @@ async function start(): Promise<void> {
 async function main(): Promise<void> {
   await init();
 
-  // 0.
-  // await puppeteer.refreshRecaptcha();
-
-  // 1. 
-  // const rssString: string = await getRssContent();
-  // const parser: XMLParser = new XMLParser({
-  //   ignoreAttributes: false
-  // });
-  // 2. 
-  // const rss: object = parser.parse(rssString);
-  // 3.
-  // const items: TItem[] = await getItemInfo(rss);
-  // 4.
   const freeItems: TItem[] = await puppeteer.filterFreeItem();
   console.log(`[${utils.displayTime()}] got free items: [${JSON.stringify(freeItems)}]`);
-  // const freeItems: TItem[] = await filterFreeItem(items);
   console.log(`[${utils.displayTime()}] free items: [${JSON.stringify(freeItems)}]`);
   await mysql.storeItem(freeItems);
   // 5.

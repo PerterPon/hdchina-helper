@@ -117,12 +117,13 @@ export async function getItemByHash(hash: string[]): Promise<TItem[]> {
   `, [hash]);
   const items: TItem[] = [];
   for (const item of res) {
-    const { pt_id, hash, title, size, torrent_url, trans_id, trans_hash } = item;
+    const { pt_id, hash, title, size, torrent_url, trans_id, trans_hash, free_until } = item;
     items.push({
       size, title, hash,
       id: pt_id,
       torrentUrl: torrent_url,
-      transHash: trans_hash
+      transHash: trans_hash,
+      freeUntil: free_until
     });
   }
   return items;
