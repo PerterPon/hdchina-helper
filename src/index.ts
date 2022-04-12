@@ -14,11 +14,12 @@ import * as path from 'path';
 import * as filesize from 'filesize';
 import * as moment from 'moment';
 import * as mysql from './mysql';
+import * as puppeteer from './puppeteer';
 
 config.init();
 
 const _log = console.log;
-console.log = (...messages) => {
+console.log = (...messages: any[]) => {
   botMessage.push(...messages);
   _log.apply(undefined, messages);
 }
@@ -51,6 +52,10 @@ async function start(): Promise<void> {
 
 async function main(): Promise<void> {
   await init();
+
+  // 0.
+  await puppeteer.refreshRecaptcha();
+
   // 1. 
   const rssString: string = await getRssContent();
   const parser: XMLParser = new XMLParser({
@@ -96,6 +101,7 @@ async function init(): Promise<void> {
   await transmission.init();
   await oss.init();
   await message.init();
+  await puppeteer.init();
 }
 
 async function getRssContent(): Promise<string> {

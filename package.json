@@ -27,10 +27,11 @@
 		"moment": "^2.29.2",
 		"mysql2": "^2.3.3",
 		"pm2": "2.10.4",
+		"puppeteer": "^13.5.2",
 		"qs": "^6.10.3",
 		"string-similarity": "^4.0.4",
 		"transmission": "^0.4.10",
-		"typescript": "^3.5.3",
+		"typescript": "^4.1.6",
 		"yargs": "~11.0.0"
 	},
 	"scripts": {
