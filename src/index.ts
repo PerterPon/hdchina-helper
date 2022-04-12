@@ -36,7 +36,7 @@ export interface TItem {
   size: number;
   title: string;
   torrentUrl: string;
-  transHash: string;
+  transHash?: string;
 }
 
 async function start(): Promise<void> {
@@ -56,19 +56,21 @@ async function main(): Promise<void> {
   await init();
 
   // 0.
-  await puppeteer.refreshRecaptcha();
+  // await puppeteer.refreshRecaptcha();
 
   // 1. 
-  const rssString: string = await getRssContent();
-  const parser: XMLParser = new XMLParser({
-    ignoreAttributes: false
-  });
+  // const rssString: string = await getRssContent();
+  // const parser: XMLParser = new XMLParser({
+  //   ignoreAttributes: false
+  // });
   // 2. 
-  const rss: object = parser.parse(rssString);
+  // const rss: object = parser.parse(rssString);
   // 3.
-  const items: TItem[] = await getItemInfo(rss);
+  // const items: TItem[] = await getItemInfo(rss);
   // 4.
-  const freeItems: TItem[] = await filterFreeItem(items);
+  const freeItems: TItem[] = await puppeteer.filterFreeItem();
+  console.log(`[${utils.displayTime()}] got free items: [${JSON.stringify(freeItems)}]`);
+  // const freeItems: TItem[] = await filterFreeItem(items);
   console.log(`[${utils.displayTime()}] free items: [${JSON.stringify(freeItems)}]`);
   await mysql.storeItem(freeItems);
   // 5.
@@ -184,6 +186,7 @@ async function filterFreeItem(items: TItem[], retryTime: number = 0): Promise<TI
   if (noneFreeCount === items.length) {
     return await filterFreeItem(items, retryTime);
   }
+  botMessage.unshift(`[${utils.displayTime()}] free item count: [${freeItem.length}]`);
   return freeItem;
 }
 
@@ -196,8 +199,8 @@ async function downloadItem(items: TItem[]): Promise<void> {
   let downloadErrorCount: number = 0;
   for (const item of items) {
     await utils.sleep(2 * 1000);
-    const { hash, title, id, size, freeUntil, transHash } = item;
-    const fileName: string = path.join(tempFolder, `${transHash}.torrent`);
+    const { hash, title, id, size, freeUntil } = item;
+    const fileName: string = path.join(tempFolder, `${hash}.torrent`);
     if (false === fs.existsSync(fileName)) {
       try {
         // not exist, download
@@ -230,9 +233,9 @@ async function uploadItem(items: TItem[]): Promise<void> {
   console.log(`[${utils.displayTime()}] upload items: [${JSON.stringify(items)}]`);
   const configInfo = config.getConfig();
   for (const item of items) {
-    const { transHash } = item;
-    const fileName: string = `${transHash}.torrent`;
-    const filePath: string = path.join(tempFolder, `${transHash}.torrent`);
+    const { hash } = item;
+    const fileName: string = `${hash}.torrent`;
+    const filePath: string = path.join(tempFolder, `${hash}.torrent`);
     await oss.uploadFile(fileName, filePath);
   }
 }
@@ -243,8 +246,8 @@ async function addItemToTransmission(items: TItem[]): Promise<{transId: string; 
   const configInfo = config.getConfig();
   const { cdnHost } = configInfo.hdchina.aliOss;
   for (const item of items) {
-    const { transHash, title } = item;
-    const torrentUrl: string = `http://${cdnHost}/${transHash}.torrent`;
+    const { hash, title } = item;
+    const torrentUrl: string = `http://${cdnHost}/${hash}.torrent`;
     console.log(`[${utils.displayTime()}] add file to transmission: [${title}]`);
     const transRes: { transId: string; hash: string } = await transmission.addUrl(torrentUrl);
     transIds.push(transRes);
@@ -258,9 +261,10 @@ async function updateTrans2Item(transIds: {transId: string; hash: string}[], ite
   for (let i = 0; i < transIds.length; i++) {
     const { transId, hash } = transIds[i];
     const item: TItem = items[i];
-    const { transHash } = item;
-    await mysql.updateItemByTransHash(transHash, {
-      trans_id: transId
+    const { hash: torrentHash } = item;
+    await mysql.updateItemByHash(torrentHash, {
+      trans_id: transId,
+      trans_hash: hash
     });
   }
 }

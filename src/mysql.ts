@@ -56,8 +56,8 @@ export async function getFreeItems(): Promise<TItem[]> {
   return freeItems;
 }
 
-export async function updateItemByTransHash(transHash: string, updateContent: any): Promise<void> {
-  console.log(`[${displayTime()}] [MYSQL] updateItemByTransHash transHash: [${transHash}], updateContent: [${JSON.stringify(updateContent)}]`);
+export async function updateItemByHash(hash: string, updateContent: any): Promise<void> {
+  console.log(`[${displayTime()}] [MYSQL] updateItemByTransHash transHash: [${hash}], updateContent: [${JSON.stringify(updateContent)}]`);
   const updateKeys: string[] = [];
   const updateValues: any[] = [];
   let updateItemString: string = '';
@@ -73,8 +73,8 @@ export async function updateItemByTransHash(transHash: string, updateContent: an
   SET
     ${updateItemString}
   WHERE
-    trans_hash = ?;
-  `, [...updateValues, transHash]);
+    hash = ?;
+  `, [...updateValues, hash]);
 }
 
 export async function getTransIdByItem(items: TItem[]): Promise<string[]> {
