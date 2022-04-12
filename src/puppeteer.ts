@@ -13,7 +13,7 @@ export async function init(): Promise<void> {
   const { cookie, userDataDir } = configInfo.hdchina.puppeteer;
   browser = await puppeteer.launch({
     userDataDir: userDataDir,
-    headless: false,
+    headless: true,
     defaultViewport: {
       width: 1123,
       height: 987
