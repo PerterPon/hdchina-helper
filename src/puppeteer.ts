@@ -17,7 +17,10 @@ export async function init(): Promise<void> {
     defaultViewport: {
       width: 1123,
       height: 987
-    }
+    },
+    args: [
+      '--no-sandbox',
+    ],
   });
   page = await browser.newPage();
   page.setCookie(cookie);
@@ -61,12 +64,14 @@ export async function filterFreeItem(retryTime: number = 0): Promise<TItem[]> {
   }
 
   for(const item of torrentItems) {
-    const freeItem = await item.$('.pro_free');
+    const freeItem = await item.$('.pro_free') || await item.$('.pro_free2up');
     const progressArea = await item.$('.progressarea');
     if( null === freeItem || null !== progressArea ) {
       continue;
     }
-    const freeTimeContainer: string = await item.$eval('.pro_free', (el) => el.getAttribute('onmouseover'));
+    const freeTimeContainer: string = 
+      await item.$eval('.pro_free', (el) => el.getAttribute('onmouseover')) ||
+      await item.$eval('.pro_free2up', (el) => el.getAttribute('onmouseover'));
     const [ freeTimeString ] = freeTimeContainer.match(/\d\d\d\d-\d\d-\d\d\s\d\d:\d\d:\d\d/);
     const freeTime: Date = new Date(freeTimeString);
 
