@@ -7,7 +7,6 @@ import * as message from './message';
 
 import axios, { AxiosResponse } from 'axios';
 import * as _ from 'lodash';
-import { XMLParser } from 'fast-xml-parser';
 import { parse as parseUrl, UrlWithParsedQuery } from 'url';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -18,22 +17,8 @@ import * as puppeteer from './puppeteer';
 import { mkdirpSync } from 'fs-extra';
 import * as log from './log';
 
-interface Console {
-  message(message: string): void;
-}
-
 config.init();
 
-// const _log = log.log;
-// log.log = (...messages: any[]) => {
-//   botMessage.push(...messages);
-//   _log.apply(undefined, messages);
-// }
-// (console as any).message = () => {
-
-// }
-
-// const botMessage: string[] = [];
 let tempFolder: string = null;
 
 export interface TItem {
@@ -252,6 +237,8 @@ async function addItemToTransmission(items: TItem[]): Promise<{transId: string; 
 
 async function updateTrans2Item(transIds: {transId: string; hash: string}[], items: TItem[]): Promise<void> {
   log.log(`[${utils.displayTime()}] updateTransId2Item transIds: [${JSON.stringify(transIds)}], items: [${JSON.stringify(items)}]`);
+  const configInfo = config.getConfig();
+  const { cdnHost } = configInfo.hdchina.aliOss;
 
   for (let i = 0; i < transIds.length; i++) {
     const { transId, hash } = transIds[i];
@@ -259,7 +246,8 @@ async function updateTrans2Item(transIds: {transId: string; hash: string}[], ite
     const { hash: torrentHash } = item;
     await mysql.updateItemByHash(torrentHash, {
       trans_id: transId,
-      trans_hash: hash
+      trans_hash: hash,
+      torrent_download_url: `http://${cdnHost}/hdchina/${torrentHash}.torrent`
     });
   }
 }
@@ -317,6 +305,7 @@ async function reduceLeftSpace(): Promise<void> {
   const { minSpaceLeft, fileDownloadPath, minStayFileSize } = configInfo.hdchina.transmission;
   const allItems: transmission.TTransItem[] = await transmission.getAllItems();
   const datedItems: transmission.TTransItem[] = _.orderBy(allItems, ['activityDate']);
+  let reducedTotal: number = 0;
   while (freeSpace < minSpaceLeft) {
     if (0 === datedItems.length) {
       break;
@@ -328,11 +317,13 @@ async function reduceLeftSpace(): Promise<void> {
       size > minStayFileSize &&
       downloadDir === fileDownloadPath
     ) {
-      log.log(`[${utils.displayTime()}] remove item because of min left space: [${name}], size: [${filesize(size)}]`);
+      log.message(`[${utils.displayTime()}] remove item because of min left space: [${name}], size: [${filesize(size)}]`);
+      reducedTotal += size;
       await transmission.removeItem(id);
       freeSpace += size;
     }
   }
+  log.message(`[${utils.displayTime()}] reduce space total: [${filesize(reducedTotal)}]`);
 }
 
 start();

@@ -40,7 +40,9 @@ export async function getFreeItems(): Promise<TItem[]> {
     FROM
       torrent
     WHERE
-      free_until > NOW() AND status = 0;
+      free_until > NOW() AND
+      status = 0 AND
+      torrent_download_url IS NOT NULL;
     `);
   log.log(`[${displayTime()}] [MYSQL] get free item: [${JSON.stringify(data)}]`);
   const freeItems: TItem[] = [];

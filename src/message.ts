@@ -13,11 +13,11 @@ export async function init(): Promise<void> {
 
 
 export async function sendMessage(): Promise<void> {
-  const logFileName: string = `${moment().format('YYYY-MM-DD HH:mm:SS')}.log`
+  const logFileName: string = `${moment().format('YYYY-MM-DD_HH:mm:SS')}.log`
   await oss.uploadFile(`log/${logFileName}`, Buffer.from(log.logs.join('\n')));
   const configInfo = config.getConfig();
   const { cdnHost } = configInfo.hdchina.aliOss;
-  const logUrl: string = `http://${cdnHost}/${logFileName}`;
+  const logUrl: string = `http://${cdnHost}/hdchina/log/${logFileName}`;
 
   log.message(`[${displayTime()}] [Util] detail log: [ ${logUrl} ]`);
   await doSendMessage(log.messages.join('\n'));
