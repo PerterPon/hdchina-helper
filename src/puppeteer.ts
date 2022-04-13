@@ -14,7 +14,7 @@ export async function init(): Promise<void> {
   const { cookie, userDataDir } = configInfo.hdchina.puppeteer;
   browser = await puppeteer.launch({
     userDataDir: userDataDir,
-    headless: true,
+    headless: false,
     defaultViewport: {
       width: 1123,
       height: 987
@@ -53,11 +53,11 @@ export async function filterFreeItem(retryTime: number = 0): Promise<TItem[]> {
   let freeTarget: puppeteer.ElementHandle<HTMLTableRowElement>[] = [];
   
   try {
-    await page.goto(torrentPage, {
+    page.goto(torrentPage, {
       timeout: 15 * 1000
     });
     await page.waitForSelector('.torrent_list > tbody > tr .pro_free', {
-      timeout: 5 * 1000
+      timeout: 10 * 1000
     });
     torrentItems = await page.$$('.torrent_list > tbody > tr');
     freeTarget = await page.$$('.torrent_list > tbody > tr .pro_free');
@@ -67,7 +67,12 @@ export async function filterFreeItem(retryTime: number = 0): Promise<TItem[]> {
   }
 
   for(const item of torrentItems) {
-    const freeItem = await item.$('.pro_free') || await item.$('.pro_free2up');
+    let freeItem;
+    try {
+      freeItem = await item.$('.pro_free')
+    } catch (e) {
+      freeItem = await item.$('.pro_free2up');
+    }
     const progressArea = await item.$('.progressarea');
     if( null === freeItem || null !== progressArea ) {
       continue;
