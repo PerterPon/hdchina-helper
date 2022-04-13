@@ -42,7 +42,7 @@ export async function getFreeItems(): Promise<TItem[]> {
     WHERE
       free_until > NOW() AND
       status = 0 AND
-      torrent_download_url IS NOT NULL;
+      torrent_download_url IS NULL;
     `);
   log.log(`[${displayTime()}] [MYSQL] get free item: [${JSON.stringify(data)}]`);
   const freeItems: TItem[] = [];
@@ -135,14 +135,14 @@ export async function getItemByHash(hash: string[]): Promise<TItem[]> {
 export async function setItemDownloading(items: TItem[]): Promise<void> {
   log.log(`[${displayTime()}] [MYSQL] setItemDownloading: [${JSON.stringify(items)}]`);
   for (const item of items) {
-    const { transHash } = item;
+    const { hash } = item;
     await pool.query(`
     UPDATE
       torrent
     SET
       status = 1
     WHERE
-      trans_hash = ?;
-    `, [ transHash ]);
+      hash = ?;
+    `, [ hash ]);
   }
 }
