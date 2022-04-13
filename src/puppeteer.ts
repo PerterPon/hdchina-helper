@@ -67,12 +67,14 @@ export async function filterFreeItem(retryTime: number = 0): Promise<TItem[]> {
   }
 
   for(const item of torrentItems) {
-    let freeItem;
+    let freeItem = null;
     try {
       freeItem = await item.$('.pro_free')
-    } catch (e) {
+    } catch(e) {}
+    try {
       freeItem = await item.$('.pro_free2up');
-    }
+    } catch (e) {}
+
     const progressArea = await item.$('.progressarea');
     if( null === freeItem || null !== progressArea ) {
       continue;
