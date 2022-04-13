@@ -47,12 +47,14 @@ export async function filterFreeItem(retryTime: number = 0): Promise<TItem[]> {
   }
   retryTime++;
 
-  await page.goto(torrentPage);
   
   let torrentItems: puppeteer.ElementHandle<HTMLTableRowElement>[] = [];
   let freeTarget: puppeteer.ElementHandle<HTMLTableRowElement>[] = [];
-
+  
   try {
+    await page.goto(torrentPage, {
+      timeout: 15 * 1000
+    });
     await page.waitForSelector('.torrent_list > tbody > tr .pro_free', {
       timeout: 5 * 1000
     });
