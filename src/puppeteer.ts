@@ -4,6 +4,7 @@ import { TItem } from 'src';
 import * as config from './config';
 import { displayTime, sleep } from './utils';
 import * as url from 'url';
+import * as log from './log';
 
 let browser: puppeteer.Browser = null;
 let page: puppeteer.Page = null;
@@ -27,7 +28,7 @@ export async function init(): Promise<void> {
 }
 
 export async function refreshRecaptcha(): Promise<void> {
-  console.log(`[${displayTime()}] [Puppeteer] refreshRecaptcha`);
+  log.log(`[${displayTime()}] [Puppeteer] refreshRecaptcha`);
   const configInfo = config.getConfig();
   const { torrentPage } = configInfo.hdchina;
   await page.goto(torrentPage);
@@ -38,7 +39,7 @@ export async function refreshRecaptcha(): Promise<void> {
 }
 
 export async function filterFreeItem(retryTime: number = 0): Promise<TItem[]> {
-  console.log(`[${displayTime()}] [Puppeteer] filterFreeItem with time: [${retryTime}]`);
+  log.log(`[${displayTime()}] [Puppeteer] filterFreeItem with time: [${retryTime}]`);
   const freeItems: TItem[] = [];
   const configInfo = config.getConfig();
   const { torrentPage, globalRetryTime, uid } = configInfo.hdchina;
@@ -60,9 +61,9 @@ export async function filterFreeItem(retryTime: number = 0): Promise<TItem[]> {
     });
     torrentItems = await page.$$('.torrent_list > tbody > tr');
     freeTarget = await page.$$('.torrent_list > tbody > tr .pro_free');
-    console.log(`[${displayTime()}] [Puppeteer] free target count: [${freeTarget.length}]`);
+    log.log(`[${displayTime()}] [Puppeteer] free target count: [${freeTarget.length}]`);
   } catch (e) {
-    console.log(`[${displayTime()}] [Puppeteer] failed to launch page, wait for retry`);
+    log.log(`[${displayTime()}] [Puppeteer] failed to launch page, wait for retry`);
   }
 
   for(const item of torrentItems) {

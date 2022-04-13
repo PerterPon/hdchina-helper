@@ -4,6 +4,7 @@ import * as _ from 'lodash';
 import { promisify } from 'util';
 import * as config from './config';
 import { displayTime } from './utils';
+import * as log from './log';
 
 export interface TTransItem {
   id: number;
@@ -34,7 +35,7 @@ export async function init(): Promise<void> {
 }
 
 export async function getDownloadingItems(): Promise<TTransItem[]> {
-  console.log(`[${displayTime()}] [Transmission] get download items`);
+  log.log(`[${displayTime()}] [Transmission] get download items`);
   const data = await transmission.active();
   const downloadingItems: TTransItem[] = [];
   for (const item of data.torrents) {
@@ -50,7 +51,7 @@ export async function getDownloadingItems(): Promise<TTransItem[]> {
 }
 
 export async function getAllItems(): Promise<TTransItem[]> {
-  console.log(`[${displayTime()}] [Transmission] getAllItems`);
+  log.log(`[${displayTime()}] [Transmission] getAllItems`);
   const data = await transmission.get();
   const downloadingItems: TTransItem[] = [];
   for (const item of data.torrents) {
@@ -64,19 +65,19 @@ export async function getAllItems(): Promise<TTransItem[]> {
 }
 
 export async function removeItem(id: number): Promise<void> {
-  console.log(`[${displayTime()}] [Transmission] remove item: [${id}]`);
+  log.log(`[${displayTime()}] [Transmission] remove item: [${id}]`);
   const result = await transmission.remove(id, true);
-  console.log(`[${displayTime()}] [Transmission] remove item: [${id}] with result: [${JSON.stringify(result)}]`);
+  log.log(`[${displayTime()}] [Transmission] remove item: [${id}] with result: [${JSON.stringify(result)}]`);
 }
 
 export async function addUrl(url: string): Promise<{transId: string; hash: string;}> {
-  console.log(`[${displayTime()}] [Transmission] add url: [${url}]`);
+  log.log(`[${displayTime()}] [Transmission] add url: [${url}]`);
   const configInfo = config.getConfig();
   const { fileDownloadPath } = configInfo.hdchina.transmission;
   const res = await transmission.addUrl(url, {
     'download-dir':  fileDownloadPath
   });
-  console.log(`[${displayTime()}] [Transmission] add url with result: [${JSON.stringify(res)}]`);
+  log.log(`[${displayTime()}] [Transmission] add url with result: [${JSON.stringify(res)}]`);
   const { id, hashString } = res;
   return {
     transId: id,

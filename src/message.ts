@@ -1,15 +1,30 @@
 
 import axios from 'axios';
+import * as moment from 'moment';
+
 import * as config from './config';
 import { displayTime } from './utils';
+import * as log from './log';
+import * as oss from './oss';
 
 export async function init(): Promise<void> {
 
 }
 
 
-export async function sendMessage(message: string): Promise<void> {
-  console.log(`[${displayTime()}] [MESSAGE] send message`);
+export async function sendMessage(): Promise<void> {
+  const logFileName: string = `${moment().format('YYYY-MM-DD HH:mm:SS')}.log`
+  await oss.uploadFile(`log/${logFileName}`, Buffer.from(log.logs.join('\n')));
+  const configInfo = config.getConfig();
+  const { cdnHost } = configInfo.hdchina.aliOss;
+  const logUrl: string = `http://${cdnHost}/${logFileName}`;
+
+  log.message(`[${displayTime()}] [Util] detail log: [ ${logUrl} ]`);
+  await doSendMessage(log.messages.join('\n'));
+}
+
+async function doSendMessage(message: string): Promise<void> {
+  log.log(`[${displayTime()}] [MESSAGE] send message`);
   const configInfo = config.getConfig();
   const { webhook } = configInfo.hdchina.lark;
   await axios({

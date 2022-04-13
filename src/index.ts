@@ -16,16 +16,24 @@ import * as moment from 'moment';
 import * as mysql from './mysql';
 import * as puppeteer from './puppeteer';
 import { mkdirpSync } from 'fs-extra';
+import * as log from './log';
+
+interface Console {
+  message(message: string): void;
+}
 
 config.init();
 
-const _log = console.log;
-console.log = (...messages: any[]) => {
-  botMessage.push(...messages);
-  _log.apply(undefined, messages);
-}
+// const _log = log.log;
+// log.log = (...messages: any[]) => {
+//   botMessage.push(...messages);
+//   _log.apply(undefined, messages);
+// }
+// (console as any).message = () => {
 
-const botMessage: string[] = [];
+// }
+
+// const botMessage: string[] = [];
 let tempFolder: string = null;
 
 export interface TItem {
@@ -43,10 +51,11 @@ async function start(): Promise<void> {
   try {
     await main();
   } catch(e) {
-    console.log(e.message);
-    console.log(e.stack);
-    botMessage.unshift('[ERROR!]');
-    await message.sendMessage(botMessage.join('\n'));
+    log.log(e.message);
+    log.log(e.stack);
+    log.message('[ERROR!]');
+
+    await message.sendMessage();
     await utils.sleep(2 * 1000);
     process.exit(1);
   }
@@ -56,8 +65,8 @@ async function main(): Promise<void> {
   await init();
 
   const freeItems: TItem[] = await puppeteer.filterFreeItem();
-  console.log(`[${utils.displayTime()}] got free items: [${JSON.stringify(freeItems)}]`);
-  console.log(`[${utils.displayTime()}] free items: [${JSON.stringify(freeItems)}]`);
+  log.log(`[${utils.displayTime()}] got free items: [${JSON.stringify(freeItems)}]`);
+  log.log(`[${utils.displayTime()}] free items: [${JSON.stringify(freeItems)}]`);
   await mysql.storeItem(freeItems);
   // 5.
   const canDownloadItem: TItem[] = await mysql.getFreeItems();
@@ -76,11 +85,11 @@ async function main(): Promise<void> {
   const beyondFreeItems: TItem[] = await filterBeyondFreeItems(downloadingItems);
   // 11. 
   await removeItemFromTransmission(beyondFreeItems);
-  console.log(`[${utils.displayTime()}] all task done!!!!\n`);
+  log.log(`[${utils.displayTime()}] all task done!!!!\n`);
   // 12.
   await reduceLeftSpace();
 
-  await message.sendMessage(botMessage.join('\n'));
+  await message.sendMessage();
   await utils.sleep(5 * 1000);
   process.exit(0);
 }
@@ -104,14 +113,14 @@ async function initTempFolder(): Promise<void> {
 }
 
 async function getRssContent(): Promise<string> {
-  console.log(`[${utils.displayTime()}] get rss content`);
+  log.log(`[${utils.displayTime()}] get rss content`);
   const configInfo: config.TTBSConfig = config.getConfig();
   const res: AxiosResponse = await axios.get(configInfo.hdchina.rssLink);
   return res.data;
 }
 
 async function getItemInfo(rss: any): Promise<TItem[]> {
-  console.log(`[${utils.displayTime()}] get item info`);
+  log.log(`[${utils.displayTime()}] get item info`);
   const { item } = rss.rss.channel;
   const items: TItem[] = [];
   for(const it of item) {
@@ -133,7 +142,7 @@ async function getItemInfo(rss: any): Promise<TItem[]> {
 }
 
 async function filterFreeItem(items: TItem[], retryTime: number = 0): Promise<TItem[]> {
-  console.log(`[${utils.displayTime()}] filterFreeItem`);
+  log.log(`[${utils.displayTime()}] filterFreeItem`);
   const configInfo = config.getConfig();
   const { globalRetryTime } = configInfo.hdchina;
   if (retryTime >= globalRetryTime) {
@@ -141,13 +150,13 @@ async function filterFreeItem(items: TItem[], retryTime: number = 0): Promise<TI
     return [];
   }
   retryTime++;
-  console.log(`[${utils.displayTime()}] filterFreeItem with time: [${retryTime}]`);
+  log.log(`[${utils.displayTime()}] filterFreeItem with time: [${retryTime}]`);
   const ids: string[] = [];
   for (const item of items) {
     ids.push(item.id);
   }
   const itemDetail = await utils.getItemDetailByIds(ids);
-  console.log('getItemDetailByIds', JSON.stringify(itemDetail, null, 4));
+  log.log('getItemDetailByIds', JSON.stringify(itemDetail, null, 4));
   const freeItem: TItem[] = [];
   let noneFreeCount: number = 0;
   for (let i = 0; i < items.length; i++) {
@@ -172,12 +181,12 @@ async function filterFreeItem(items: TItem[], retryTime: number = 0): Promise<TI
   if (noneFreeCount === items.length) {
     return await filterFreeItem(items, retryTime);
   }
-  botMessage.unshift(`[${utils.displayTime()}] free item count: [${freeItem.length}]`);
+  log.message(`[${utils.displayTime()}] free item count: [${freeItem.length}]`);
   return freeItem;
 }
 
 async function downloadItem(items: TItem[]): Promise<void> {
-  console.log(`[${utils.displayTime()}] downloadItem: [${JSON.stringify(items)}]`);
+  log.log(`[${utils.displayTime()}] downloadItem: [${JSON.stringify(items)}]`);
   const configInfo = config.getConfig();
   const { downloadUrl, uid } = configInfo.hdchina;
   let downloadCount: number = 0;
@@ -202,7 +211,7 @@ async function downloadItem(items: TItem[]): Promise<void> {
         });
         await utils.writeFile(res.data, fileWriter);
         const leftTime: number = moment(freeUntil).unix() - moment().unix();
-        console.log(`[${utils.displayTime()}] download torrent: [${fileName}], size: [${filesize(size)}], free time: [${moment(freeUntil).diff(moment(), 'hours')} H]`);
+        log.log(`[${utils.displayTime()}] download torrent: [${fileName}], size: [${filesize(size)}], free time: [${moment(freeUntil).diff(moment(), 'hours')} H]`);
         downloadCount++;
       } catch (e) {
         downloadErrorCount++;
@@ -212,11 +221,11 @@ async function downloadItem(items: TItem[]): Promise<void> {
       existsTorrentCount++;
     }
   }
-  botMessage.unshift(`[${utils.displayTime()}] all torrents download complete! download number: [${downloadCount}], exists torrent count: [${existsTorrentCount}], download error count: [${downloadErrorCount}]`);
+  log.message(`[${utils.displayTime()}] all torrents download complete! download number: [${downloadCount}], exists torrent count: [${existsTorrentCount}], download error count: [${downloadErrorCount}]`);
 }
 
 async function uploadItem(items: TItem[]): Promise<void> {
-  console.log(`[${utils.displayTime()}] upload items: [${JSON.stringify(items)}]`);
+  log.log(`[${utils.displayTime()}] upload items: [${JSON.stringify(items)}]`);
   const configInfo = config.getConfig();
   for (const item of items) {
     const { hash } = item;
@@ -227,14 +236,14 @@ async function uploadItem(items: TItem[]): Promise<void> {
 }
 
 async function addItemToTransmission(items: TItem[]): Promise<{transId: string; hash: string;}[]> {
-  console.log(`[${utils.displayTime()}] addItemToTransmission: [${JSON.stringify(items)}]`);
+  log.log(`[${utils.displayTime()}] addItemToTransmission: [${JSON.stringify(items)}]`);
   const transIds: {transId: string; hash: string;}[] = [];
   const configInfo = config.getConfig();
   const { cdnHost } = configInfo.hdchina.aliOss;
   for (const item of items) {
     const { hash, title } = item;
-    const torrentUrl: string = `http://${cdnHost}/${hash}.torrent`;
-    console.log(`[${utils.displayTime()}] add file to transmission: [${title}]`);
+    const torrentUrl: string = `http://${cdnHost}/hdchina/${hash}.torrent`;
+    log.log(`[${utils.displayTime()}] add file to transmission: [${title}]`);
     const transRes: { transId: string; hash: string } = await transmission.addUrl(torrentUrl);
     transIds.push(transRes);
   }
@@ -242,7 +251,7 @@ async function addItemToTransmission(items: TItem[]): Promise<{transId: string; 
 }
 
 async function updateTrans2Item(transIds: {transId: string; hash: string}[], items: TItem[]): Promise<void> {
-  console.log(`[${utils.displayTime()}] updateTransId2Item transIds: [${JSON.stringify(transIds)}], items: [${JSON.stringify(items)}]`);
+  log.log(`[${utils.displayTime()}] updateTransId2Item transIds: [${JSON.stringify(transIds)}], items: [${JSON.stringify(items)}]`);
 
   for (let i = 0; i < transIds.length; i++) {
     const { transId, hash } = transIds[i];
@@ -256,7 +265,7 @@ async function updateTrans2Item(transIds: {transId: string; hash: string}[], ite
 }
 
 async function getDownloadingItems(): Promise<TItem[]> {
-  console.log(`[${utils.displayTime()}] getDownloadingItems`);
+  log.log(`[${utils.displayTime()}] getDownloadingItems`);
   const downloadingTransItems: transmission.TTransItem[] = await transmission.getDownloadingItems();
   const downloadingHash: string[] = [];
   const configInfo = config.getConfig();
@@ -273,12 +282,12 @@ async function getDownloadingItems(): Promise<TItem[]> {
   for (const downloadingItem of downloadingItems) {
     downloadingItemNames.push(downloadingItem.title);
   }
-  console.log(`[${utils.displayTime()}] downloading item names: [${downloadingItemNames.join('\n')}]`);
+  log.log(`[${utils.displayTime()}] downloading item names: [${downloadingItemNames.join('\n')}]`);
   return downloadingItems;
 }
 
 async function filterBeyondFreeItems(items: TItem[]): Promise<TItem[]> {
-  console.log(`[${utils.displayTime()}] filterBeyondFreeItems: [${JSON.stringify(items)}]`);
+  log.log(`[${utils.displayTime()}] filterBeyondFreeItems: [${JSON.stringify(items)}]`);
   const beyondFreeItems: TItem[] = [];
   for (const item of items) {
     const { freeUntil } = item;
@@ -290,19 +299,19 @@ async function filterBeyondFreeItems(items: TItem[]): Promise<TItem[]> {
 }
 
 async function removeItemFromTransmission(items: TItem[]): Promise<void> {
-  console.log(`[${utils.displayTime()}] removeItemFromTransmission: [${JSON.stringify(items)}]`);
+  log.log(`[${utils.displayTime()}] removeItemFromTransmission: [${JSON.stringify(items)}]`);
   const transIds: string[] = await mysql.getTransIdByItem(items);
   for (let i = 0; i < items.length; i++) {
     const transId: string = transIds[i];
     const item: TItem = items[i];
-    console.log(`[${utils.displayTime()}] removing torrent: [${item.title}]`);
+    log.log(`[${utils.displayTime()}] removing torrent: [${item.title}]`);
     await transmission.removeItem(Number(transId));
   }
-  botMessage.unshift(`[${utils.displayTime()}] remove torrent count: [${items.length}]`);
+  log.message(`[${utils.displayTime()}] remove torrent count: [${items.length}]`);
 }
 
 async function reduceLeftSpace(): Promise<void> {
-  console.log(`[${utils.displayTime()}] reduceLeftSpace`);
+  log.log(`[${utils.displayTime()}] reduceLeftSpace`);
   const configInfo = config.getConfig();
   let freeSpace: number = await transmission.freeSpace();
   const { minSpaceLeft, fileDownloadPath, minStayFileSize } = configInfo.hdchina.transmission;
@@ -319,7 +328,7 @@ async function reduceLeftSpace(): Promise<void> {
       size > minStayFileSize &&
       downloadDir === fileDownloadPath
     ) {
-      console.log(`[${utils.displayTime()}] remove item because of min left space: [${name}], size: [${filesize(size)}]`);
+      log.log(`[${utils.displayTime()}] remove item because of min left space: [${name}], size: [${filesize(size)}]`);
       await transmission.removeItem(id);
       freeSpace += size;
     }
@@ -329,15 +338,16 @@ async function reduceLeftSpace(): Promise<void> {
 start();
 
 process.on('uncaughtException', async (e) => {
-  console.log(e);
-  await message.sendMessage(botMessage.join('\n'));
+  log.log(e.message);
+  log.log(e.stack);
+  await message.sendMessage();
   await utils.sleep(5 * 1000);
   throw e;
 });
 
 process.on('uncaughtException', async (e) => {
   console.error(e);
-  await message.sendMessage(botMessage.join('\n'));
+  await message.sendMessage();
   await utils.sleep(5 * 1000);
   process.exit(1);
 })
