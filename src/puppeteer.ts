@@ -11,19 +11,50 @@ import * as oss from './oss';
 let browser: puppeteer.Browser = null;
 let page: puppeteer.Page = null;
 
+const DEFAULT_ARGS = [
+  '--disable-background-networking',
+  '--enable-features=NetworkService,NetworkServiceInProcess',
+  '--disable-background-timer-throttling',
+  '--disable-backgrounding-occluded-windows',
+  '--disable-breakpad',
+  '--disable-client-side-phishing-detection',
+  '--disable-component-extensions-with-background-pages',
+  '--disable-default-apps',
+  '--disable-dev-shm-usage',
+  '--disable-extensions',
+  // BlinkGenPropertyTrees disabled due to crbug.com/937609
+  '--disable-features=TranslateUI,BlinkGenPropertyTrees',
+  '--disable-hang-monitor',
+  '--disable-ipc-flooding-protection',
+  '--disable-popup-blocking',
+  '--disable-prompt-on-repost',
+  '--disable-renderer-backgrounding',
+  '--disable-sync',
+  '--force-color-profile=srgb',
+  '--metrics-recording-only',
+  '--no-first-run',
+  '--enable-automation',
+  '--password-store=basic',
+  '--use-mock-keychain',
+];
+
 export async function init(): Promise<void> {
   const configInfo = config.getConfig();
   const { cookie, userDataDir } = configInfo.hdchina.puppeteer;
   browser = await puppeteer.launch({
-    userDataDir: userDataDir,
     headless: true,
-    defaultViewport: {
-      width: 1123,
-      height: 987
-    },
+    executablePath: null,
+    ignoreDefaultArgs: DEFAULT_ARGS,
     args: [
-      '--no-sandbox',
+        '--disable-features=site-per-process',
+        '--enable-audio-service-sandbox',
+        `--user-data-dir=${userDataDir}`,
+        '--no-sandbox',
     ],
+    defaultViewport: {
+      width: 1423,
+      height: 3800
+    }
   });
   page = await browser.newPage();
   page.setCookie(cookie);
@@ -77,7 +108,6 @@ export async function filterFreeItem(retryTime: number = 0): Promise<TItem[]> {
     log.log(`[${displayTime()}] [Puppeteer] free target count: [${freeTarget.length}]`);
   } catch (e) {
     log.log(`[${displayTime()}] [Puppeteer] failed to launch page with error: [${e.message}], wait for retry`);
-    return await filterFreeItem(retryTime);
   }
 
   for(const item of torrentItems) {
@@ -130,7 +160,7 @@ export async function filterFreeItem(retryTime: number = 0): Promise<TItem[]> {
       hash: urlItem.query.hash as string
     });
   }
-  if (0 === freeItems.length) {
+  if (0 === freeItems.length && 0 === freeTarget.length) {
     await sleep(5 * 1000);
     return filterFreeItem(retryTime);
   }
