@@ -15,8 +15,14 @@ export async function init(): Promise<void> {
   
 }
 
-export async function uploadFile(name: string, filePath: string|Buffer): Promise<void> {
-  log.log(`[${displayTime()}] [OSS] put file: [${name}], file path: [${filePath}]`);
+export async function uploadTorrent(name: string, filePath: string|Buffer): Promise<void> {
+  log.log(`[${displayTime()}] [OSS] put file: [${name}]`);
   const res: OSS.PutObjectResult = await store.put(`hdchina/${name}`, filePath);
+  log.log(`[${displayTime()}] [OSS] put file with result: [${JSON.stringify(res)}]`);
+}
+
+export async function uploadScreenShot(name: string, filePath: string|Buffer): Promise<void> {
+  log.log(`[${displayTime()}] [OSS] put file: [${name}]`);
+  const res: OSS.PutObjectResult = await store.put(`screenshot/${name}`, filePath);
   log.log(`[${displayTime()}] [OSS] put file with result: [${JSON.stringify(res)}]`);
 }

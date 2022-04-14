@@ -216,7 +216,7 @@ async function uploadItem(items: TItem[]): Promise<void> {
     const { hash } = item;
     const fileName: string = `${hash}.torrent`;
     const filePath: string = path.join(tempFolder, `${hash}.torrent`);
-    await oss.uploadFile(fileName, filePath);
+    await oss.uploadTorrent(fileName, filePath);
   }
 }
 

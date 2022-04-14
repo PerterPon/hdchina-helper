@@ -5,6 +5,8 @@ import * as config from './config';
 import { displayTime, sleep } from './utils';
 import * as url from 'url';
 import * as log from './log';
+import * as moment from 'moment';
+import * as oss from './oss';
 
 let browser: puppeteer.Browser = null;
 let page: puppeteer.Page = null;
@@ -43,39 +45,46 @@ export async function filterFreeItem(retryTime: number = 0): Promise<TItem[]> {
   const freeItems: TItem[] = [];
   const configInfo = config.getConfig();
   const { torrentPage, globalRetryTime, uid } = configInfo.hdchina;
+  const { cdnHost } = configInfo.hdchina.aliOss;
   if (retryTime >= globalRetryTime) {
     return [];
   }
   retryTime++;
 
-  
   let torrentItems: puppeteer.ElementHandle<HTMLTableRowElement>[] = [];
   let freeTarget: puppeteer.ElementHandle<HTMLTableRowElement>[] = [];
   
   try {
-    page.goto(torrentPage, {
+    await page.goto(torrentPage, {
       timeout: 15 * 1000
     });
+    const screenShot: Buffer = await page.screenshot() as Buffer;
+    const screenShotName: string = `${moment().format('YYYY-MM-DD_HH:mm:ss')}.png`;
+    await oss.uploadScreenShot(screenShotName, screenShot);
+    log.message(`[${displayTime()}] [Puppeteer] screenshot: [http://${cdnHost}/screenshot/${screenShotName}]`);
     await page.waitForSelector('.torrent_list > tbody > tr .pro_free', {
       timeout: 10 * 1000
     });
     torrentItems = await page.$$('.torrent_list > tbody > tr');
     try {
-      freeTarget = await page.$$('.torrent_list > tbody > tr .pro_free');
+      const freeTarget1up = await page.$$('.torrent_list > tbody > tr .pro_free');
+      freeTarget.push(...freeTarget1up);
+    } catch (e) {}
+    try {
+      const freeTarget2up = await page.$$('.torrent_list > tbody > tr .pro_free2up');
+      freeTarget.push(...freeTarget2up);
     } catch (e) {}
     log.log(`[${displayTime()}] [Puppeteer] free target count: [${freeTarget.length}]`);
   } catch (e) {
-    log.log(`[${displayTime()}] [Puppeteer] failed to launch page, wait for retry`);
+    log.log(`[${displayTime()}] [Puppeteer] failed to launch page with error: [${e.message}], wait for retry`);
   }
 
   for(const item of torrentItems) {
     let freeItem = null;
-    try {
-      freeItem = await item.$('.pro_free')
-    } catch(e) {}
-    try {
+    freeItem = await item.$('.pro_free');
+    if (null === freeItem) {
       freeItem = await item.$('.pro_free2up');
-    } catch (e) {}
+    }
 
     const progressArea = await item.$('.progressarea');
     if( null === freeItem || null !== progressArea ) {
@@ -86,8 +95,11 @@ export async function filterFreeItem(retryTime: number = 0): Promise<TItem[]> {
       freeTimeContainer = await item.$eval('.pro_free', (el) => el.getAttribute('onmouseover'));
     } catch (e) {}
     try {
-      freeTimeContainer = await item.$eval('.pro_free2up', (el) => el.getAttribute('onmouseover'));
+      if ('' === freeTimeContainer) {
+        freeTimeContainer = await item.$eval('.pro_free2up', (el) => el.getAttribute('onmouseover'));
+      }
     } catch (e) {}
+
     const [ freeTimeString ] = freeTimeContainer.match(/\d\d\d\d-\d\d-\d\d\s\d\d:\d\d:\d\d/);
     const freeTime: Date = new Date(freeTimeString);
 
