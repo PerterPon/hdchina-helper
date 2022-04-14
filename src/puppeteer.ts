@@ -14,7 +14,7 @@ export async function init(): Promise<void> {
   const { cookie, userDataDir } = configInfo.hdchina.puppeteer;
   browser = await puppeteer.launch({
     userDataDir: userDataDir,
-    headless: false,
+    headless: true,
     defaultViewport: {
       width: 1123,
       height: 987
@@ -60,7 +60,9 @@ export async function filterFreeItem(retryTime: number = 0): Promise<TItem[]> {
       timeout: 10 * 1000
     });
     torrentItems = await page.$$('.torrent_list > tbody > tr');
-    freeTarget = await page.$$('.torrent_list > tbody > tr .pro_free');
+    try {
+      freeTarget = await page.$$('.torrent_list > tbody > tr .pro_free');
+    } catch (e) {}
     log.log(`[${displayTime()}] [Puppeteer] free target count: [${freeTarget.length}]`);
   } catch (e) {
     log.log(`[${displayTime()}] [Puppeteer] failed to launch page, wait for retry`);
@@ -79,9 +81,13 @@ export async function filterFreeItem(retryTime: number = 0): Promise<TItem[]> {
     if( null === freeItem || null !== progressArea ) {
       continue;
     }
-    const freeTimeContainer: string = 
-      await item.$eval('.pro_free', (el) => el.getAttribute('onmouseover')) ||
-      await item.$eval('.pro_free2up', (el) => el.getAttribute('onmouseover'));
+    let freeTimeContainer: string = '';
+    try {
+      freeTimeContainer = await item.$eval('.pro_free', (el) => el.getAttribute('onmouseover'));
+    } catch (e) {}
+    try {
+      freeTimeContainer = await item.$eval('.pro_free2up', (el) => el.getAttribute('onmouseover'));
+    } catch (e) {}
     const [ freeTimeString ] = freeTimeContainer.match(/\d\d\d\d-\d\d-\d\d\s\d\d:\d\d:\d\d/);
     const freeTime: Date = new Date(freeTimeString);
 
