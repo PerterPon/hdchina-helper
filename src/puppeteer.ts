@@ -77,6 +77,7 @@ export async function filterFreeItem(retryTime: number = 0): Promise<TItem[]> {
     log.log(`[${displayTime()}] [Puppeteer] free target count: [${freeTarget.length}]`);
   } catch (e) {
     log.log(`[${displayTime()}] [Puppeteer] failed to launch page with error: [${e.message}], wait for retry`);
+    return await filterFreeItem(retryTime);
   }
 
   for(const item of torrentItems) {
