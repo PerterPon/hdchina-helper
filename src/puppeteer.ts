@@ -56,6 +56,7 @@ export async function init(): Promise<void> {
       height: 3800
     }
   });
+
   page = await browser.newPage();
   page.setCookie(cookie);
 }
