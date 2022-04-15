@@ -90,7 +90,7 @@ export async function filterFreeItem(retryTime: number = 0): Promise<TItem[]> {
     await page.goto(torrentPage, {
       timeout: 15 * 1000
     });
-    const screenShot: Buffer = await page.screenshot() as Buffer;
+    const screenShot: Buffer = await page.screenshot() as unknown as Buffer;
     const screenShotName: string = `${moment().format('YYYY-MM-DD_HH:mm:ss')}.png`;
     await oss.uploadScreenShot(screenShotName, screenShot);
     log.message(`[${displayTime()}] [Puppeteer] screenshot: [http://${cdnHost}/screenshot/${screenShotName}]`);
