@@ -237,8 +237,13 @@ async function addItemToTransmission(items: TItem[]): Promise<{transId: string; 
     const { hash, title } = item;
     const torrentUrl: string = `http://${cdnHost}/hdchina/${hash}.torrent`;
     log.log(`[${utils.displayTime()}] add file to transmission: [${title}]`);
-    const transRes: { transId: string; hash: string } = await transmission.addUrl(torrentUrl);
-    transIds.push(transRes);
+    try {
+      const transRes: { transId: string; hash: string } = await transmission.addUrl(torrentUrl);
+      transIds.push(transRes);
+    } catch(e) {
+      log.log(e.message);
+      log.log(e.stack);
+    }
   }
   return transIds;
 }
