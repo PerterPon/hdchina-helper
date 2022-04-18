@@ -19,12 +19,12 @@ export async function sendMessage(): Promise<void> {
   const { cdnHost } = configInfo.hdchina.aliOss;
   const logUrl: string = `http://${cdnHost}/hdchina/log/${logFileName}`;
 
-  log.message(`[${displayTime()}] [Util] detail log: [ ${logUrl} ]`);
+  log.message(`[Util] detail log: [ ${logUrl} ]`);
   await doSendMessage(log.messages.join('\n'));
 }
 
 async function doSendMessage(message: string): Promise<void> {
-  log.log(`[${displayTime()}] [MESSAGE] send message`);
+  log.log(`[MESSAGE] send message`);
   const configInfo = config.getConfig();
   const { webhook } = configInfo.hdchina.lark;
   await axios({

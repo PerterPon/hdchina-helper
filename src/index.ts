@@ -174,7 +174,7 @@ async function filterFreeItem(items: TItem[], retryTime: number = 0): Promise<TI
   if (noneFreeCount === items.length) {
     return await filterFreeItem(items, retryTime);
   }
-  log.message(`[${utils.displayTime()}] free item count: [${freeItem.length}]`);
+  log.message(`free item count: [${freeItem.length}]`);
   return freeItem;
 }
 
@@ -214,7 +214,7 @@ async function downloadItem(items: TItem[]): Promise<void> {
       existsTorrentCount++;
     }
   }
-  log.message(`[${utils.displayTime()}]download number: [${downloadCount}], exists torrent count: [${existsTorrentCount}], download error count: [${downloadErrorCount}]`);
+  log.message(`download number: [${downloadCount}], exists torrent count: [${existsTorrentCount}], download error count: [${downloadErrorCount}]`);
 }
 
 async function uploadItem(items: TItem[]): Promise<void> {
@@ -247,7 +247,7 @@ async function addItemToTransmission(items: TItem[]): Promise<{transId: string; 
       log.log(e.stack);
     }
   }
-  log.message(`[${utils.displayTime()}] add Item To Transmission error count: [${errorCount}]`);
+  log.message(`add Item To Transmission error count: [${errorCount}]`);
   return transIds;
 }
 
@@ -311,7 +311,7 @@ async function removeItemFromTransmission(items: TItem[]): Promise<void> {
     log.log(`[${utils.displayTime()}] removing torrent: [${item.title}]`);
     await transmission.removeItem(Number(transId));
   }
-  log.message(`[${utils.displayTime()}] remove torrent count: [${items.length}]`);
+  log.message(`remove torrent count: [${items.length}]`);
 }
 
 async function reduceLeftSpace(): Promise<void> {
@@ -333,13 +333,13 @@ async function reduceLeftSpace(): Promise<void> {
       size > minStayFileSize &&
       downloadDir === fileDownloadPath
     ) {
-      log.message(`[${utils.displayTime()}] remove item because of min left space: [${name}], size: [${filesize(size)}]`);
+      log.message(`remove item because of min left space: [${name}], size: [${filesize(size)}]`);
       reducedTotal += size;
       await transmission.removeItem(id);
       freeSpace += size;
     }
   }
-  log.message(`[${utils.displayTime()}] reduce space total: [${filesize(reducedTotal)}]`);
+  log.message(`reduce space total: [${filesize(reducedTotal)}]`);
 }
 
 start();
