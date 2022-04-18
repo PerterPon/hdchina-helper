@@ -214,7 +214,9 @@ async function downloadItem(items: TItem[]): Promise<void> {
       existsTorrentCount++;
     }
   }
-  log.message(`download number: [${downloadCount}], exists torrent count: [${existsTorrentCount}], download error count: [${downloadErrorCount}]`);
+  log.message(`download number: [${downloadCount}]`);
+  log.message(`exists torrent count: [${existsTorrentCount}]`);
+  log.message(`download error count: [${downloadErrorCount}]`);
 }
 
 async function uploadItem(items: TItem[]): Promise<void> {
