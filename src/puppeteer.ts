@@ -11,54 +11,26 @@ import * as oss from './oss';
 let browser: puppeteer.Browser = null;
 let page: puppeteer.Page = null;
 
-const DEFAULT_ARGS = [
-  '--disable-background-networking',
-  '--enable-features=NetworkService,NetworkServiceInProcess',
-  '--disable-background-timer-throttling',
-  '--disable-backgrounding-occluded-windows',
-  '--disable-breakpad',
-  '--disable-client-side-phishing-detection',
-  '--disable-component-extensions-with-background-pages',
-  '--disable-default-apps',
-  '--disable-dev-shm-usage',
-  '--disable-extensions',
-  // BlinkGenPropertyTrees disabled due to crbug.com/937609
-  '--disable-features=TranslateUI,BlinkGenPropertyTrees',
-  '--disable-hang-monitor',
-  '--disable-ipc-flooding-protection',
-  '--disable-popup-blocking',
-  '--disable-prompt-on-repost',
-  '--disable-renderer-backgrounding',
-  '--disable-sync',
-  '--force-color-profile=srgb',
-  '--metrics-recording-only',
-  '--no-first-run',
-  '--enable-automation',
-  '--password-store=basic',
-  '--use-mock-keychain',
-];
-
 export async function init(): Promise<void> {
   const configInfo = config.getConfig();
   const { cookie, userDataDir } = configInfo.hdchina.puppeteer;
   browser = await puppeteer.launch({
     headless: true,
     executablePath: null,
-    ignoreDefaultArgs: DEFAULT_ARGS,
+    ignoreDefaultArgs: [],
     args: [
-        '--disable-features=site-per-process',
-        '--enable-audio-service-sandbox',
         `--user-data-dir=${userDataDir}`,
         '--no-sandbox',
+        '--disable-setuid-sandbox'
     ],
     defaultViewport: {
-      width: 1423,
-      height: 3800
+      width: 1049,
+      height: 2800
     }
   });
 
   page = await browser.newPage();
-  page.setCookie(cookie);
+  // page.setCookie(cookie);
 }
 
 export async function refreshRecaptcha(): Promise<void> {
