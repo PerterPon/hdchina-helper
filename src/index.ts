@@ -59,7 +59,15 @@ async function main(): Promise<void> {
   await downloadItem(canDownloadItem);
   // 7.
   await uploadItem(canDownloadItem);
-  const trans: { transId: string; hash: string; }[] = await addItemToTransmission(canDownloadItem);
+
+  let trans: { transId: string; hash: string; }[] = [];
+  try {
+    trans = await addItemToTransmission(canDownloadItem);
+  } catch (e) {
+    log.log(e.message);
+    log.log(e.stack);
+  }
+
   // 8.
   await updateTrans2Item(trans, canDownloadItem);
   await mysql.setItemDownloading(canDownloadItem);
