@@ -233,6 +233,7 @@ async function addItemToTransmission(items: TItem[]): Promise<{transId: string; 
   const transIds: {transId: string; hash: string;}[] = [];
   const configInfo = config.getConfig();
   const { cdnHost } = configInfo.hdchina.aliOss;
+  let errorCount: number = 0;
   for (const item of items) {
     const { hash, title } = item;
     const torrentUrl: string = `http://${cdnHost}/hdchina/${hash}.torrent`;
@@ -241,10 +242,12 @@ async function addItemToTransmission(items: TItem[]): Promise<{transId: string; 
       const transRes: { transId: string; hash: string } = await transmission.addUrl(torrentUrl);
       transIds.push(transRes);
     } catch(e) {
+      errorCount++;
       log.log(e.message);
       log.log(e.stack);
     }
   }
+  log.message(`[${utils.displayTime()}] add Item To Transmission error count: [${errorCount}]`);
   return transIds;
 }
 
