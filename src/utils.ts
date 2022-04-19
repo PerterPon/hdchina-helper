@@ -28,7 +28,7 @@ export async function fetchCsrfTokenAndPHPSessionId(): Promise<{csrfToken: strin
       phpSessionId: currentPhpSessionId
     };
   }
-  log.log(`[${displayTime()}] fetch csrf token`);
+  log.log(`fetch csrf token`);
   const configInfo = config.getConfig();
   const { cookie, indexPage } = configInfo.hdchina;
   const res: AxiosResponse = await axios.get(indexPage, {
@@ -45,7 +45,7 @@ export async function fetchCsrfTokenAndPHPSessionId(): Promise<{csrfToken: strin
   const [phpSessionId] = phpSessionIdCookie.split(';');
   currentPhpSessionId = phpSessionId;
 
-  log.log(`[${displayTime()}] got token: [${csrfToken}], php session id: [${phpSessionId}]`);
+  log.log(`got token: [${csrfToken}], php session id: [${phpSessionId}]`);
   return {
     csrfToken,
     phpSessionId
@@ -53,7 +53,7 @@ export async function fetchCsrfTokenAndPHPSessionId(): Promise<{csrfToken: strin
 }
 
 export async function getItemDetailByIds(ids: string[]): Promise<any> {
-  log.log(`[${displayTime()}] [Utils], getItemDetailByIds: [${ids}]`);
+  log.log(`[Utils], getItemDetailByIds: [${ids}]`);
 
   const configInfo = config.getConfig();
   const { cookie, checkFreeUrl } = configInfo.hdchina;

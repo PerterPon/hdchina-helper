@@ -3,7 +3,6 @@ const Transmission = require('transmission');
 import * as _ from 'lodash';
 import { promisify } from 'util';
 import * as config from './config';
-import { displayTime } from './utils';
 import * as log from './log';
 
 export interface TTransItem {
@@ -35,7 +34,7 @@ export async function init(): Promise<void> {
 }
 
 export async function getDownloadingItems(): Promise<TTransItem[]> {
-  log.log(`[${displayTime()}] [Transmission] get download items`);
+  log.log(`[Transmission] get download items`);
   const data = await transmission.active();
   const downloadingItems: TTransItem[] = [];
   for (const item of data.torrents) {
@@ -51,7 +50,7 @@ export async function getDownloadingItems(): Promise<TTransItem[]> {
 }
 
 export async function getAllItems(): Promise<TTransItem[]> {
-  log.log(`[${displayTime()}] [Transmission] getAllItems`);
+  log.log(`[Transmission] getAllItems`);
   const data = await transmission.get();
   const downloadingItems: TTransItem[] = [];
   for (const item of data.torrents) {
@@ -65,19 +64,19 @@ export async function getAllItems(): Promise<TTransItem[]> {
 }
 
 export async function removeItem(id: number): Promise<void> {
-  log.log(`[${displayTime()}] [Transmission] remove item: [${id}]`);
+  log.log(`[Transmission] remove item: [${id}]`);
   const result = await transmission.remove(id, true);
-  log.log(`[${displayTime()}] [Transmission] remove item: [${id}] with result: [${JSON.stringify(result)}]`);
+  log.log(`[Transmission] remove item: [${id}] with result: [${JSON.stringify(result)}]`);
 }
 
 export async function addUrl(url: string): Promise<{transId: string; hash: string;}> {
-  log.log(`[${displayTime()}] [Transmission] add url: [${url}]`);
+  log.log(`[Transmission] add url: [${url}]`);
   const configInfo = config.getConfig();
   const { fileDownloadPath } = configInfo.hdchina.transmission;
   const res = await transmission.addUrl(url, {
     'download-dir':  fileDownloadPath
   });
-  log.log(`[${displayTime()}] [Transmission] add url with result: [${JSON.stringify(res)}]`);
+  log.log(`[Transmission] add url with result: [${JSON.stringify(res)}]`);
   const { id, hashString } = res;
   return {
     transId: id,

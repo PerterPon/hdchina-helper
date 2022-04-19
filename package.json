@@ -41,6 +41,7 @@
 		"test-cov": "make test-cov",
 		"dev": "make dev",
 		"start": "make start",
-		"build": "rm -rf ./build && tsc && cp -r etc build"
+		"build": "rm -rf ./build && tsc && cp -r etc build",
+		"pub": "git pull && npm run build"
 	}
 }

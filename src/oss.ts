@@ -1,7 +1,6 @@
 
 import * as OSS from 'ali-oss';
 import * as config from './config';
-import { displayTime } from './utils';
 import * as log from './log';
 
 let store: OSS = null;
@@ -16,13 +15,13 @@ export async function init(): Promise<void> {
 }
 
 export async function uploadTorrent(name: string, filePath: string|Buffer): Promise<void> {
-  log.log(`[${displayTime()}] [OSS] put file: [${name}]`);
+  log.log(`[OSS] put file: [${name}]`);
   const res: OSS.PutObjectResult = await store.put(`hdchina/${name}`, filePath);
-  log.log(`[${displayTime()}] [OSS] put file with result: [${JSON.stringify(res)}]`);
+  log.log(`[OSS] put file with result: [${JSON.stringify(res)}]`);
 }
 
 export async function uploadScreenShot(name: string, filePath: string|Buffer): Promise<void> {
-  log.log(`[${displayTime()}] [OSS] put file: [${name}]`);
+  log.log(`[OSS] put file: [${name}]`);
   const res: OSS.PutObjectResult = await store.put(`screenshot/${name}`, filePath);
-  log.log(`[${displayTime()}] [OSS] put file with result: [${JSON.stringify(res)}]`);
+  log.log(`[OSS] put file with result: [${JSON.stringify(res)}]`);
 }

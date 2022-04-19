@@ -3,7 +3,6 @@ import axios from 'axios';
 import * as moment from 'moment';
 
 import * as config from './config';
-import { displayTime } from './utils';
 import * as log from './log';
 import * as oss from './oss';
 

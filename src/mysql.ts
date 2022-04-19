@@ -2,7 +2,6 @@
 import * as mysql from 'mysql2/promise';
 import { TItem } from 'src';
 import * as config from './config';
-import { displayTime } from './utils';
 import * as _ from 'lodash';
 import * as log from './log';
 
@@ -18,7 +17,7 @@ export async function init(): Promise<void> {
 }
 
 export async function storeItem(items: TItem[]): Promise<void> {
-  log.log(`[${displayTime()}] [MYSQL] store items: [${JSON.stringify(items)}]`);
+  log.log(`[MYSQL] store items: [${JSON.stringify(items)}]`);
   for (const item of items) {
     const { id, freeUntil, size, title, hash, torrentUrl, transHash } = item;
     await pool.query(`
@@ -33,7 +32,7 @@ export async function storeItem(items: TItem[]): Promise<void> {
 };
 
 export async function getFreeItems(): Promise<TItem[]> {
-  log.log(`[${displayTime()}] [MYSQL] get free item`);
+  log.log(`[MYSQL] get free item`);
   const [data]: any = await pool.query(`
     SELECT 
       *
@@ -43,7 +42,7 @@ export async function getFreeItems(): Promise<TItem[]> {
       free_until > NOW() AND
       torrent_download_url IS NULL;
     `);
-  log.log(`[${displayTime()}] [MYSQL] get free item: [${JSON.stringify(data)}]`);
+  log.log(`[MYSQL] get free item: [${JSON.stringify(data)}]`);
   const freeItems: TItem[] = [];
   for (const item of data) {
     const { pt_id, free_util, size, hash, title, torrent_url, trans_hash} = item;
@@ -59,7 +58,7 @@ export async function getFreeItems(): Promise<TItem[]> {
 }
 
 export async function updateItemByHash(hash: string, updateContent: any): Promise<void> {
-  log.log(`[${displayTime()}] [MYSQL] updateItemByTransHash transHash: [${hash}], updateContent: [${JSON.stringify(updateContent)}]`);
+  log.log(`[MYSQL] updateItemByTransHash transHash: [${hash}], updateContent: [${JSON.stringify(updateContent)}]`);
   const updateKeys: string[] = [];
   const updateValues: any[] = [];
   let updateItemString: string = '';
@@ -80,7 +79,7 @@ export async function updateItemByHash(hash: string, updateContent: any): Promis
 }
 
 export async function getTransIdByItem(items: TItem[]): Promise<string[]> {
-  log.log(`[${displayTime()}] [MYSQL] getTransIdByItem: [${JSON.stringify(items)}]`);
+  log.log(`[MYSQL] getTransIdByItem: [${JSON.stringify(items)}]`);
   if (0 === items.length) {
     return [];
   }
@@ -105,7 +104,7 @@ export async function getTransIdByItem(items: TItem[]): Promise<string[]> {
 }
 
 export async function getItemByHash(hash: string[]): Promise<TItem[]> {
-  log.log(`[${displayTime()}] [MYSQL] get item by hash: [${JSON.stringify(hash)}]`);
+  log.log(`[MYSQL] get item by hash: [${JSON.stringify(hash)}]`);
   if (0 === hash.length) {
     return [];
   }
@@ -132,7 +131,7 @@ export async function getItemByHash(hash: string[]): Promise<TItem[]> {
 }
 
 export async function setItemDownloading(items: TItem[]): Promise<void> {
-  log.log(`[${displayTime()}] [MYSQL] setItemDownloading: [${JSON.stringify(items)}]`);
+  log.log(`[MYSQL] setItemDownloading: [${JSON.stringify(items)}]`);
   for (const item of items) {
     const { hash } = item;
     await pool.query(`
