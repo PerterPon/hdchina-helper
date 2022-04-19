@@ -56,9 +56,8 @@ export async function loadTorrentPage(): Promise<void> {
   const configInfo = config.getConfig();
   const { torrentPage: torrentPageUrl } = configInfo.hdchina;
   const { cdnHost } = configInfo.hdchina.aliOss;
-  await page.goto(torrentPageUrl, {
-    timeout: 15 * 1000
-  });
+  page.goto(torrentPageUrl);
+  await sleep(5 * 1000);
   const screenShot: Buffer = await page.screenshot() as unknown as Buffer;
   const screenShotName: string = `${moment().format('YYYY-MM-DD_HH:mm:ss')}.png`;
   await oss.uploadScreenShot(screenShotName, screenShot);
