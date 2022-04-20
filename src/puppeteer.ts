@@ -53,19 +53,24 @@ export async function refreshRecaptcha(): Promise<void> {
 }
 
 export async function loadTorrentPage(): Promise<void> {
-  const configInfo = config.getConfig();
-  const { torrentPage: torrentPageUrl } = configInfo.hdchina;
-  const { cdnHost } = configInfo.hdchina.aliOss;
-  page.goto(torrentPageUrl);
-  await sleep(5 * 1000);
-  const screenShot: Buffer = await page.screenshot() as unknown as Buffer;
-  const screenShotName: string = `${moment().format('YYYY-MM-DD_HH:mm:ss')}.png`;
-  await oss.uploadScreenShot(screenShotName, screenShot);
-  log.message(`[Puppeteer] screenshot: [http://${cdnHost}/screenshot/${screenShotName}]`);
-  await page.waitForSelector('.userinfo', {
-    timeout: 15 * 1000
-  });
-  torrentPage = page;
+  try {
+    const configInfo = config.getConfig();
+    const { torrentPage: torrentPageUrl } = configInfo.hdchina;
+    const { cdnHost } = configInfo.hdchina.aliOss;
+    page.goto(torrentPageUrl);
+    await sleep(5 * 1000);
+    const screenShot: Buffer = await page.screenshot() as unknown as Buffer;
+    const screenShotName: string = `${moment().format('YYYY-MM-DD_HH:mm:ss')}.png`;
+    await oss.uploadScreenShot(screenShotName, screenShot);
+    log.message(`[Puppeteer] screenshot: [http://${cdnHost}/screenshot/${screenShotName}]`);
+    await page.waitForSelector('.userinfo', {
+      timeout: 15 * 1000
+    });
+    torrentPage = page;
+  } catch (e) {
+    log.log(e.message);
+    log.log(e.stack);
+  }
 }
 
 export async function getUserInfo(): Promise<TPageUserInfo> {
