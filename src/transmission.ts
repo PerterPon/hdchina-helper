@@ -87,6 +87,7 @@ export async function addUrl(url: string): Promise<{transId: string; hash: strin
 export async function freeSpace(): Promise<number> {
   const configInfo = config.getConfig();
   const { fileDownloadPath } = configInfo.hdchina.transmission;
+  log.log(`[Transmission] free space: [${fileDownloadPath}]`);
   const res = await transmission.freeSpace(fileDownloadPath);
   return res['size-bytes'];
 }
