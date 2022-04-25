@@ -4,7 +4,7 @@
         "outDir": "./build",
         "allowJs": false,
         "module": "commonjs",
-        "noImplicitAny": true, /* Raise error on expressions and declarations with an implied 'any' type. */
+        "noImplicitAny": false, /* Raise error on expressions and declarations with an implied 'any' type. */
         "strictFunctionTypes": true,
         "allowUnusedLabels": true,
         "allowUnreachableCode": true,
