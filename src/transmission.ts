@@ -4,6 +4,7 @@ import * as _ from 'lodash';
 import { promisify } from 'util';
 import * as config from './config';
 import * as log from './log';
+import * as filesize from 'filesize';
 
 export interface TTransItem {
   id: number;
@@ -87,8 +88,8 @@ export async function addUrl(url: string): Promise<{transId: string; hash: strin
 export async function freeSpace(): Promise<number> {
   const configInfo = config.getConfig();
   const { fileDownloadPath } = configInfo.hdchina.transmission;
-  log.log(`[Transmission] free space: [${fileDownloadPath}]`);
   const res = await transmission.freeSpace(fileDownloadPath);
+  log.log(`[Transmission] free space: [${fileDownloadPath}], total: [${filesize(res['size-bytes'])}]`);
   return res['size-bytes'];
 }
 
