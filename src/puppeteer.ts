@@ -2,7 +2,7 @@
 import * as puppeteer from 'puppeteer';
 import { TItem } from 'src';
 import * as config from './config';
-import { sleep } from './utils';
+import { sleep, randomInt } from './utils';
 import * as url from 'url';
 import * as log from './log';
 import * as moment from 'moment';
@@ -32,8 +32,8 @@ export async function init(): Promise<void> {
         '--disable-setuid-sandbox'
     ],
     defaultViewport: {
-      width: 1049,
-      height: 2800
+      width: 600 + randomInt(600),
+      height: 200 + randomInt(2000),
     }
   });
 
@@ -59,6 +59,22 @@ export async function loadTorrentPage(): Promise<void> {
     const { cdnHost } = configInfo.hdchina.aliOss;
     page.goto(torrentPageUrl);
     await sleep(5 * 1000);
+    await page.mouse.move(
+      100 + randomInt(200),
+      200 + randomInt(100)
+    );
+    await page.mouse.move(
+      100 + randomInt(200),
+      200 + randomInt(100)
+    );
+    await page.mouse.move(
+      100 + randomInt(200),
+      200 + randomInt(100)
+    );
+    await page.mouse.move(
+      100 + randomInt(200),
+      200 + randomInt(100)
+    );
     const screenShot: Buffer = await page.screenshot() as unknown as Buffer;
     const screenShotName: string = `${moment().format('YYYY-MM-DD_HH:mm:ss')}.png`;
     await oss.uploadScreenShot(screenShotName, screenShot);

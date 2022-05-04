@@ -82,6 +82,11 @@ export async function writeFile(from: fs.ReadStream, to: fs.WriteStream): Promis
   });
 }
 
+export function randomInt(input: number): number {
+  return Math.round(
+    Math.random() * input
+  );
+}
 
 
 export const ajaxHeader = {
