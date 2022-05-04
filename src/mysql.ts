@@ -11,7 +11,9 @@ export async function init(): Promise<void> {
   const configInfo = config.getConfig();
   const { host, user, password, database, waitForConnections, connectionLimit, queueLimit } = configInfo.hdchina.mysql;
   pool = mysql.createPool({
-    host, user, password, database, waitForConnections, connectionLimit, queueLimit
+    host, user, password, database, waitForConnections, connectionLimit, queueLimit,
+    acquireTimeout: 20000,
+    connectTimeout: 20000
   });
 
 }
