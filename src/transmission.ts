@@ -89,6 +89,7 @@ export async function freeSpace(): Promise<number> {
   const configInfo = config.getConfig();
   const { fileDownloadPath } = configInfo.hdchina.transmission;
   const res = await transmission.freeSpace(fileDownloadPath);
+  log.message(`left space total: [${filesize(res['size-bytes'])}]`);
   log.log(`[Transmission] free space: [${fileDownloadPath}], total: [${filesize(res['size-bytes'])}]`);
   return res['size-bytes'];
 }
