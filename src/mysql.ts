@@ -24,6 +24,10 @@ export async function storeItem(items: TItem[]): Promise<void> {
     const { id, freeUntil, size, title, hash, torrentUrl, transHash } = item;
     await pool.query(`
     INSERT INTO
+      torrents(gmt_create, gmt_modify, )
+    `, []);
+    await pool.query(`
+    INSERT INTO
       torrent(gmt_create, gmt_modify, pt_id, free_until, size, hash, site, title, torrent_url, trans_hash)
     VALUES 
       (?, ?, ?, ?, ?, ?, "hdchina", ?, ?, ?)
