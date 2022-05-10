@@ -9,7 +9,8 @@ export let pool: mysql.Pool = null;
 
 export async function init(): Promise<void> {
   const configInfo = config.getConfig();
-  const { host, user, password, database, waitForConnections, connectionLimit, queueLimit } = configInfo.hdchina.mysql;
+  console.log(configInfo);
+  const { host, user, password, database, waitForConnections, connectionLimit, queueLimit } = configInfo.mysql;
   pool = mysql.createPool({
     host, user, password, database, waitForConnections, connectionLimit, queueLimit,
     acquireTimeout: 20000,

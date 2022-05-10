@@ -7,7 +7,7 @@ let store: OSS = null;
 
 export async function init(): Promise<void> {
   const configInfo = config.getConfig();
-  const { accessKeyId, accessKeySecret, bucket, endpoint } = configInfo.hdchina.aliOss;
+  const { accessKeyId, accessKeySecret, bucket, endpoint } = configInfo.aliOss;
   store = new OSS({
     accessKeyId,accessKeySecret,bucket,endpoint
   });

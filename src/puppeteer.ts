@@ -21,7 +21,7 @@ export interface TPageUserInfo {
 
 export async function init(): Promise<void> {
   const configInfo = config.getConfig();
-  const { cookie, userDataDir } = configInfo.hdchina.puppeteer;
+  const { cookie, userDataDir } = configInfo.puppeteer;
   browser = await puppeteer.launch({
     headless: true,
     executablePath: null,
@@ -44,7 +44,7 @@ export async function init(): Promise<void> {
 export async function refreshRecaptcha(): Promise<void> {
   log.log(`[Puppeteer] refreshRecaptcha`);
   const configInfo = config.getConfig();
-  const { torrentPage } = configInfo.hdchina;
+  const { torrentPage } = configInfo
   await page.goto(torrentPage);
   await sleep(3 * 1000);
   await page.reload();
@@ -55,8 +55,8 @@ export async function refreshRecaptcha(): Promise<void> {
 export async function loadTorrentPage(): Promise<void> {
   try {
     const configInfo = config.getConfig();
-    const { torrentPage: torrentPageUrl } = configInfo.hdchina;
-    const { cdnHost } = configInfo.hdchina.aliOss;
+    const { torrentPage: torrentPageUrl } = configInfo
+    const { cdnHost } = configInfo.aliOss;
     page.goto(torrentPageUrl);
     await sleep(5 * 1000);
     await page.mouse.move(
@@ -122,7 +122,7 @@ export async function filterFreeItem(retryTime: number = 0): Promise<TItem[]> {
   log.log(`[Puppeteer] filterFreeItem with time: [${retryTime}]`);
   const freeItems: TItem[] = [];
   const configInfo = config.getConfig();
-  const { globalRetryTime, uid } = configInfo.hdchina;
+  const { globalRetryTime, uid } = configInfo
   if (retryTime >= globalRetryTime) {
     return [];
   }

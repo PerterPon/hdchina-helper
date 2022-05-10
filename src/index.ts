@@ -107,7 +107,7 @@ async function init(): Promise<void> {
 
 async function initTempFolder(): Promise<void> {
   const configInfo = config.getConfig();
-  const { tempFolder: tempFolderConfig } = configInfo.hdchina;
+  const { tempFolder: tempFolderConfig } = configInfo
   const fullTempFolder = path.join(__dirname, tempFolderConfig);
   mkdirpSync(fullTempFolder);
   tempFolder = fullTempFolder;
@@ -116,7 +116,7 @@ async function initTempFolder(): Promise<void> {
 async function getRssContent(): Promise<string> {
   log.log(`get rss content`);
   const configInfo: config.TTBSConfig = config.getConfig();
-  const res: AxiosResponse = await axios.get(configInfo.hdchina.rssLink);
+  const res: AxiosResponse = await axios.get(configInfo.rssLink);
   return res.data;
 }
 
@@ -145,7 +145,7 @@ async function getItemInfo(rss: any): Promise<TItem[]> {
 async function filterFreeItem(items: TItem[], retryTime: number = 0): Promise<TItem[]> {
   log.log(`filterFreeItem`);
   const configInfo = config.getConfig();
-  const { globalRetryTime } = configInfo.hdchina;
+  const { globalRetryTime } = configInfo
   if (retryTime >= globalRetryTime) {
     console.warn(`exceed max filter free time!`);
     return [];
@@ -189,7 +189,7 @@ async function filterFreeItem(items: TItem[], retryTime: number = 0): Promise<TI
 async function downloadItem(items: TItem[]): Promise<void> {
   log.log(`downloadItem: [${JSON.stringify(items)}]`);
   const configInfo = config.getConfig();
-  const { downloadUrl, uid } = configInfo.hdchina;
+  const { downloadUrl, uid } = configInfo
   let downloadCount: number = 0;
   let existsTorrentCount: number = 0;
   let downloadErrorCount: number = 0;
@@ -242,7 +242,7 @@ async function addItemToTransmission(items: TItem[]): Promise<{transId: string; 
   log.log(`addItemToTransmission: [${JSON.stringify(items)}]`);
   const transIds: {transId: string; hash: string;}[] = [];
   const configInfo = config.getConfig();
-  const { cdnHost } = configInfo.hdchina.aliOss;
+  const { cdnHost } = configInfo.aliOss;
   let errorCount: number = 0;
   for (const item of items) {
     const { hash, title } = item;
@@ -264,7 +264,7 @@ async function addItemToTransmission(items: TItem[]): Promise<{transId: string; 
 async function updateTrans2Item(transIds: {transId: string; hash: string}[], items: TItem[]): Promise<void> {
   log.log(`updateTransId2Item transIds: [${JSON.stringify(transIds)}], items: [${JSON.stringify(items)}]`);
   const configInfo = config.getConfig();
-  const { cdnHost } = configInfo.hdchina.aliOss;
+  const { cdnHost } = configInfo.aliOss;
 
   for (let i = 0; i < transIds.length; i++) {
     const { transId, hash } = transIds[i];
@@ -283,7 +283,7 @@ async function getDownloadingItems(): Promise<TItem[]> {
   const downloadingTransItems: transmission.TTransItem[] = await transmission.getDownloadingItems();
   const downloadingHash: string[] = [];
   const configInfo = config.getConfig();
-  const { fileDownloadPath } = configInfo.hdchina.transmission;
+  const { fileDownloadPath } = configInfo.transmission;
   for (const item of downloadingTransItems) {
     const { hash, downloadDir } = item;
     // only the specific torrent we need to remove.
@@ -328,7 +328,7 @@ async function reduceLeftSpace(): Promise<void> {
   log.log(`reduceLeftSpace`);
   const configInfo = config.getConfig();
   let freeSpace: number = await transmission.freeSpace();
-  const { minSpaceLeft, fileDownloadPath, minStayFileSize } = configInfo.hdchina.transmission;
+  const { minSpaceLeft, fileDownloadPath, minStayFileSize } = configInfo.transmission;
   const allItems: transmission.TTransItem[] = await transmission.getAllItems();
   const datedItems: transmission.TTransItem[] = _.orderBy(allItems, ['activityDate']);
   let reducedTotal: number = 0;

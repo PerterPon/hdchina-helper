@@ -30,7 +30,7 @@ export async function fetchCsrfTokenAndPHPSessionId(): Promise<{csrfToken: strin
   }
   log.log(`fetch csrf token`);
   const configInfo = config.getConfig();
-  const { cookie, indexPage } = configInfo.hdchina;
+  const { cookie, indexPage } = configInfo
   const res: AxiosResponse = await axios.get(indexPage, {
     headers: {
       ...htmlHeader,
@@ -56,7 +56,7 @@ export async function getItemDetailByIds(ids: string[]): Promise<any> {
   log.log(`[Utils], getItemDetailByIds: [${ids}]`);
 
   const configInfo = config.getConfig();
-  const { cookie, checkFreeUrl } = configInfo.hdchina;
+  const { cookie, checkFreeUrl } = configInfo
   const { csrfToken, phpSessionId } = await fetchCsrfTokenAndPHPSessionId();
   const res: AxiosResponse = await axios({
     method: 'post',
