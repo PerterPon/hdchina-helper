@@ -32,8 +32,8 @@ export async function init(): Promise<void> {
         '--disable-setuid-sandbox'
     ],
     defaultViewport: {
-      width: 600 + randomInt(600),
-      height: 200 + randomInt(2000),
+      width: 998,
+      height: 2000
     }
   });
 

@@ -64,21 +64,21 @@ async function main(): Promise<void> {
   // 5.
   const canDownloadItem: TItem[] = await mysql.getFreeItems();
   // 6. 
-  await downloadItem(canDownloadItem);
+  const successItems: TItem[] = await downloadItem(canDownloadItem);
   // 7.
-  await uploadItem(canDownloadItem);
+  await uploadItem(successItems);
 
   let trans: { transId: string; hash: string; }[] = [];
   try {
-    trans = await addItemToTransmission(canDownloadItem);
+    trans = await addItemToTransmission(successItems);
   } catch (e) {
     log.log(e.message);
     log.log(e.stack);
   }
 
   // 8.
-  await updateTrans2Item(trans, canDownloadItem);
-  await mysql.setItemDownloading(canDownloadItem);
+  await updateTrans2Item(trans, successItems);
+  await mysql.setItemDownloading(successItems);
   await utils.sleep(5 * 1000);
   // 9. 
   const downloadingItems: TItem[] = await getDownloadingItems();
@@ -186,13 +186,14 @@ async function filterFreeItem(items: TItem[], retryTime: number = 0): Promise<TI
   return freeItem;
 }
 
-async function downloadItem(items: TItem[]): Promise<void> {
+async function downloadItem(items: TItem[]): Promise<TItem[]> {
   log.log(`downloadItem: [${JSON.stringify(items)}]`);
   const configInfo = config.getConfig();
   const { downloadUrl, uid } = configInfo
   let downloadCount: number = 0;
   let existsTorrentCount: number = 0;
   let downloadErrorCount: number = 0;
+  const downloadSuccessItems: TItem[] = []
   for (const item of items) {
     await utils.sleep(2 * 1000);
     const { hash, title, id, size, freeUntil } = item;
@@ -202,6 +203,7 @@ async function downloadItem(items: TItem[]): Promise<void> {
         // not exist, download
         const downloadLink = `${downloadUrl}?hash=${hash}&uid=${uid}`;
         const fileWriter = fs.createWriteStream(fileName);
+        log.log(`downloading torrent with url: [${downloadLink}]`);
         const res: AxiosResponse = await axios({
           url: downloadLink,
           method: 'get',
@@ -214,6 +216,7 @@ async function downloadItem(items: TItem[]): Promise<void> {
         const leftTime: number = moment(freeUntil).unix() - moment().unix();
         log.log(`download torrent: [${fileName}], size: [${filesize(size)}], free time: [${moment(freeUntil).diff(moment(), 'hours')} H]`);
         downloadCount++;
+        downloadSuccessItems.push(item);
       } catch (e) {
         downloadErrorCount++;
         console.error(`[ERROR]download file: [${fileName}] with error: [${e.message}]`);
@@ -225,6 +228,7 @@ async function downloadItem(items: TItem[]): Promise<void> {
   log.message(`download number: [${downloadCount}]`);
   log.message(`exists torrent count: [${existsTorrentCount}]`);
   log.message(`download error count: [${downloadErrorCount}]`);
+  return downloadSuccessItems;
 }
 
 async function uploadItem(items: TItem[]): Promise<void> {
