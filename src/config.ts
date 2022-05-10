@@ -32,10 +32,37 @@ export async function init(env?: string): Promise<TTBSConfig> {
 
     config = listenConfig;
 
+    const { sites } = config;
+    for (const siteName of sites) {
+        const siteConfig = config[siteName];
+        for (const configName in config) {
+            if (-1 < sites.indexOf(configName) || 'sites' === configName) {
+                continue;
+            }
+            const gloablConfig = config[configName];
+            if (true === _.isObject(gloablConfig)) {
+                const siteConfigItem = siteConfig[configName];
+                siteConfig[configName] = _.assign({}, gloablConfig, siteConfigItem);
+            } else {
+                siteConfig[configName] = gloablConfig;
+            }
+        }
+    }
+
     return listenConfig;
 }
 
 export function getConfig(): TTBSConfig {
-    return config;
+    return config[site];
 }
 
+export let site: string = 'hdchina';
+export let uid: string = '325966';
+
+export function setSite(siteValue): void {
+    site = siteValue || site;
+}
+
+export function setUid(uidValue): void {
+    uid = uidValue || uid;
+}

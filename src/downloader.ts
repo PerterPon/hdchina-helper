@@ -18,21 +18,13 @@ import * as moment from 'moment';
 import * as mysql from './mysql';
 import { mkdirpSync } from 'fs-extra';
 import * as log from './log';
+import { siteMap } from './sites/basic';
+
+import { TItem } from './types';
 
 config.init();
 
 let tempFolder: string = null;
-
-export interface TItem {
-  id: string;
-  hash: string;
-  free?: boolean;
-  freeUntil?: Date;
-  size: number;
-  title: string;
-  torrentUrl: string;
-  transHash?: string;
-}
 
 async function start(): Promise<void> {
   try {
@@ -69,8 +61,7 @@ async function main(): Promise<void> {
   }
 
   // 8.
-  await updateTrans2Item(trans, canDownloadItem);
-  await mysql.setItemDownloading(canDownloadItem);
+  await storeDownloadAction(trans, canDownloadItem);
   await utils.sleep(5 * 1000);
   // 9. 
   const downloadingItems: TItem[] = await getDownloadingItems();
@@ -78,10 +69,10 @@ async function main(): Promise<void> {
   const beyondFreeItems: TItem[] = await filterBeyondFreeItems(downloadingItems);
   // 11. 
   await removeItemFromTransmission(beyondFreeItems);
-  log.log(`all task done!!!!\n`);
   // 12.
   await reduceLeftSpace();
-
+  
+  log.log(`all task done!!!!\n`);
   await message.sendMessage();
   await utils.sleep(5 * 1000);
   process.exit(0);
@@ -98,7 +89,7 @@ async function init(): Promise<void> {
 
 async function initTempFolder(): Promise<void> {
   const configInfo = config.getConfig();
-  const { tempFolder: tempFolderConfig } = configInfo.hdchina;
+  const { tempFolder: tempFolderConfig } = configInfo;
   const fullTempFolder = path.join(__dirname, tempFolderConfig);
   mkdirpSync(fullTempFolder);
   tempFolder = fullTempFolder;
@@ -107,18 +98,19 @@ async function initTempFolder(): Promise<void> {
 async function downloadItem(items: TItem[]): Promise<void> {
   log.log(`downloadItem: [${JSON.stringify(items)}]`);
   const configInfo = config.getConfig();
-  const { downloadUrl, uid } = configInfo.hdchina;
+  const { downloadUrl, uid } = configInfo;
   let downloadCount: number = 0;
   let existsTorrentCount: number = 0;
   let downloadErrorCount: number = 0;
   for (const item of items) {
     await utils.sleep(2 * 1000);
-    const { hash, title, id, size, freeUntil } = item;
-    const fileName: string = path.join(tempFolder, `${hash}_${uid}.torrent`);
+    const { site, title, id, size, freeUntil, torrentUrl } = item;
+    const fileName: string = path.join(tempFolder, `${site}_${id}_${uid}.torrent`);
     if (false === fs.existsSync(fileName)) {
       try {
         // not exist, download
-        const downloadLink = `${downloadUrl}?hash=${hash}&uid=${uid}`;
+        const downloadLink = await siteMap[config.site].getDownloadUrl(item);
+        log.log(`download link: [${downloadLink}]`);
         const fileWriter = fs.createWriteStream(fileName);
         const res: AxiosResponse = await axios({
           url: downloadLink,
@@ -148,11 +140,11 @@ async function downloadItem(items: TItem[]): Promise<void> {
 async function uploadItem(items: TItem[]): Promise<void> {
   log.log(`upload items: [${JSON.stringify(items)}]`);
   const configInfo = config.getConfig();
-  const { uid } = configInfo.hdchina;
+  const { uid } = configInfo;
   for (const item of items) {
-    const { hash } = item;
-    const fileName: string = `${uid}/${hash}.torrent`;
-    const filePath: string = path.join(tempFolder, `${hash}_${uid}.torrent`);
+    const { site, id } = item;
+    const fileName: string = `${uid}/${site}_${id}.torrent`;
+    const filePath: string = path.join(tempFolder, `${site}_${id}_${uid}.torrent`);
     await oss.uploadTorrent(fileName, filePath);
   }
 }
@@ -161,12 +153,12 @@ async function addItemToTransmission(items: TItem[]): Promise<{transId: string; 
   log.log(`addItemToTransmission: [${JSON.stringify(items)}]`);
   const transIds: {transId: string; hash: string;}[] = [];
   const configInfo = config.getConfig();
-  const { cdnHost } = configInfo.hdchina.aliOss;
-  const { uid } = configInfo.hdchina;
+  const { cdnHost } = configInfo.aliOss;
+  const { uid } = configInfo;
   let errorCount: number = 0;
   for (const item of items) {
-    const { hash, title } = item;
-    const torrentUrl: string = `http://${cdnHost}/hdchina/${uid}/${hash}.torrent`;
+    const { site, uid, id, title } = item;
+    const torrentUrl: string = `http://${cdnHost}/hdchina/${uid}/${site}_${id}.torrent`;
     log.log(`add file to transmission: [${title}]`);
     try {
       const transRes: { transId: string; hash: string } = await transmission.addUrl(torrentUrl);
@@ -181,20 +173,16 @@ async function addItemToTransmission(items: TItem[]): Promise<{transId: string; 
   return transIds;
 }
 
-async function updateTrans2Item(transIds: {transId: string; hash: string}[], items: TItem[]): Promise<void> {
+async function storeDownloadAction(transIds: {transId: string; hash: string}[], items: TItem[]): Promise<void> {
   log.log(`updateTransId2Item transIds: [${JSON.stringify(transIds)}], items: [${JSON.stringify(items)}]`);
   const configInfo = config.getConfig();
-  const { cdnHost } = configInfo.hdchina.aliOss;
 
   for (let i = 0; i < transIds.length; i++) {
     const { transId, hash } = transIds[i];
     const item: TItem = items[i];
-    const { hash: torrentHash } = item;
-    await mysql.updateItemByHash(torrentHash, {
-      trans_id: transId,
-      trans_hash: hash,
-      torrent_download_url: `http://${cdnHost}/hdchina/${torrentHash}.torrent`
-    });
+    const { site, id, uid } = item;
+    await mysql.updateTorrentHashBySiteAndId(site, id, hash);
+    await mysql.storeDownloadAction(site, id, uid, transId, hash);
   }
 }
 
@@ -203,7 +191,7 @@ async function getDownloadingItems(): Promise<TItem[]> {
   const downloadingTransItems: transmission.TTransItem[] = await transmission.getDownloadingItems();
   const downloadingHash: string[] = [];
   const configInfo = config.getConfig();
-  const { fileDownloadPath } = configInfo.hdchina.transmission;
+  const { fileDownloadPath } = configInfo.transmission;
   for (const item of downloadingTransItems) {
     const { hash, downloadDir } = item;
     // only the specific torrent we need to remove.
@@ -248,7 +236,7 @@ async function reduceLeftSpace(): Promise<void> {
   log.log(`reduceLeftSpace`);
   const configInfo = config.getConfig();
   let freeSpace: number = await transmission.freeSpace();
-  const { minSpaceLeft, fileDownloadPath, minStayFileSize } = configInfo.hdchina.transmission;
+  const { minSpaceLeft, fileDownloadPath, minStayFileSize } = configInfo.transmission;
   const allItems: transmission.TTransItem[] = await transmission.getAllItems();
   const datedItems: transmission.TTransItem[] = _.orderBy(allItems, ['activityDate']);
   let reducedTotal: number = 0;
@@ -271,3 +259,5 @@ async function reduceLeftSpace(): Promise<void> {
   }
   log.message(`reduce space total: [${filesize(reducedTotal)}]`);
 }
+
+start();

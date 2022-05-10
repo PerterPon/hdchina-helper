@@ -15,7 +15,7 @@ export async function sendMessage(): Promise<void> {
   const logFileName: string = `${moment().format('YYYY-MM-DD_HH:mm:SS')}.log`
   await oss.uploadTorrent(`log/${logFileName}`, Buffer.from(log.logs.join('\n')));
   const configInfo = config.getConfig();
-  const { cdnHost } = configInfo.hdchina.aliOss;
+  const { cdnHost } = configInfo.aliOss;
   const logUrl: string = `http://${cdnHost}/hdchina/log/${logFileName}`;
 
   log.message(`[Util] detail log: [ ${logUrl} ]`);
@@ -25,7 +25,7 @@ export async function sendMessage(): Promise<void> {
 async function doSendMessage(message: string): Promise<void> {
   log.log(`[MESSAGE] send message`);
   const configInfo = config.getConfig();
-  const { webhook } = configInfo.hdchina.lark;
+  const { webhook } = configInfo.lark;
   await axios({
     url: webhook,
     method: 'POST',

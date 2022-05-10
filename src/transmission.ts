@@ -21,7 +21,7 @@ let transmission: any = null;
 
 export async function init(): Promise<void> {
   const configInfo = config.getConfig();
-  const { host, port, username, password, ssl } = configInfo.hdchina.transmission;
+  const { host, port, username, password, ssl } = configInfo.transmission;
   transmission = new Transmission({
     host, port, username, password, ssl
   });
@@ -73,7 +73,7 @@ export async function removeItem(id: number): Promise<void> {
 export async function addUrl(url: string): Promise<{transId: string; hash: string;}> {
   log.log(`[Transmission] add url: [${url}]`);
   const configInfo = config.getConfig();
-  const { fileDownloadPath } = configInfo.hdchina.transmission;
+  const { fileDownloadPath } = configInfo.transmission;
   const res = await transmission.addUrl(url, {
     'download-dir':  fileDownloadPath
   });
@@ -87,7 +87,7 @@ export async function addUrl(url: string): Promise<{transId: string; hash: strin
 
 export async function freeSpace(): Promise<number> {
   const configInfo = config.getConfig();
-  const { fileDownloadPath } = configInfo.hdchina.transmission;
+  const { fileDownloadPath } = configInfo.transmission;
   const res = await transmission.freeSpace(fileDownloadPath);
   log.log(`[Transmission] free space: [${fileDownloadPath}], total: [${filesize(res['size-bytes'])}]`);
   return res['size-bytes'];

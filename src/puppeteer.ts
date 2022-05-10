@@ -1,6 +1,6 @@
 
 import * as puppeteer from 'puppeteer';
-import { TItem } from 'src';
+import { TItem } from './types';
 import * as config from './config';
 import { sleep, randomInt } from './utils';
 import * as url from 'url';
@@ -8,20 +8,17 @@ import * as log from './log';
 import * as moment from 'moment';
 import * as oss from './oss';
 
+import { TPageUserInfo } from './sites/basic';
+
+import { siteMap } from './sites/basic';
+
 let browser: puppeteer.Browser = null;
 let page: puppeteer.Page = null;
 let torrentPage: puppeteer.Page = null;
 
-export interface TPageUserInfo {
-  shareRatio: string;
-  uploadCount: string;
-  downloadCount: string;
-  magicPoint: string;
-}
-
 export async function init(): Promise<void> {
   const configInfo = config.getConfig();
-  const { cookie, userDataDir } = configInfo.hdchina.puppeteer;
+  const { cookie, userDataDir } = configInfo.puppeteer;
   browser = await puppeteer.launch({
     headless: true,
     executablePath: null,
@@ -32,54 +29,36 @@ export async function init(): Promise<void> {
         '--disable-setuid-sandbox'
     ],
     defaultViewport: {
-      width: 600 + randomInt(600),
-      height: 200 + randomInt(2000),
+      width: 1440,
+      height: 2000
     }
   });
 
   page = await browser.newPage();
-  // page.setCookie(cookie);
+  page.setCookie(cookie);
 }
 
-export async function refreshRecaptcha(): Promise<void> {
-  log.log(`[Puppeteer] refreshRecaptcha`);
-  const configInfo = config.getConfig();
-  const { torrentPage } = configInfo.hdchina;
-  await page.goto(torrentPage);
-  await sleep(3 * 1000);
-  await page.reload();
-  await sleep(3 * 1000);
-  await browser.close();
+export async function getUserInfo(): Promise<TPageUserInfo> {
+  log.log(`[PUPPETEER] get user info`);
+  if (null === torrentPage) {
+    await loadTorrentPage();
+  }
+  return siteMap[config.site].getUserInfo(torrentPage);
 }
 
 export async function loadTorrentPage(): Promise<void> {
+  log.log(`[PUPPETEER] loadTorrentPage`);
   try {
     const configInfo = config.getConfig();
-    const { torrentPage: torrentPageUrl } = configInfo.hdchina;
-    const { cdnHost } = configInfo.hdchina.aliOss;
+    const { torrentPage: torrentPageUrl } = configInfo;
+    const { cdnHost } = configInfo.aliOss;
     page.goto(torrentPageUrl);
     await sleep(5 * 1000);
-    await page.mouse.move(
-      100 + randomInt(200),
-      200 + randomInt(100)
-    );
-    await page.mouse.move(
-      100 + randomInt(200),
-      200 + randomInt(100)
-    );
-    await page.mouse.move(
-      100 + randomInt(200),
-      200 + randomInt(100)
-    );
-    await page.mouse.move(
-      100 + randomInt(200),
-      200 + randomInt(100)
-    );
     const screenShot: Buffer = await page.screenshot() as unknown as Buffer;
-    const screenShotName: string = `${moment().format('YYYY-MM-DD_HH:mm:ss')}.png`;
+    const screenShotName: string = `${config.site}_${config.uid}_${moment().format('YYYY-MM-DD_HH:mm:ss')}.png`;
     await oss.uploadScreenShot(screenShotName, screenShot);
     log.message(`[Puppeteer] screenshot: [http://${cdnHost}/screenshot/${screenShotName}]`);
-    await page.waitForSelector('.userinfo', {
+    await page.waitForSelector(configInfo.siteAnchor.pageWaiter, {
       timeout: 15 * 1000
     });
     torrentPage = page;
@@ -89,40 +68,12 @@ export async function loadTorrentPage(): Promise<void> {
   }
 }
 
-export async function getUserInfo(): Promise<TPageUserInfo> {
-  if (null === torrentPage) {
-    await loadTorrentPage();
-  }
-  let magicP: puppeteer.ElementHandle<HTMLParagraphElement> = null;
-  let ratioP: puppeteer.ElementHandle<HTMLParagraphElement> = null;
-  const userInfo: TPageUserInfo = {
-    shareRatio: '0',
-    uploadCount: '0',
-    downloadCount: '0',
-    magicPoint: '0'
-  };
-  try {
-    magicP = await torrentPage.$('.userinfo > p:nth-child(2)');
-    const magicPointContent: string = await magicP.evaluate((el) => el.textContent) || '';
-    const [magicPoint] = magicPointContent.match(/\d+\,\d+\.\d+/) || [];
-    userInfo.magicPoint = magicPoint || '';
-  } catch (e) {}
-  try {
-    ratioP = await torrentPage.$('.userinfo > p:nth-child(3)');
-    const ratioContent: string = await ratioP.evaluate((el) => el.textContent) || '';
-    const [shareRatio, uploadCount, downloadCount] = ratioContent.match(/\d+\.\d+/g) || [];
-    userInfo.shareRatio = shareRatio;
-    userInfo.uploadCount = uploadCount;
-    userInfo.downloadCount = downloadCount;
-  } catch (e) {}
-  return userInfo;
-}
-
 export async function filterFreeItem(retryTime: number = 0): Promise<TItem[]> {
   log.log(`[Puppeteer] filterFreeItem with time: [${retryTime}]`);
   const freeItems: TItem[] = [];
   const configInfo = config.getConfig();
-  const { globalRetryTime, uid } = configInfo.hdchina;
+  const currentSite = siteMap[config.site];
+  const { globalRetryTime, uid } = configInfo;
   if (retryTime >= globalRetryTime) {
     return [];
   }
@@ -134,17 +85,19 @@ export async function filterFreeItem(retryTime: number = 0): Promise<TItem[]> {
   let torrentItems: puppeteer.ElementHandle<HTMLTableRowElement>[] = [];
   let freeTarget: puppeteer.ElementHandle<HTMLTableRowElement>[] = [];
   
+  const { siteAnchor } = configInfo;
+
   try {    
-    await torrentPage.waitForSelector('.torrent_list > tbody > tr .pro_free', {
+    await torrentPage.waitForSelector(siteAnchor.torrentItemWaiter, {
       timeout: 10 * 1000
     });
-    torrentItems = await torrentPage.$$('.torrent_list > tbody > tr');
+    torrentItems = await torrentPage.$$(siteAnchor.torrentItem);
     try {
-      const freeTarget1up = await torrentPage.$$('.torrent_list > tbody > tr .pro_free');
+      const freeTarget1up = await torrentPage.$$(siteAnchor.freeItem1upTag);
       freeTarget.push(...freeTarget1up);
     } catch (e) {}
     try {
-      const freeTarget2up = await torrentPage.$$('.torrent_list > tbody > tr .pro_free2up');
+      const freeTarget2up = await torrentPage.$$(siteAnchor.freeItem2upTag);
       freeTarget.push(...freeTarget2up);
     } catch (e) {}
     log.log(`[Puppeteer] free target count: [${freeTarget.length}]`);
@@ -154,43 +107,34 @@ export async function filterFreeItem(retryTime: number = 0): Promise<TItem[]> {
 
   for(const item of torrentItems) {
     let freeItem = null;
-    freeItem = await item.$('.pro_free');
+    freeItem = await item.$(siteAnchor.freeItem1up);
     if (null === freeItem) {
-      freeItem = await item.$('.pro_free2up');
+      freeItem = await item.$(siteAnchor.freeItem2up);
     }
 
-    const progressArea = await item.$('.progressarea');
+    const progressArea = await item.$(siteAnchor.progressArea);
     if( null === freeItem || null !== progressArea ) {
       continue;
     }
     let freeTimeContainer: string = '';
     try {
-      freeTimeContainer = await item.$eval('.pro_free', (el) => el.getAttribute('onmouseover'));
+      freeTimeContainer = await currentSite.getFreeTime(item);
     } catch (e) {}
     try {
       if ('' === freeTimeContainer) {
-        freeTimeContainer = await item.$eval('.pro_free2up', (el) => el.getAttribute('onmouseover'));
+        freeTimeContainer = await currentSite.getFreeTime2up(item);
       }
     } catch (e) {}
 
-    const [ freeTimeString ] = freeTimeContainer.match(/\d\d\d\d-\d\d-\d\d\s\d\d:\d\d:\d\d/);
+    const [ freeTimeString ] = freeTimeContainer.match(siteAnchor.freeTimeExp);
     const freeTime: Date = new Date(freeTimeString);
 
-    const torrentUrl: string = await item.$eval('.act .download', (el) => (el.parentNode as HTMLAnchorElement).getAttribute('href'))
+    let torrentUrl: string = await item.$eval(siteAnchor.torrentUrlAnchor, (el) => (el.parentNode as HTMLAnchorElement).getAttribute('href'))
+    torrentUrl = `${configInfo.domain}${torrentUrl}`;
 
-    const idHref = await item.$eval('h3 a', (el) => el.getAttribute('href'));
-    const [trash, id] = idHref.match(/id=(\d+)&/);
-    const title: any = await item.$eval('h3 a', (el) => el.getAttribute('title'));
-
-    const sizeString: string = await item.$eval('.t_size', (el) => el.innerHTML);
-    const [ sizeNumberString ] = sizeString.match(/\d+/);
-    const sizeNumber: number = Number(sizeNumberString)
-    let size: number = 0;
-    if (-1 < sizeString.indexOf('GB')) {
-      size = sizeNumber * 1024 * 1024 * 1024
-    } else if (-1 < sizeString.indexOf('MB')) {
-      size = sizeNumber * 1024 * 1024;
-    }
+    const id: string = await currentSite.getSiteId(item);
+    const title: string = await currentSite.getTitle(item);
+    const size: number = await currentSite.getSize(item);
 
     const urlItem = url.parse(torrentUrl, true);
 
@@ -198,8 +142,9 @@ export async function filterFreeItem(retryTime: number = 0): Promise<TItem[]> {
       id, title, size,
       freeUntil: freeTime,
       free: true,
-      torrentUrl: `${torrentUrl}&uid=${uid}`,
-      hash: urlItem.query.hash as string
+      uid: config.uid,
+      torrentUrl: torrentUrl,
+      site: config.site
     });
   }
   if (0 === freeItems.length && 0 === freeTarget.length) {
