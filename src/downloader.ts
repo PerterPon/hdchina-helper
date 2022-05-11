@@ -172,6 +172,10 @@ async function addItemToTransmission(items: TItem[]): Promise<{transId: string; 
       const transRes: { transId: string; hash: string } = await transmission.addUrl(torrentUrl);
       transIds.push(transRes);
     } catch(e) {
+      transIds.push({
+        transId: '-1',
+        hash: '-1'
+      });
       errorCount++;
       log.log(e.message);
       log.log(e.stack);
