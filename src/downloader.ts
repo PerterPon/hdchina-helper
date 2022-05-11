@@ -136,6 +136,7 @@ async function downloadItem(items: TItem[]): Promise<TItem[]> {
       }
     } else {
       existsTorrentCount++;
+      downloadSuccessItems.push(item);
     }
   }
   log.message(`download number: [${downloadCount}]`);
