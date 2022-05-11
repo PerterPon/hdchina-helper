@@ -35,7 +35,7 @@ export async function init(): Promise<void> {
   });
 
   page = await browser.newPage();
-  page.setCookie(cookie);
+  // page.setCookie(cookie);
 }
 
 export async function getUserInfo(): Promise<TPageUserInfo> {
