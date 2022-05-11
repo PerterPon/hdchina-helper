@@ -36,11 +36,19 @@ export async function init(): Promise<void> {
 
 export async function getDownloadingItems(): Promise<TTransItem[]> {
   log.log(`[Transmission] get download items`);
-  const data = await transmission.active();
+  const data = await transmission.get();
   const downloadingItems: TTransItem[] = [];
+  const configInfo = config.getConfig();
   for (const item of data.torrents) {
-    if( transmission.status.DOWNLOAD === item.status) {
-      const { status, id, name, downloadDir, hashString, sizeWhenDone: size, activityDate, isFinished } = item;
+    const { status, id, name, downloadDir, hashString, sizeWhenDone: size, activityDate, isFinished } = item;
+    if( -1 < [
+        transmission.status.DOWNLOAD, 
+        transmission.status.DOWNLOAD_WAIT, 
+        transmission.status.CHECK, 
+        transmission.status.CHECK_WAIT, 
+        transmission.status.STOPPED
+        ].indexOf(status)
+    ){
       downloadingItems.push({
         id, name, downloadDir, status, size, activityDate, isFinished,
         hash: hashString

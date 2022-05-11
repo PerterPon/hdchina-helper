@@ -7,6 +7,7 @@ import * as qs from 'qs';
 import * as oss from './oss';
 import * as log from './log';
 import * as message from './message';
+import { TItem } from 'src';
 
 let currentCsrfToken: string = null;
 let currentPhpSessionId: string = null;
@@ -30,11 +31,12 @@ export async function fetchCsrfTokenAndPHPSessionId(): Promise<{csrfToken: strin
   }
   log.log(`fetch csrf token`);
   const configInfo = config.getConfig();
-  const { cookie, indexPage } = configInfo
+  const { indexPage, puppeteer } = configInfo
+  const { value, name } = puppeteer.cookie;
   const res: AxiosResponse = await axios.get(indexPage, {
     headers: {
       ...htmlHeader,
-      cookie
+      cookie: `${name}=${value};`
     }
   });
   const html: string = res.data;
@@ -72,6 +74,31 @@ export async function getItemDetailByIds(ids: string[]): Promise<any> {
     responseType: 'json'
   });
   return res.data;
+}
+
+export async function getDownloadingItemFreeTime(): Promise<string> {
+  log.log(`[UTILS] getDownloadingItemFreeTime`);
+  const { csrfToken, phpSessionId } = await fetchCsrfTokenAndPHPSessionId();
+  const configInfo = config.getConfig();
+  const { downloadingItemStatus, uid } = configInfo;
+  const { name, value } = configInfo.puppeteer.cookie;
+  const requestBody: string = qs.stringify({
+    userid: uid,
+    type: 'leeching',
+    csrf: csrfToken
+  });
+  log.log(`get downloading status, url: [${downloadingItemStatus}], data: [${requestBody}]`);
+  const res: AxiosResponse = await axios({
+    method: 'post',
+    url: downloadingItemStatus,
+    data: requestBody,
+    headers: {
+      ...downloadingItemStatusHeader,
+      cookie: `${name}=${value}; ${phpSessionId}`
+    },
+    responseType: 'json'
+  });
+  return res.data.message;
 }
 
 export async function writeFile(from: fs.ReadStream, to: fs.WriteStream): Promise<void> {
@@ -132,3 +159,18 @@ export const downloadHeader = {
   "sec-fetch-user": "?1",
   "upgrade-insecure-requests": "1"
 };
+
+export const downloadingItemStatusHeader = {
+  "accept": "*/*",
+  "accept-language": "zh-CN,zh;q=0.9,en;q=0.8,ja;q=0.7,zh-TW;q=0.6",
+  "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
+  "sec-ch-ua": "\" Not A;Brand\";v=\"99\", \"Chromium\";v=\"100\", \"Google Chrome\";v=\"100\"",
+  "sec-ch-ua-mobile": "?0",
+  "sec-ch-ua-platform": "\"macOS\"",
+  "sec-fetch-dest": "empty",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-site": "same-origin",
+  "x-requested-with": "XMLHttpRequest",
+  "Referer": "https://hdchina.org/userdetails.php?id=325966",
+  "Referrer-Policy": "strict-origin-when-cross-origin"
+}

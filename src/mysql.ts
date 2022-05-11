@@ -1,4 +1,4 @@
-
+// @ts-ignore:next-line
 import * as mysql from 'mysql2/promise';
 import { TItem } from 'src';
 import * as config from './config';
@@ -21,28 +21,27 @@ export async function init(): Promise<void> {
 export async function storeItem(items: TItem[]): Promise<void> {
   log.log(`[MYSQL] store items: [${JSON.stringify(items)}]`);
   for (const item of items) {
-    const { id, freeUntil, size, title, hash, torrentUrl, transHash } = item;
+    const { id, freeUntil, size, title, hash, torrentUrl, torrentHash: transHash } = item;
     await pool.query(`
     INSERT INTO
-      torrent(gmt_create, gmt_modify, pt_id, free_until, size, hash, site, title, torrent_url, trans_hash)
+      torrent_rss(gmt_create, gmt_modify, pt_id, free_until, size, hash, site, title, torrent_url, trans_hash, uid)
     VALUES 
-      (?, ?, ?, ?, ?, ?, "hdchina", ?, ?, ?)
+      (?, ?, ?, ?, ?, ?, "hdchina", ?, ?, ?, ?)
     ON DUPLICATE KEY UPDATE
       size = VALUES(size);
-    `, [new Date(), new Date(), id, freeUntil, size, hash, title, torrentUrl, transHash]);
+    `, [new Date(), new Date(), id, freeUntil, size, hash, title, torrentUrl, transHash, config.uid]);
   }
 };
 
-export async function getFreeItems(): Promise<TItem[]> {
+export async function getCanDownloadItems(): Promise<TItem[]> {
   log.log(`[MYSQL] get free item`);
   const [data]: any = await pool.query(`
     SELECT 
       *
     FROM
-      torrent
+      torrent_rss
     WHERE
-      free_until > NOW() AND
-      torrent_download_url IS NULL;
+      trans_id IS NULL;
     `);
   log.log(`[MYSQL] get free item: [${JSON.stringify(data)}]`);
   const freeItems: TItem[] = [];
@@ -53,7 +52,7 @@ export async function getFreeItems(): Promise<TItem[]> {
       freeUntil: free_util,
       size, hash, title,
       torrentUrl: torrent_url,
-      transHash: trans_hash
+      torrentHash: trans_hash
     });
   }
   return freeItems;
@@ -72,12 +71,28 @@ export async function updateItemByHash(hash: string, updateContent: any): Promis
   updateItemString += 'gmt_modify = NOW()'
   await pool.query(`
   UPDATE
-    torrent
+    torrent_rss
   SET
     ${updateItemString}
   WHERE
     hash = ?;
   `, [...updateValues, hash]);
+}
+
+export async function updateItemFreeStatus(items: TItem[]): Promise<void> {
+  log.log(`[MYSQL] updateItemFreeStatus`);
+  for (const item of items) {
+    const { id, freeUntil, free } = item;
+    await pool.query(`
+    UPDATE torrent_rss
+    SET 
+      free = ?,
+      free_until = ?
+    WHERE
+      pt_id = ? AND
+      site = 'hdchina';
+    `, [ Number(free), freeUntil, id ]);
+  }
 }
 
 export async function getTransIdByItem(items: TItem[]): Promise<string[]> {
@@ -94,7 +109,7 @@ export async function getTransIdByItem(items: TItem[]): Promise<string[]> {
   SELECT 
     *
   FROM
-    torrent
+    torrent_rss
   WHERE
     pt_id IN (?) AND site = 'hdchina';
   `, [itemIds]);
@@ -114,19 +129,20 @@ export async function getItemByHash(hash: string[]): Promise<TItem[]> {
   SELECT
     *
   FROM
-    torrent
+    torrent_rss
   WHERE
     trans_hash IN (?)
   `, [hash]);
   const items: TItem[] = [];
   for (const item of res) {
-    const { pt_id, hash, title, size, torrent_url, trans_id, trans_hash, free_until } = item;
+    const { pt_id, hash, title, size, torrent_url, trans_id, trans_hash, free_until, free } = item;
     items.push({
       size, title, hash,
       id: pt_id,
       torrentUrl: torrent_url,
-      transHash: trans_hash,
-      freeUntil: free_until
+      torrentHash: trans_hash,
+      freeUntil: free_until,
+      free: Boolean(free)
     });
   }
   return items;
@@ -138,7 +154,7 @@ export async function setItemDownloading(items: TItem[]): Promise<void> {
     const { hash } = item;
     await pool.query(`
     UPDATE
-      torrent
+      torrent_rss
     SET
       status = 1
     WHERE

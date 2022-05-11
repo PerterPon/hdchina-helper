@@ -1,9 +1,6 @@
 
-import * as config from './config';
-import * as utils from './utils';
-import * as transmission from './transmission';
-import * as oss from './oss';
-import * as message from './message';
+// @ts-ignore:next-line
+import { XMLParser } from 'fast-xml-parser';
 
 import axios, { AxiosResponse } from 'axios';
 import * as _ from 'lodash';
@@ -12,6 +9,13 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as filesize from 'filesize';
 import * as moment from 'moment';
+import * as cheerio from 'cheerio';
+
+import * as config from './config';
+import * as utils from './utils';
+import * as transmission from './transmission';
+import * as oss from './oss';
+import * as message from './message';
 import * as mysql from './mysql';
 import * as puppeteer from './puppeteer';
 import { mkdirpSync } from 'fs-extra';
@@ -29,7 +33,7 @@ export interface TItem {
   size: number;
   title: string;
   torrentUrl: string;
-  transHash?: string;
+  torrentHash?: string;
 }
 
 async function start(): Promise<void> {
@@ -50,22 +54,30 @@ async function main(): Promise<void> {
   await init();
 
   // 1. 
-  const userInfo: puppeteer.TPageUserInfo = await puppeteer.getUserInfo();
-  log.message(`share ratio: [${userInfo.shareRatio || ''}]`);
-  log.message(`upload count: [${userInfo.uploadCount || ''}]`);
-  log.message(` download count: [${userInfo.downloadCount || ''}]`);
-  log.message(`matic point: [${userInfo.magicPoint || ''}]`)
+  // const userInfo: puppeteer.TPageUserInfo = await puppeteer.getUserInfo();
+  // log.message(`share ratio: [${userInfo.shareRatio || ''}]`);
+  // log.message(`upload count: [${userInfo.uploadCount || ''}]`);
+  // log.message(` download count: [${userInfo.downloadCount || ''}]`);
+  // log.message(`matic point: [${userInfo.magicPoint || ''}]`)
 
-  // 2.
-  const freeItems: TItem[] = await puppeteer.filterFreeItem();
-  log.log(`got free items: [${JSON.stringify(freeItems)}]`);
-  // 3. 
-  await mysql.storeItem(freeItems);
-  // 5.
-  const canDownloadItem: TItem[] = await mysql.getFreeItems();
-  // 6. 
+  const rssString: string = await getRssContent();
+  const parser: XMLParser = new XMLParser({
+    ignoreAttributes: false
+  });
+  // 2. 
+  const rss: object = parser.parse(rssString);
+  // 3.
+  const items: TItem[] = await getItemInfo(rss);
+
+  // await mysql.storeItem(items);
+  let canDownloadItem: TItem[] = await mysql.getCanDownloadItems();
+  if (canDownloadItem.length > 5) {
+    log.log(`too much download item: [${canDownloadItem.length}], reduce to 5`);
+    log.message(`total download item: [${canDownloadItem.length}], current download: [${5}]`);
+    canDownloadItem = canDownloadItem.splice(0, 5);
+  }
+
   const successItems: TItem[] = await downloadItem(canDownloadItem);
-  // 7.
   await uploadItem(successItems);
 
   let trans: { transId: string; hash: string; }[] = [];
@@ -76,16 +88,19 @@ async function main(): Promise<void> {
     log.log(e.stack);
   }
 
-  // 8.
   await updateTrans2Item(trans, successItems);
   await mysql.setItemDownloading(successItems);
-  await utils.sleep(5 * 1000);
+
+  const downloadingFreeItem: TItem[] = await getDownloadingItemFreeTime(successItems);
+
+  await mysql.updateItemFreeStatus(downloadingFreeItem);
+
   // 9. 
   const downloadingItems: TItem[] = await getDownloadingItems();
   // 10. 
   const beyondFreeItems: TItem[] = await filterBeyondFreeItems(downloadingItems);
-  // 11. 
-  await removeItemFromTransmission(beyondFreeItems);
+  // 11.
+  // await removeItemFromTransmission(beyondFreeItems);
   log.log(`all task done!!!!\n`);
   // 12.
   await reduceLeftSpace();
@@ -136,54 +151,10 @@ async function getItemInfo(rss: any): Promise<TItem[]> {
       size: length,
       title,
       torrentUrl: enclosureUrl,
-      transHash: guid['#text']
+      torrentHash: guid['#text']
     });
   }
   return items;
-}
-
-async function filterFreeItem(items: TItem[], retryTime: number = 0): Promise<TItem[]> {
-  log.log(`filterFreeItem`);
-  const configInfo = config.getConfig();
-  const { globalRetryTime } = configInfo
-  if (retryTime >= globalRetryTime) {
-    console.warn(`exceed max filter free time!`);
-    return [];
-  }
-  retryTime++;
-  log.log(`filterFreeItem with time: [${retryTime}]`);
-  const ids: string[] = [];
-  for (const item of items) {
-    ids.push(item.id);
-  }
-  const itemDetail = await utils.getItemDetailByIds(ids);
-  log.log('getItemDetailByIds', JSON.stringify(itemDetail, null, 4));
-  const freeItem: TItem[] = [];
-  let noneFreeCount: number = 0;
-  for (let i = 0; i < items.length; i++) {
-    const item: TItem = items[i];
-    const ddlItem = itemDetail.message[item.id];
-    const { sp_state, timeout } = ddlItem;
-    if (
-      -1 === sp_state.indexOf('display: none') && 
-      (-1 < sp_state.indexOf('pro_free') || -1 < sp_state.indexOf('pro_free2up') ) &&
-      '' !== timeout
-    ) {
-      const [ ddl ] = timeout.match(/\d\d\d\d-\d\d-\d\d\s\d\d:\d\d:\d\d/);
-      const ddlTime: Date = new Date(ddl);
-      item.freeUntil = ddlTime;
-      item.free = true;
-      freeItem.push(item);
-    } else {
-      noneFreeCount++;
-      item.free = false;
-    }
-  }
-  if (noneFreeCount === items.length) {
-    return await filterFreeItem(items, retryTime);
-  }
-  log.message(`free item count: [${freeItem.length}]`);
-  return freeItem;
 }
 
 async function downloadItem(items: TItem[]): Promise<TItem[]> {
@@ -196,33 +167,31 @@ async function downloadItem(items: TItem[]): Promise<TItem[]> {
   const downloadSuccessItems: TItem[] = []
   for (const item of items) {
     await utils.sleep(2 * 1000);
-    const { hash, title, id, size, freeUntil } = item;
-    const fileName: string = path.join(tempFolder, `${hash}.torrent`);
-    if (false === fs.existsSync(fileName)) {
-      try {
-        // not exist, download
-        const downloadLink = `${downloadUrl}?hash=${hash}&uid=${uid}`;
-        const fileWriter = fs.createWriteStream(fileName);
-        log.log(`downloading torrent with url: [${downloadLink}]`);
-        const res: AxiosResponse = await axios({
-          url: downloadLink,
-          method: 'get',
-          responseType: 'stream',
-          headers: {
-            ...utils.downloadHeader
-          }
-        });
-        await utils.writeFile(res.data, fileWriter);
-        const leftTime: number = moment(freeUntil).unix() - moment().unix();
-        log.log(`download torrent: [${fileName}], size: [${filesize(size)}], free time: [${moment(freeUntil).diff(moment(), 'hours')} H]`);
-        downloadCount++;
-        downloadSuccessItems.push(item);
-      } catch (e) {
-        downloadErrorCount++;
-        console.error(`[ERROR]download file: [${fileName}] with error: [${e.message}]`);
-      }
-    } else {
+    const { hash, title, id, size, freeUntil, torrentHash } = item;
+    const fileName: string = path.join(tempFolder, `${torrentHash}.torrent`);
+    if (true === fs.existsSync(fileName)) {
       existsTorrentCount++;
+    }
+    try {
+      // not exist, download
+      const downloadLink = `${downloadUrl}?hash=${hash}&uid=${uid}`;
+      const fileWriter = fs.createWriteStream(fileName);
+      log.log(`downloading torrent with url: [${downloadLink}]`);
+      const res: AxiosResponse = await axios({
+        url: downloadLink,
+        method: 'get',
+        responseType: 'stream',
+        headers: {
+          ...utils.downloadHeader
+        }
+      });
+      await utils.writeFile(res.data, fileWriter);
+      log.log(`download torrent: [${fileName}], size: [${filesize(size)}]]`);
+      downloadCount++;
+      downloadSuccessItems.push(item);
+    } catch (e) {
+      downloadErrorCount++;
+      console.error(`[ERROR]download file: [${fileName}] with error: [${e.message}]`);
     }
   }
   log.message(`download number: [${downloadCount}]`);
@@ -235,9 +204,9 @@ async function uploadItem(items: TItem[]): Promise<void> {
   log.log(`upload items: [${JSON.stringify(items)}]`);
   const configInfo = config.getConfig();
   for (const item of items) {
-    const { hash } = item;
-    const fileName: string = `${hash}.torrent`;
-    const filePath: string = path.join(tempFolder, `${hash}.torrent`);
+    const { torrentHash } = item;
+    const fileName: string = `${torrentHash}.torrent`;
+    const filePath: string = path.join(tempFolder, `${torrentHash}.torrent`);
     await oss.uploadTorrent(fileName, filePath);
   }
 }
@@ -249,8 +218,8 @@ async function addItemToTransmission(items: TItem[]): Promise<{transId: string; 
   const { cdnHost } = configInfo.aliOss;
   let errorCount: number = 0;
   for (const item of items) {
-    const { hash, title } = item;
-    const torrentUrl: string = `http://${cdnHost}/hdchina/${hash}.torrent`;
+    const { torrentHash, title } = item;
+    const torrentUrl: string = `http://${cdnHost}/hdchina/${torrentHash}.torrent`;
     log.log(`add file to transmission: [${title}]`);
     try {
       const transRes: { transId: string; hash: string } = await transmission.addUrl(torrentUrl);
@@ -263,6 +232,34 @@ async function addItemToTransmission(items: TItem[]): Promise<{transId: string; 
   }
   log.message(`add transmission error count: [${errorCount}]`);
   return transIds;
+}
+
+async function getDownloadingItemFreeTime(items: TItem[]): Promise<TItem[]> {
+  log.log(`getDownloadingItemFreeTime, length: [${JSON.stringify(items)}]`);
+  const resHtml = await utils.getDownloadingItemFreeTime();
+  const $ = cheerio.load(resHtml);
+  const freeItems = $('table td .pro_free');
+  const freeItemMap: Map<string, Date> = new Map();
+  for (const item of freeItems) { 
+    const $item = $(item);
+    const freeTimeContainer = $item.parent().html();
+    const [ freeTime ] = freeTimeContainer.match(/\d\d\d\d-\d\d-\d\d\s\d\d:\d\d:\d\d/);
+    const [ pattern, id ] = freeTimeContainer.match(/details.php\?id=(\d+)/);
+    const freeTimeDate: Date = new Date(freeTime);
+    freeItemMap.set(id, freeTimeDate);
+    log.log(`got free item, id:[${id}], free time date: [${freeTimeDate}]`);
+  }
+  for (const item of items) {
+    const { id } = item;
+    const freeTime: Date|undefined = freeItemMap.get(id);
+    if (undefined === freeTime) {
+      item.free = false;
+    } else {
+      item.free = true;
+      item.freeUntil = freeTime;
+    }
+  }
+  return items;
 }
 
 async function updateTrans2Item(transIds: {transId: string; hash: string}[], items: TItem[]): Promise<void> {
@@ -308,8 +305,8 @@ async function filterBeyondFreeItems(items: TItem[]): Promise<TItem[]> {
   log.log(`filterBeyondFreeItems: [${JSON.stringify(items)}]`);
   const beyondFreeItems: TItem[] = [];
   for (const item of items) {
-    const { freeUntil } = item;
-    if (moment(freeUntil) < moment()) {
+    const { freeUntil, free } = item;
+    if ( false === free ||  moment(freeUntil) < moment()) {
       beyondFreeItems.push(item);
     }
   }

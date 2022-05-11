@@ -59,22 +59,6 @@ export async function loadTorrentPage(): Promise<void> {
     const { cdnHost } = configInfo.aliOss;
     page.goto(torrentPageUrl);
     await sleep(5 * 1000);
-    await page.mouse.move(
-      100 + randomInt(200),
-      200 + randomInt(100)
-    );
-    await page.mouse.move(
-      100 + randomInt(200),
-      200 + randomInt(100)
-    );
-    await page.mouse.move(
-      100 + randomInt(200),
-      200 + randomInt(100)
-    );
-    await page.mouse.move(
-      100 + randomInt(200),
-      200 + randomInt(100)
-    );
     const screenShot: Buffer = await page.screenshot() as unknown as Buffer;
     const screenShotName: string = `${moment().format('YYYY-MM-DD_HH:mm:ss')}.png`;
     await oss.uploadScreenShot(screenShotName, screenShot);
