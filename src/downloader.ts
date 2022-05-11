@@ -97,9 +97,12 @@ async function initTempFolder(): Promise<void> {
 
 async function downloadItem(items: TItem[]): Promise<TItem[]> {
   log.log(`downloadItem: [${JSON.stringify(items)}]`);
-  items = [items[0]];
+  if (items.length > 5) {
+    log.message(`target download items: [${items.length}], reduce to [${5}]`);
+    items = items.splice(0, 5);
+  }
   const configInfo = config.getConfig();
-  const { downloadUrl, uid } = configInfo;
+  const { downloadUrl, uid,  } = configInfo;
   let downloadCount: number = 0;
   let existsTorrentCount: number = 0;
   let downloadErrorCount: number = 0;
