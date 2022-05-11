@@ -23,8 +23,8 @@ export async function init(): Promise<void> {
     headless: true,
     executablePath: null,
     ignoreDefaultArgs: [],
+    userDataDir: userDataDir,
     args: [
-        `--user-data-dir=${userDataDir}`,
         '--no-sandbox',
         '--disable-setuid-sandbox'
     ],
@@ -126,11 +126,10 @@ export async function filterFreeItem(retryTime: number = 0): Promise<TItem[]> {
       }
     } catch (e) {}
 
-    const [ freeTimeString ] = freeTimeContainer.match(siteAnchor.freeTimeExp);
+    const [ freeTimeString ] = freeTimeContainer.match(/\d\d\d\d-\d\d-\d\d\s\d\d:\d\d:\d\d/);
     const freeTime: Date = new Date(freeTimeString);
-
     let torrentUrl: string = await item.$eval(siteAnchor.torrentUrlAnchor, (el) => (el.parentNode as HTMLAnchorElement).getAttribute('href'))
-    torrentUrl = `${configInfo.domain}${torrentUrl}`;
+    torrentUrl = `${configInfo.domain}/${torrentUrl}`;
 
     const id: string = await currentSite.getSiteId(item);
     const title: string = await currentSite.getTitle(item);

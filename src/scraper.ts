@@ -61,6 +61,7 @@ async function main(): Promise<void> {
   // 3.
   const freeItems: TItem[] = await puppeteer.filterFreeItem();
   log.log(`got free items: [${JSON.stringify(freeItems)}]`);
+  log.message(`free item count: [${freeItems.length}]`);
   // 4. 
   await mysql.storeItem(freeItems);
 

@@ -27,7 +27,8 @@ export async function storeItem(items: TItem[]): Promise<void> {
       torrents(gmt_create, gmt_modify, uid, site, site_id, size, torrent_url, is_free, free_until, title)
     VALUES(NOW(), NOW(), ?, ?, ?, ?, ?, ?, ?, ?)
     ON DUPLICATE KEY UPDATE
-      size = VALUES(size);
+      size = VALUES(size),
+      torrent_url = VALUES(torrent_url);
     `, [config.uid, config.site, id, size, torrentUrl, 1, freeUntil, title]);
   }
 };
