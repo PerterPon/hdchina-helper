@@ -111,32 +111,31 @@ async function downloadItem(items: TItem[]): Promise<TItem[]> {
     await utils.sleep(2 * 1000);
     const { site, title, id, size, freeUntil, torrentUrl } = item;
     const fileName: string = path.join(tempFolder, `${site}_${id}_${uid}.torrent`);
-    if (false === fs.existsSync(fileName)) {
-      try {
-        // not exist, download
-        const downloadLink = await siteMap[config.site].getDownloadUrl(item);
-        log.log(`download link: [${downloadLink}]`);
-        const fileWriter = fs.createWriteStream(fileName);
-        const res: AxiosResponse = await axios({
-          url: downloadLink,
-          method: 'get',
-          responseType: 'stream',
-          headers: {
-            ...utils.downloadHeader
-          }
-        });
-        await utils.writeFile(res.data, fileWriter);
-        const leftTime: number = moment(freeUntil).unix() - moment().unix();
-        log.log(`download torrent: [${fileName}], size: [${filesize(size)}], free time: [${moment(freeUntil).diff(moment(), 'hours')} H]`);
-        downloadCount++;
-        downloadSuccessItems.push(item);
-      } catch (e) {
-        downloadErrorCount++;
-        console.error(`[ERROR]download file: [${fileName}] with error: [${e.message}]`);
-      }
-    } else {
+    if (true === fs.existsSync(fileName)) {
       existsTorrentCount++;
+    }
+
+    try {
+      // not exist, download
+      const downloadLink = await siteMap[config.site].getDownloadUrl(item);
+      log.log(`download link: [${downloadLink}]`);
+      const fileWriter = fs.createWriteStream(fileName);
+      const res: AxiosResponse = await axios({
+        url: downloadLink,
+        method: 'get',
+        responseType: 'stream',
+        headers: {
+          ...utils.downloadHeader
+        }
+      });
+      await utils.writeFile(res.data, fileWriter);
+      const leftTime: number = moment(freeUntil).unix() - moment().unix();
+      log.log(`download torrent: [${fileName}], size: [${filesize(size)}], free time: [${moment(freeUntil).diff(moment(), 'hours')} H]`);
+      downloadCount++;
       downloadSuccessItems.push(item);
+    } catch (e) {
+      downloadErrorCount++;
+      console.error(`[ERROR]download file: [${fileName}] with error: [${e.message}]`);
     }
   }
   log.message(`download number: [${downloadCount}]`);
