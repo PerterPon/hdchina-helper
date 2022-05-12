@@ -23,8 +23,8 @@ export async function init(): Promise<void> {
     headless: true,
     executablePath: null,
     ignoreDefaultArgs: [],
-    userDataDir: userDataDir,
     args: [
+        `--user-data-dir=${userDataDir}`,
         '--no-sandbox',
         '--disable-setuid-sandbox'
     ],
