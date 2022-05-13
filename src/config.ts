@@ -34,14 +34,14 @@ export async function init(env?: string): Promise<TTBSConfig> {
     }
 
     
-    const { sites } = config;
+    const { sites } = listenConfig;
     for (const siteName of sites) {
-        const siteConfig = config[siteName];
-        for (const configName in config) {
+        const siteConfig = listenConfig[siteName];
+        for (const configName in listenConfig) {
             if (-1 < sites.indexOf(configName) || 'sites' === configName) {
                 continue;
             }
-            const gloablConfig = config[configName];
+            const gloablConfig = listenConfig[configName];
             if (true === _.isObject(gloablConfig)) {
                 const siteConfigItem = siteConfig[configName];
                 siteConfig[configName] = _.assign({}, gloablConfig, siteConfigItem);
