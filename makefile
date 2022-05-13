@@ -11,7 +11,7 @@ TEST_FOLDER = $(DIRNAME)/test_output
 
 build-ts:
 	rm -rf $(BUILD_FOLDER)
-	$(TSC) --skipLibCheck
+	$(TSC) --skipLibCheck --noEmitOnError
 	cp -r $(DIRNAME)/etc $(BUILD_FOLDER)
 
 build-test:

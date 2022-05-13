@@ -7,6 +7,8 @@ import * as url from 'url';
 import * as log from './log';
 import * as moment from 'moment';
 import * as oss from './oss';
+import * as fs from 'fs';
+import * as path from 'path';
 
 import { TPageUserInfo } from './sites/basic';
 
@@ -15,16 +17,18 @@ import { siteMap } from './sites/basic';
 let browser: puppeteer.Browser = null;
 let page: puppeteer.Page = null;
 let torrentPage: puppeteer.Page = null;
+let cookieFileName: string = 'cookie';
+let storageFileName: string = 'storage';
 
 export async function init(): Promise<void> {
   const configInfo = config.getConfig();
   const { cookie, userDataDir } = configInfo.puppeteer;
   browser = await puppeteer.launch({
-    headless: true,
+    headless: false,
     executablePath: null,
     ignoreDefaultArgs: [],
     args: [
-        `--user-data-dir=${userDataDir}`,
+        // `--user-data-dir=${userDataDir}`,
         '--no-sandbox',
         '--disable-setuid-sandbox'
     ],
@@ -35,7 +39,37 @@ export async function init(): Promise<void> {
   });
 
   page = await browser.newPage();
-  // page.setCookie(cookie);
+  await page.setCookie(cookie);
+  // await setCookieAndStorage();
+}
+
+export async function setCookieAndStorage(): Promise<void> {
+  log.log(`[PUPPETEER] setCookieAndStorage`);
+  const configInfo = config.getConfig();
+  const { userDataDir, cookie } = configInfo.puppeteer;
+  const cookieFile: string = path.join(userDataDir, cookieFileName);
+  const storageFile: string = path.join(userDataDir, storageFileName);
+  if (true === fs.existsSync(cookieFile)) {
+    const cookiesValue: string = fs.readFileSync(cookieFile, 'utf-8');
+    log.log(`[PUPPETEER] set local cookie: [${cookiesValue}]`);
+    try {
+      const cookie = JSON.parse(cookiesValue);
+      page.setCookie(...cookie);
+    } catch (e) {
+      log.log(e, cookiesValue);
+    }
+  } else {
+    page.setCookie(cookie);
+  }
+
+  if (true === fs.existsSync(storageFile)) {
+    const storageValue: string = fs.readFileSync(storageFile, 'utf-8');
+    log.log(`[PUPPETEER] set storage with value: [${storageFile}]`);
+    await page.evaluate((storageValue) => {
+      const storage = JSON.parse(storageValue);
+      (window as any).localStorage = storage;
+    }, storageValue);
+  }
 }
 
 export async function getUserInfo(): Promise<TPageUserInfo> {
@@ -61,6 +95,14 @@ export async function loadTorrentPage(): Promise<void> {
     await page.waitForSelector(configInfo.siteAnchor.pageWaiter, {
       timeout: 15 * 1000
     });
+    const { cookies } = await (page as any)._client.send('Network.getAllCookies') || {};
+    const { userDataDir } = configInfo.puppeteer;
+    const cookieFile: string = path.join(userDataDir, cookieFileName);
+    fs.writeFileSync(cookieFile, JSON.stringify(cookies));
+
+    const localStorage: string = await page.evaluate(() => JSON.stringify(window.localStorage));
+    const storageFile: string = path.join(userDataDir, storageFileName);
+    fs.writeFileSync(storageFile, localStorage);
     torrentPage = page;
   } catch (e) {
     log.log(e.message);

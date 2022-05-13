@@ -275,7 +275,8 @@ async function reduceLeftSpace(): Promise<void> {
 async function getDownloaderStates(): Promise<void> {
   log.log('getDownloaderStates');
   const { uploadSpeed, downloadSpeed } = await transmission.sessionStates();
-  log.message(`current download speed: [${filesize(downloadSpeed)}/s], upload speed: [${filesize(uploadSpeed)}/s]`);
+  log.message(`upload speed: [${filesize(uploadSpeed)}/s]`);
+  log.message(`download speed: [${filesize(downloadSpeed)}/s]`);
 }
 
 start();
