@@ -7,7 +7,7 @@ export interface TTBSConfig {
     [key: string]: any;
 }
 
-let config: TTBSConfig;
+let config: TTBSConfig = null;
 
 export function getEtcFolderPath(): string {
     const etcPath: string = path.join(__dirname, '../../etc');
@@ -15,6 +15,9 @@ export function getEtcFolderPath(): string {
 }
 
 export async function init(env?: string): Promise<TTBSConfig> {
+    if (null !== config) {
+        return config;
+    }
     const etcPath: string = getEtcFolderPath();
     const defaultFilePath: string = path.join(etcPath, '/default.yaml');
     const defaultFileContent: string = fs.readFileSync(defaultFilePath, 'utf-8');
@@ -30,8 +33,7 @@ export async function init(env?: string): Promise<TTBSConfig> {
         listenConfig = defaultConfig;
     }
 
-    config = listenConfig;
-
+    
     const { sites } = config;
     for (const siteName of sites) {
         const siteConfig = config[siteName];
@@ -48,7 +50,8 @@ export async function init(env?: string): Promise<TTBSConfig> {
             }
         }
     }
-
+    
+    config = listenConfig;
     return listenConfig;
 }
 

@@ -21,6 +21,9 @@ let cookieFileName: string = 'cookie';
 let storageFileName: string = 'storage';
 
 export async function init(): Promise<void> {
+  if (browser !== null) {
+    return;
+  }
   const configInfo = config.getConfig();
   const { cookie, userDataDir } = configInfo.puppeteer;
   browser = await puppeteer.launch({

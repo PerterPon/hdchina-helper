@@ -20,6 +20,9 @@ export interface TTransItem {
 let transmission: any = null;
 
 export async function init(): Promise<void> {
+  if (null !== transmission) {
+    return;
+  }
   const configInfo = config.getConfig();
   const { host, port, username, password, ssl } = configInfo.transmission;
   transmission = new Transmission({

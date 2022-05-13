@@ -16,6 +16,8 @@ import { TPageUserInfo } from './sites/basic';
 
 import { TItem } from './types';
 
+import { main as startDownloader } from './downloader';
+
 const program = new Command();
 
 program
@@ -33,7 +35,13 @@ let tempFolder: string = null;
 
 async function start(): Promise<void> {
   try {
+    await init();
     await main();
+    await startDownloader();
+
+    await message.sendMessage();
+    await utils.sleep(5 * 1000);
+    process.exit(0);
   } catch(e) {
     log.log(e.message);
     log.log(e.stack);
@@ -46,7 +54,6 @@ async function start(): Promise<void> {
 }
 
 async function main(): Promise<void> {
-  await init();
   // 1. 
   const userInfo: TPageUserInfo = await puppeteer.getUserInfo();
   const { shareRatio, downloadCount, uploadCount, magicPoint } = userInfo;
@@ -64,10 +71,6 @@ async function main(): Promise<void> {
   log.message(`free item count: [${freeItems.length}]`);
   // 4. 
   await mysql.storeItem(freeItems);
-
-  await message.sendMessage();
-  await utils.sleep(5 * 1000);
-  process.exit(0);
 }
 
 async function init(): Promise<void> {

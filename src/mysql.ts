@@ -8,6 +8,9 @@ import * as log from './log';
 export let pool: mysql.Pool = null;
 
 export async function init(): Promise<void> {
+  if (null !== pool) {
+    return;
+  }
   const configInfo = config.getConfig();
   const { host, user, password, database, waitForConnections, connectionLimit, queueLimit } = configInfo.mysql;
   pool = mysql.createPool({

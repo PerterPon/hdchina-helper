@@ -1,7 +1,4 @@
 
-
-
-
 import * as config from './config';
 import * as utils from './utils';
 import * as transmission from './transmission';
@@ -26,9 +23,14 @@ config.init();
 
 let tempFolder: string = null;
 
-async function start(): Promise<void> {
+export async function start(): Promise<void> {
   try {
+    await start();
     await main();
+
+    await message.sendMessage();
+    await utils.sleep(5 * 1000);
+    process.exit(0);
   } catch(e) {
     log.log(e.message);
     log.log(e.stack);
@@ -40,9 +42,7 @@ async function start(): Promise<void> {
   }
 }
 
-async function main(): Promise<void> {
-  await init();
-
+export async function main(): Promise<void> {
   // 5.
   const canDownloadItem: TItem[] = await mysql.getFreeItems();
 
@@ -74,9 +74,6 @@ async function main(): Promise<void> {
   await getDownloaderStates();
   
   log.log(`all task done!!!!\n`);
-  await message.sendMessage();
-  await utils.sleep(5 * 1000);
-  process.exit(0);
 }
 
 async function init(): Promise<void> {
@@ -279,4 +276,4 @@ async function getDownloaderStates(): Promise<void> {
   log.message(`download speed: [${filesize(downloadSpeed)}/s]`);
 }
 
-start();
+// start();
