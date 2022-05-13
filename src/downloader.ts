@@ -137,7 +137,9 @@ async function downloadItem(items: TItem[]): Promise<TItem[]> {
       console.error(`[ERROR]download file: [${fileName}] with error: [${e.message}]`);
     }
   }
-  log.message(`download number: [${downloadCount}]`);
+  if (0 < downloadCount) {
+    log.message(`download number: [${downloadCount}]`);
+  }
   log.log(`exists torrent count: [${existsTorrentCount}]`);
   log.log(`download error count: [${downloadErrorCount}]`);
   return downloadSuccessItems;
@@ -179,7 +181,9 @@ async function addItemToTransmission(items: TItem[]): Promise<{transId: string; 
       log.log(e.stack);
     }
   }
-  log.message(`add transmission error count: [${errorCount}]`);
+  if (0 < errorCount) {
+    log.message(`add transmission error count: [${errorCount}]`);
+  }
   return transIds;
 }
 
@@ -239,7 +243,9 @@ async function removeItemFromTransmission(items: TItem[]): Promise<void> {
     log.log(`removing torrent: [${item.title}]`);
     await transmission.removeItem(Number(transId));
   }
-  log.message(`remove torrent count: [${items.length}]`);
+  if (0 < items.length) {
+    log.message(`remove torrent count: [${items.length}]`);
+  }
 }
 
 async function reduceLeftSpace(): Promise<void> {
@@ -267,7 +273,9 @@ async function reduceLeftSpace(): Promise<void> {
       freeSpace += size;
     }
   }
-  log.message(`reduce space total: [${filesize(reducedTotal)}]`);
+  if (0 < reducedTotal) {
+    log.message(`reduce space total: [${filesize(reducedTotal)}]`);
+  }
 }
 
 async function getDownloaderStates(): Promise<void> {

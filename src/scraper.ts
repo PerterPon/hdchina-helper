@@ -59,8 +59,8 @@ async function main(): Promise<void> {
   const { shareRatio, downloadCount, uploadCount, magicPoint } = userInfo;
   log.message(`share ratio: [${shareRatio || ''}]`);
   log.message(`upload count: [${uploadCount || ''}]`);
-  log.message(` download count: [${downloadCount || ''}]`);
-  log.message(`matic point: [${magicPoint || ''}]`)
+  log.message(`download count: [${downloadCount || ''}]`);
+  log.message(`magic point: [${magicPoint || ''}]`)
 
   // 2.
   await mysql.storeSiteInfo(Number(shareRatio), Number(downloadCount), Number(uploadCount), Number(magicPoint));
