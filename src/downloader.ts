@@ -43,6 +43,7 @@ export async function start(): Promise<void> {
 }
 
 export async function main(): Promise<void> {
+  await initTempFolder();
   // 5.
   const canDownloadItem: TItem[] = await mysql.getFreeItems();
 
