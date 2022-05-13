@@ -116,7 +116,7 @@ export async function getTransIdByItem(items: TItem[]): Promise<string[]> {
     try {
       const [res] = await pool.query(`
       SELECT *
-      FROM torrents
+      FROM downloader
       WHERE
         site = ? AND site_id = ?;
       `,[item.site, item.id]);
