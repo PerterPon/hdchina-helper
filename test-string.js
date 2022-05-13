@@ -7,9 +7,9 @@ const transmission = new Transmission({
   ssl: false
 });
 
-// transmission.session((error, data) => {
-//   console.log(error, data);
-// });
+transmission.sessionStats((error, data) => {
+  console.log(error, data);
+});
 
 // transmission.active((error, data) => {
 //   console.log(data);
@@ -18,15 +18,15 @@ const transmission = new Transmission({
 //   console.log(data);
 // });
 
-transmission.addUrl('http://cdn-pt.perterpon.com/hdchina/325966/hdchina_608432.torrent', function(error, data) {
-  console.log(transmission.status, data);
+// transmission.addUrl('http://cdn-pt.perterpon.com/hdchina/325966/hdchina_608432.torrent', function(error, data) {
+//   console.log(transmission.status, data);
   // data
   // {
   //   hashString: '228c44513eb836b8c621d1408ceb3030262eac53',
   //   id: 595,
   //   name: 'Harry.Potter.and.the.Goblet.of.Fire.2005.2160p.UHD.BluRay.HDR.x265.DTS-HD.MA7.1'
   // }
-});
+// });
 
 
 

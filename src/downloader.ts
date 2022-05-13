@@ -71,6 +71,7 @@ async function main(): Promise<void> {
   await removeItemFromTransmission(beyondFreeItems);
   // 12.
   await reduceLeftSpace();
+  await getDownloaderStates();
   
   log.log(`all task done!!!!\n`);
   await message.sendMessage();
@@ -269,6 +270,12 @@ async function reduceLeftSpace(): Promise<void> {
     }
   }
   log.message(`reduce space total: [${filesize(reducedTotal)}]`);
+}
+
+async function getDownloaderStates(): Promise<void> {
+  log.log('getDownloaderStates');
+  const { uploadSpeed, downloadSpeed } = await transmission.sessionStates();
+  log.message(`current download speed: [${filesize(downloadSpeed)}/s], upload speed: [${filesize(uploadSpeed)}/s]`);
 }
 
 start();

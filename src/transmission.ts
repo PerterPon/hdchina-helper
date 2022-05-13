@@ -93,4 +93,15 @@ export async function freeSpace(): Promise<number> {
   return res['size-bytes'];
 }
 
+export async function sessionStates(): Promise<{
+  uploadSpeed: number,
+  downloadSpeed: number
+}> {
+  const res = await transmission.sessionStats();
+  return {
+    uploadSpeed: res.uploadSpeed,
+    downloadSpeed: res.downloadSpeed
+  }
+}
+
 export const status: any = {};
