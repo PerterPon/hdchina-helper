@@ -24,7 +24,7 @@ export async function init(): Promise<void> {
   const configInfo = config.getConfig();
   const { cookie, userDataDir } = configInfo.puppeteer;
   browser = await puppeteer.launch({
-    headless: false,
+    headless: true,
     executablePath: null,
     ignoreDefaultArgs: [],
     args: [
