@@ -138,8 +138,8 @@ async function downloadItem(items: TItem[]): Promise<TItem[]> {
     }
   }
   log.message(`download number: [${downloadCount}]`);
-  log.message(`exists torrent count: [${existsTorrentCount}]`);
-  log.message(`download error count: [${downloadErrorCount}]`);
+  log.log(`exists torrent count: [${existsTorrentCount}]`);
+  log.log(`download error count: [${downloadErrorCount}]`);
   return downloadSuccessItems;
 }
 
