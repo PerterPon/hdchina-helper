@@ -4,9 +4,7 @@ import * as config from './config';
 import axios, { AxiosResponse } from 'axios';
 import * as fs from 'fs';
 import * as qs from 'qs';
-import * as oss from './oss';
 import * as log from './log';
-import * as message from './message';
 
 let currentCsrfToken: string = null;
 let currentPhpSessionId: string = null;
@@ -30,7 +28,7 @@ export async function fetchCsrfTokenAndPHPSessionId(): Promise<{csrfToken: strin
   }
   log.log(`fetch csrf token`);
   const configInfo = config.getConfig();
-  const { cookie, indexPage } = configInfo
+  const { cookie, indexPage } = configInfo;
   const res: AxiosResponse = await axios.get(indexPage, {
     headers: {
       ...htmlHeader,
@@ -56,7 +54,7 @@ export async function getItemDetailByIds(ids: string[]): Promise<any> {
   log.log(`[Utils], getItemDetailByIds: [${ids}]`);
 
   const configInfo = config.getConfig();
-  const { cookie, checkFreeUrl } = configInfo
+  const { cookie, checkFreeUrl } = configInfo;
   const { csrfToken, phpSessionId } = await fetchCsrfTokenAndPHPSessionId();
   const res: AxiosResponse = await axios({
     method: 'post',

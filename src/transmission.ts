@@ -20,6 +20,9 @@ export interface TTransItem {
 let transmission: any = null;
 
 export async function init(): Promise<void> {
+  if (null !== transmission) {
+    return;
+  }
   const configInfo = config.getConfig();
   const { host, port, username, password, ssl } = configInfo.transmission;
   transmission = new Transmission({
@@ -92,6 +95,17 @@ export async function freeSpace(): Promise<number> {
   log.message(`left space total: [${filesize(res['size-bytes'])}]`);
   log.log(`[Transmission] free space: [${fileDownloadPath}], total: [${filesize(res['size-bytes'])}]`);
   return res['size-bytes'];
+}
+
+export async function sessionStates(): Promise<{
+  uploadSpeed: number,
+  downloadSpeed: number
+}> {
+  const res = await transmission.sessionStats();
+  return {
+    uploadSpeed: res.uploadSpeed,
+    downloadSpeed: res.downloadSpeed
+  }
 }
 
 export const status: any = {};

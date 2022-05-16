@@ -6,6 +6,9 @@ import * as log from './log';
 let store: OSS = null;
 
 export async function init(): Promise<void> {
+  if (null !== store) {
+    return null;
+  }
   const configInfo = config.getConfig();
   const { accessKeyId, accessKeySecret, bucket, endpoint } = configInfo.aliOss;
   store = new OSS({

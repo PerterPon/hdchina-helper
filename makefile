@@ -11,7 +11,7 @@ TEST_FOLDER = $(DIRNAME)/test_output
 
 build-ts:
 	rm -rf $(BUILD_FOLDER)
-	$(TSC)
+	$(TSC) --skipLibCheck --noEmitOnError
 	cp -r $(DIRNAME)/etc $(BUILD_FOLDER)
 
 build-test:
@@ -30,6 +30,16 @@ test-cov: build-test
 dev: build-ts
 	cd $(DIRNAME)/build && \
 	NODE_PATH=$(BUILD_FOLDER) DEBUG="true" node src/index.js --env dev
+	@echo "dev start success!"
+
+scraper: build-ts
+	cd $(DIRNAME)/build && \
+	NODE_PATH=$(BUILD_FOLDER) DEBUG="true" node src/scraper.js --env dev
+	@echo "dev start success!"
+
+downloader: build-ts
+	cd $(DIRNAME)/build && \
+	NODE_PATH=$(BUILD_FOLDER) DEBUG="true" node src/downloader.js --env dev
 	@echo "dev start success!"
 
 start: build-ts

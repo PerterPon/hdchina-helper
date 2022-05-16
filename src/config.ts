@@ -7,7 +7,7 @@ export interface TTBSConfig {
     [key: string]: any;
 }
 
-let config: TTBSConfig;
+let config: TTBSConfig = null;
 
 export function getEtcFolderPath(): string {
     const etcPath: string = path.join(__dirname, '../../etc');
@@ -15,6 +15,9 @@ export function getEtcFolderPath(): string {
 }
 
 export async function init(env?: string): Promise<TTBSConfig> {
+    if (null !== config) {
+        return config;
+    }
     const etcPath: string = getEtcFolderPath();
     const defaultFilePath: string = path.join(etcPath, '/default.yaml');
     const defaultFileContent: string = fs.readFileSync(defaultFilePath, 'utf-8');
@@ -30,16 +33,15 @@ export async function init(env?: string): Promise<TTBSConfig> {
         listenConfig = defaultConfig;
     }
 
-    config = listenConfig;
-
-    const { sites } = config;
+    
+    const { sites } = listenConfig;
     for (const siteName of sites) {
-        const siteConfig = config[siteName];
-        for (const configName in config) {
+        const siteConfig = listenConfig[siteName];
+        for (const configName in listenConfig) {
             if (-1 < sites.indexOf(configName) || 'sites' === configName) {
                 continue;
             }
-            const gloablConfig = config[configName];
+            const gloablConfig = listenConfig[configName];
             if (true === _.isObject(gloablConfig)) {
                 const siteConfigItem = siteConfig[configName];
                 siteConfig[configName] = _.assign({}, gloablConfig, siteConfigItem);
@@ -48,7 +50,8 @@ export async function init(env?: string): Promise<TTBSConfig> {
             }
         }
     }
-
+    
+    config = listenConfig;
     return listenConfig;
 }
 

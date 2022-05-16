@@ -1,31 +1,31 @@
 const Transmission = require('transmission');
 const transmission = new Transmission({
-  host: 'home.perterpon.com',
+  host: 'ptbox.perterpon.com',
   port: 9091,
   username: 'perterpon', 
-  password: 'pon423904',
+  password: 'Perterpon423904_',
   ssl: false
 });
 
-// transmission.session((error, data) => {
-//   console.log(error, data);
-// });
+transmission.sessionStats((error, data) => {
+  console.log(error, data);
+});
 
 // transmission.active((error, data) => {
 //   console.log(data);
 // });
-transmission.freeSpace('/volume1',(error, data) => {
-  console.log(data);
-});
+// transmission.freeSpace('/volume1',(error, data) => {
+//   console.log(data);
+// });
 
-// transmission.addUrl('http://hdchina.org/download.php?hash=uC26eXwFjP0SzXn32-Va3A&uid=325966', function(error, data) {
+// transmission.addUrl('http://cdn-pt.perterpon.com/hdchina/325966/hdchina_608432.torrent', function(error, data) {
 //   console.log(transmission.status, data);
-//   // data
-//   // {
-//   //   hashString: '228c44513eb836b8c621d1408ceb3030262eac53',
-//   //   id: 595,
-//   //   name: 'Harry.Potter.and.the.Goblet.of.Fire.2005.2160p.UHD.BluRay.HDR.x265.DTS-HD.MA7.1'
-//   // }
+  // data
+  // {
+  //   hashString: '228c44513eb836b8c621d1408ceb3030262eac53',
+  //   id: 595,
+  //   name: 'Harry.Potter.and.the.Goblet.of.Fire.2005.2160p.UHD.BluRay.HDR.x265.DTS-HD.MA7.1'
+  // }
 // });
 
 
