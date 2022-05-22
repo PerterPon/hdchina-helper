@@ -91,7 +91,7 @@ export async function getUserInfo(): Promise<TPageUserInfo> {
 }
 
 export async function loadTorrentPage(torrentPageUrl: string): Promise<void> {
-  log.log(`[PUPPETEER] loadTorrentPage: [${torrentPageUrl}]`);
+  log.message(`[PUPPETEER] loadTorrentPage: [${torrentPageUrl}]`);
   try {
     const configInfo = config.getConfig();
     const { cdnHost } = configInfo.aliOss;
