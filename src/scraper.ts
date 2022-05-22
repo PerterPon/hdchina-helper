@@ -10,6 +10,7 @@ import * as log from './log';
 
 import * as _ from 'lodash';
 import * as path from 'path';
+import * as filesize from 'filesize';
 import { mkdirpSync } from 'fs-extra';
 import { Command } from 'commander';
 import { TPageUserInfo } from './sites/basic';
@@ -65,8 +66,12 @@ async function main(): Promise<void> {
   log.message(`download count: [${downloadCount || ''}]`);
   log.message(`magic point: [${magicPoint || ''}]`)
 
+  const { uploadSpeed, downloadSpeed } = await transmission.sessionStates();
+  log.message(`upload speed: [${filesize(uploadSpeed)}/s]`);
+  log.message(`download speed: [${filesize(downloadSpeed)}/s]`);
+
   // 2.
-  await mysql.storeSiteInfo(Number(shareRatio), Number(downloadCount), Number(uploadCount), Number(magicPoint));
+  await mysql.storeSiteInfo(Number(shareRatio), Number(downloadCount), Number(uploadCount), Number(magicPoint), Number(uploadSpeed), Number(downloadSpeed));
 
   // 3.
   const configInfo = config.getConfig();

@@ -163,12 +163,14 @@ export async function storeSiteInfo(
   shareRatio: number, 
   downloadCount: number,
   uploadCount: number,
-  magicPoint: number
+  magicPoint: number,
+  uploadSpeed: number,
+  downloadSpeed: number
 ): Promise<void> {
-  log.log(`[MYSQL] store site info, share ratio: [${shareRatio}], download count: [${downloadCount}], upload count: [${uploadCount}], magic point: [${magicPoint}]`);
+  log.log(`[MYSQL] store site info, share ratio: [${shareRatio}], download count: [${downloadCount}], upload count: [${uploadCount}], magic point: [${magicPoint}], upload speed: [${uploadSpeed}], download speed: [${downloadSpeed}]`);
   await pool.query(`
   INSERT INTO 
-    site_data(gmt_create, gmt_modify, site, uid, share_ratio, download_count, upload_count, magic_point)
-  VALUE(NOW(), NOW(), ?, ?, ?, ?, ?, ?)
-  `, [config.site, config.uid, shareRatio || 0, downloadCount || 0, uploadCount || 0, magicPoint || 0]);
+    site_data(gmt_create, gmt_modify, site, uid, share_ratio, download_count, upload_count, magic_point, upload_speed, download_speed)
+  VALUE(NOW(), NOW(), ?, ?, ?, ?, ?, ?, ?, ?)
+  `, [config.site, config.uid, shareRatio || 0, downloadCount || 0, uploadCount || 0, magicPoint || 0, uploadSpeed || 0, downloadSpeed]);
 }
