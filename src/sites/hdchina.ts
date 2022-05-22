@@ -2,6 +2,8 @@
 import * as puppeteer from 'puppeteer';
 import { TItem } from '../types';
 
+import * as utils from '../utils';
+
 import { TPageUserInfo } from "./basic";
 
 export async function getUserInfo(torrentPage: puppeteer.Page): Promise<TPageUserInfo> {
@@ -31,8 +33,10 @@ export async function getUserInfo(torrentPage: puppeteer.Page): Promise<TPageUse
   return userInfo;
 }
 
-export async function getFreeTime(el: puppeteer.ElementHandle): Promise<string> {
-  return await el.$eval('.pro_free', (el) => el.getAttribute('onmouseover'));
+export async function getFreeTime(el: puppeteer.ElementHandle): Promise<Date> {
+  const freeTimeContainer: string =  await el.$eval('.pro_free', (el) => el.getAttribute('onmouseover'));
+  const [timeString] = freeTimeContainer.match(/\d\d\d\d-\d\d-\d\d\s\d\d:\d\d:\d\d/);
+  return new Date(timeString);
 }
 
 export async function getFreeTime2up(el: puppeteer.ElementHandle): Promise<string> {
@@ -65,4 +69,10 @@ export async function getSize(el: puppeteer.ElementHandle): Promise<number> {
 
 export async function getDownloadUrl(item: TItem): Promise<string> {
   return `${item.torrentUrl}&uid=${item.uid}`;
+}
+
+export async function getDownloadHeader(): Promise<any> {
+  return {
+    ...utils.downloadHeader,
+  }
 }

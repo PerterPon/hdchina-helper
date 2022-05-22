@@ -29,6 +29,8 @@ program.parse(process.argv);
 config.setSite(program.site);
 config.setUid(program.uid);
 
+log.message(`site: [${config.site}], uid: [${config.uid}]`);
+
 config.init();
 
 let tempFolder: string = null;
@@ -39,6 +41,7 @@ async function start(): Promise<void> {
     await main();
     await startDownloader();
 
+    await puppeteer.close();
     await message.sendMessage();
     await utils.sleep(5 * 1000);
     process.exit(0);
@@ -66,11 +69,15 @@ async function main(): Promise<void> {
   await mysql.storeSiteInfo(Number(shareRatio), Number(downloadCount), Number(uploadCount), Number(magicPoint));
 
   // 3.
-  const freeItems: TItem[] = await puppeteer.filterFreeItem();
-  log.log(`got free items: [${JSON.stringify(freeItems)}]`);
-  log.message(`free item count: [${freeItems.length}]`);
-  // 4. 
-  await mysql.storeItem(freeItems);
+  const configInfo = config.getConfig();
+  const { torrentPage } = configInfo;
+  for (const pageUrl of torrentPage) {
+    const freeItems: TItem[] = await puppeteer.filterFreeItem(pageUrl);
+    log.log(`got free items: [${JSON.stringify(freeItems)}]`);
+    log.message(`free item count: [${freeItems.length}]`);
+    // 4. 
+    await mysql.storeItem(freeItems);
+  }
 }
 
 async function init(): Promise<void> {

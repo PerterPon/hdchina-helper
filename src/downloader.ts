@@ -19,8 +19,6 @@ import { siteMap } from './sites/basic';
 
 import { TItem } from './types';
 
-config.init();
-
 let tempFolder: string = null;
 
 export async function start(): Promise<void> {
@@ -112,20 +110,22 @@ async function downloadItem(items: TItem[]): Promise<TItem[]> {
     const fileName: string = path.join(tempFolder, `${site}_${id}_${uid}.torrent`);
     if (true === fs.existsSync(fileName)) {
       existsTorrentCount++;
+      downloadSuccessItems.push(item);
+      continue;
     }
 
     try {
       // not exist, download
       const downloadLink = await siteMap[config.site].getDownloadUrl(item);
-      log.log(`download link: [${downloadLink}]`);
+      
       const fileWriter = fs.createWriteStream(fileName);
+      const downloadHeader = await siteMap[config.site].getDownloadHeader();
+      log.log(`download link: [${downloadLink}], header: [${JSON.stringify(downloadHeader)}]`);
       const res: AxiosResponse = await axios({
         url: downloadLink,
         method: 'get',
         responseType: 'stream',
-        headers: {
-          ...utils.downloadHeader
-        }
+        headers: downloadHeader
       });
       await utils.writeFile(res.data, fileWriter);
       const leftTime: number = moment(freeUntil).unix() - moment().unix();
@@ -193,6 +193,9 @@ async function storeDownloadAction(transIds: {transId: string; hash: string}[], 
 
   for (let i = 0; i < transIds.length; i++) {
     const { transId, hash } = transIds[i];
+    if ('-1' === transId) {
+      continue;
+    }
     const item: TItem = items[i];
     const { site, id, uid } = item;
     await mysql.updateTorrentHashBySiteAndId(site, id, hash);

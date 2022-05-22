@@ -9,6 +9,7 @@ import * as moment from 'moment';
 import * as oss from './oss';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as mkdirp from 'mkdirp';
 
 import { TPageUserInfo } from './sites/basic';
 
@@ -26,12 +27,13 @@ export async function init(): Promise<void> {
   }
   const configInfo = config.getConfig();
   const { cookie, userDataDir } = configInfo.puppeteer;
+  await mkdirp(userDataDir);
   browser = await puppeteer.launch({
     headless: true,
     executablePath: null,
     ignoreDefaultArgs: [],
     args: [
-        // `--user-data-dir=${userDataDir}`,
+        `--user-data-dir=${userDataDir}`,
         '--no-sandbox',
         '--disable-setuid-sandbox'
     ],
@@ -44,6 +46,10 @@ export async function init(): Promise<void> {
   page = await browser.newPage();
   await page.setCookie(cookie);
   // await setCookieAndStorage();
+}
+
+export async function close(): Promise<void> {
+  await browser.close();
 }
 
 export async function setCookieAndStorage(): Promise<void> {
@@ -77,17 +83,17 @@ export async function setCookieAndStorage(): Promise<void> {
 
 export async function getUserInfo(): Promise<TPageUserInfo> {
   log.log(`[PUPPETEER] get user info`);
+  const configInfo = config.getConfig();
   if (null === torrentPage) {
-    await loadTorrentPage();
+    await loadTorrentPage(configInfo.indexPage);
   }
   return siteMap[config.site].getUserInfo(torrentPage);
 }
 
-export async function loadTorrentPage(): Promise<void> {
-  log.log(`[PUPPETEER] loadTorrentPage`);
+export async function loadTorrentPage(torrentPageUrl: string): Promise<void> {
+  log.log(`[PUPPETEER] loadTorrentPage: [${torrentPageUrl}]`);
   try {
     const configInfo = config.getConfig();
-    const { torrentPage: torrentPageUrl } = configInfo;
     const { cdnHost } = configInfo.aliOss;
     page.goto(torrentPageUrl);
     await sleep(5 * 1000);
@@ -113,7 +119,7 @@ export async function loadTorrentPage(): Promise<void> {
   }
 }
 
-export async function filterFreeItem(retryTime: number = 0): Promise<TItem[]> {
+export async function filterFreeItem(torrentPageUrl: string, retryTime: number = 0): Promise<TItem[]> {
   log.log(`[Puppeteer] filterFreeItem with time: [${retryTime}]`);
   const freeItems: TItem[] = [];
   const configInfo = config.getConfig();
@@ -122,10 +128,10 @@ export async function filterFreeItem(retryTime: number = 0): Promise<TItem[]> {
   if (retryTime >= globalRetryTime) {
     return [];
   }
-  retryTime++;
-  if (null === torrentPage) {
-    await loadTorrentPage();
+  if (null === torrentPage || 0 === retryTime) {
+    await loadTorrentPage(torrentPageUrl);
   }
+  retryTime++;
 
   let torrentItems: puppeteer.ElementHandle<HTMLTableRowElement>[] = [];
   let freeTarget: puppeteer.ElementHandle<HTMLTableRowElement>[] = [];
@@ -161,22 +167,20 @@ export async function filterFreeItem(retryTime: number = 0): Promise<TItem[]> {
     if( null === freeItem || null !== progressArea ) {
       continue;
     }
-    let freeTimeContainer: string = '';
+    let freeTime: Date = null;
     try {
-      freeTimeContainer = await currentSite.getFreeTime(item);
+      freeTime = await currentSite.getFreeTime(item);
     } catch (e) {}
     try {
-      if ('' === freeTimeContainer) {
-        freeTimeContainer = await currentSite.getFreeTime2up(item);
+      if (null === freeTime) {
+        freeTime = await currentSite.getFreeTime2up(item);
       }
     } catch (e) {}
 
-    const [ freeTimeString ] = freeTimeContainer.match(/\d\d\d\d-\d\d-\d\d\s\d\d:\d\d:\d\d/);
-    const freeTime: Date = new Date(freeTimeString);
     let torrentUrl: string = await item.$eval(siteAnchor.torrentUrlAnchor, (el) => (el.parentNode as HTMLAnchorElement).getAttribute('href'))
     torrentUrl = `${configInfo.domain}/${torrentUrl}`;
 
-    const id: string = await currentSite.getSiteId(item);
+    const id: string = await currentSite.getSiteId(item, torrentUrl);
     const title: string = await currentSite.getTitle(item);
     const size: number = await currentSite.getSize(item);
 
@@ -194,8 +198,7 @@ export async function filterFreeItem(retryTime: number = 0): Promise<TItem[]> {
   if (0 === freeItems.length && 0 === freeTarget.length) {
     await sleep(5 * 1000);
     torrentPage = null;
-    return filterFreeItem(retryTime);
+    return filterFreeItem(torrentPageUrl, retryTime);
   }
-  await browser.close();
   return freeItems;
 }

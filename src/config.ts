@@ -18,6 +18,7 @@ export async function init(env?: string): Promise<TTBSConfig> {
     if (null !== config) {
         return config;
     }
+    console.log(site, uid);
     const etcPath: string = getEtcFolderPath();
     const defaultFilePath: string = path.join(etcPath, '/default.yaml');
     const defaultFileContent: string = fs.readFileSync(defaultFilePath, 'utf-8');
@@ -33,7 +34,6 @@ export async function init(env?: string): Promise<TTBSConfig> {
         listenConfig = defaultConfig;
     }
 
-    
     const { sites } = listenConfig;
     for (const siteName of sites) {
         const siteConfig = listenConfig[siteName];
