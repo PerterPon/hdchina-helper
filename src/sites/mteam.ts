@@ -35,11 +35,20 @@ export async function getUserInfo(torrentPage: puppeteer.Page): Promise<TPageUse
 
 export async function getFreeTime(el: puppeteer.ElementHandle): Promise<Date> {
   const freeTimeContainer: string = await el.$eval('.pro_free', (el) => el.parentElement.textContent);
-  const [pattern, day] = freeTimeContainer.match(/限時：(\d.*)日/);
-  const [pattern2, hour] = freeTimeContainer.match(/(\d.*)時/);
+  const [pattern, day] = freeTimeContainer.match(/限時：(\d.*)日/) || [];
+  let [pattern2, hour] = freeTimeContainer.match(/日(\d.*)時/) || [];
+  if (undefined === hour) {
+    [pattern2, hour] = freeTimeContainer.match(/限時：(\d.*)時/) || [];
+  }
+  const [pattern3, min] = freeTimeContainer.match(/時(\d.*)分/) || [];
   const now: moment.Moment = moment();
-  now.add(day || 0, 'day');
-  now.add(hour, 'hour');
+  if (undefined === day && undefined == hour && undefined === min) {
+    now.add(10, 'day');
+  } else {
+    now.add(day || 0, 'day');
+    now.add(hour || 0, 'hour');
+    now.add(min || 0, 'minute');
+  }
   return now.toDate();
 }
 

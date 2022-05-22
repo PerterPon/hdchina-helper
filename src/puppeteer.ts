@@ -170,12 +170,16 @@ export async function filterFreeItem(torrentPageUrl: string, retryTime: number =
     let freeTime: Date = null;
     try {
       freeTime = await currentSite.getFreeTime(item);
-    } catch (e) {}
+    } catch (e) {
+      log.log(e.message, e.stack);
+    }
     try {
       if (null === freeTime) {
         freeTime = await currentSite.getFreeTime2up(item);
       }
-    } catch (e) {}
+    } catch (e) {
+      log.log(e.message, e.stack);
+    }
 
     let torrentUrl: string = await item.$eval(siteAnchor.torrentUrlAnchor, (el) => (el.parentNode as HTMLAnchorElement).getAttribute('href'))
     torrentUrl = `${configInfo.domain}/${torrentUrl}`;
