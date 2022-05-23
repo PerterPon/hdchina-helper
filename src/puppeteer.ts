@@ -14,6 +14,7 @@ import * as mkdirp from 'mkdirp';
 import { TPageUserInfo } from './sites/basic';
 
 import { siteMap } from './sites/basic';
+import { TPTUserInfo, getUserInfo as getPTUserInfo } from './mysql';
 
 let browser: puppeteer.Browser = null;
 let page: puppeteer.Page = null;
@@ -44,12 +45,33 @@ export async function init(): Promise<void> {
   });
 
   page = await browser.newPage();
-  await page.setCookie(cookie);
-  // await setCookieAndStorage();
+  await setCookie(page);
+
 }
 
 export async function close(): Promise<void> {
   await browser.close();
+}
+
+export async function setCookie(currentPage: puppeteer.Page): Promise<void> {
+  log.log(`[PUPPETEER] setCookie`);
+
+  const configInfo = config.getConfig();
+  const userInfo: TPTUserInfo = await getPTUserInfo(config.nickname, config.site);
+  const { cookie } = userInfo;
+  const cookieItems: string[] = cookie.split(';');
+  const cookies: puppeteer.SetCookie[] = [];
+  const { domain } = configInfo.puppeteer.cookie;
+  for (const item of cookieItems) {
+    const [name, value] = item.split('=');
+    cookies.push({
+      name: name.trim(),
+      value: value.trim(),
+      domain: domain
+    });
+  }
+
+  await page.setCookie(...cookies);
 }
 
 export async function setCookieAndStorage(): Promise<void> {
@@ -138,7 +160,7 @@ export async function filterFreeItem(torrentPageUrl: string, retryTime: number =
   
   const { siteAnchor } = configInfo;
 
-  try {    
+  try {
     await torrentPage.waitForSelector(siteAnchor.torrentItemWaiter, {
       timeout: 10 * 1000
     });

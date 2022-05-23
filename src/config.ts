@@ -61,6 +61,7 @@ export function getConfig(): TTBSConfig {
 
 export let site: string = 'hdchina';
 export let uid: string = '325966';
+export let nickname: string = 'perterpon';
 
 export function setSite(siteValue): void {
     site = siteValue || site;
@@ -68,4 +69,8 @@ export function setSite(siteValue): void {
 
 export function setUid(uidValue): void {
     uid = uidValue || uid;
+}
+
+export function setNick(nicknameValue): void {
+    nickname = nicknameValue || nickname;
 }

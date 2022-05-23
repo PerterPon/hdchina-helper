@@ -7,6 +7,16 @@ import * as log from './log';
 
 export let pool: mysql.Pool = null;
 
+export interface TPTUserInfo {
+  nickname: string;
+  uploadCount: number;
+  paid: number;
+  site: string;
+  cookie: string;
+  uid: string;
+  cycleTime: number;
+}
+
 export async function init(): Promise<void> {
   if (null !== pool) {
     return;
@@ -173,4 +183,25 @@ export async function storeSiteInfo(
     site_data(gmt_create, gmt_modify, site, uid, share_ratio, download_count, upload_count, magic_point, upload_speed, download_speed)
   VALUE(NOW(), NOW(), ?, ?, ?, ?, ?, ?, ?, ?)
   `, [config.site, config.uid, shareRatio || 0, downloadCount || 0, uploadCount || 0, magicPoint || 0, uploadSpeed || 0, downloadSpeed]);
+}
+
+export async function getUserInfo(nickname: string, site: string): Promise<TPTUserInfo> {
+  const [res]: any = await pool.query(`
+  SELECT 
+    *
+  FROM
+    users
+  WHERE
+    nickname = ? AND
+    site = ?;
+  `);
+  if (0 === res.length) {
+    return null;
+  }
+  const { cookie, uid, uploadCount, paid, cycle_time } = res[0];
+  const userInfo: TPTUserInfo = { 
+    cookie, site, uid, uploadCount, paid, nickname,
+    cycleTime: cycle_time
+  };
+  return userInfo;
 }

@@ -24,13 +24,15 @@ const program = new Command();
 program
   .option('-s, --site <char>', 'separator character')
   .option('-u, --uid <char>', 'separator character')
-  .option('-e, --env <char>', 'separator character');
+  .option('-e, --env <char>', 'separator character')
+  .option('-n, --nickname <char>', 'separator character');
 
 program.parse(process.argv);
 config.setSite(program.site);
 config.setUid(program.uid);
+config.setNick(program.nickname);
 
-log.message(`site: [${config.site}], uid: [${config.uid}]`);
+log.message(`site: [${config.site}], uid: [${config.uid}], nickname: [${config.nickname}]`);
 
 config.init();
 

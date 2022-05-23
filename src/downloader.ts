@@ -98,7 +98,7 @@ async function downloadItem(items: TItem[]): Promise<TItem[]> {
     items = items.splice(0, 5);
   }
   const configInfo = config.getConfig();
-  const { downloadUrl, uid,  } = configInfo;
+  const { downloadUrl,  } = configInfo;
   let downloadCount: number = 0;
   let existsTorrentCount: number = 0;
   let downloadErrorCount: number = 0;
@@ -106,7 +106,7 @@ async function downloadItem(items: TItem[]): Promise<TItem[]> {
   for (const item of items) {
     await utils.sleep(2 * 1000);
     const { site, title, id, size, freeUntil, torrentUrl } = item;
-    const fileName: string = path.join(tempFolder, `${site}_${id}_${uid}.torrent`);
+    const fileName: string = path.join(tempFolder, `${site}_${id}_${config.uid}.torrent`);
     if (true === fs.existsSync(fileName)) {
       existsTorrentCount++;
       downloadSuccessItems.push(item);
@@ -147,11 +147,10 @@ async function downloadItem(items: TItem[]): Promise<TItem[]> {
 async function uploadItem(items: TItem[]): Promise<void> {
   log.log(`upload items: [${JSON.stringify(items)}]`);
   const configInfo = config.getConfig();
-  const { uid } = configInfo;
   for (const item of items) {
     const { site, id } = item;
-    const fileName: string = `${uid}/${site}_${id}.torrent`;
-    const filePath: string = path.join(tempFolder, `${site}_${id}_${uid}.torrent`);
+    const fileName: string = `${config.uid}/${site}_${id}.torrent`;
+    const filePath: string = path.join(tempFolder, `${site}_${id}_${config.uid}.torrent`);
     await oss.uploadTorrent(fileName, filePath);
   }
 }
@@ -161,7 +160,6 @@ async function addItemToTransmission(items: TItem[]): Promise<{transId: string; 
   const transIds: {transId: string; hash: string;}[] = [];
   const configInfo = config.getConfig();
   const { cdnHost } = configInfo.aliOss;
-  const { uid } = configInfo;
   let errorCount: number = 0;
   for (const item of items) {
     const { site, uid, id, title } = item;
