@@ -194,7 +194,7 @@ export async function getUserInfo(nickname: string, site: string): Promise<TPTUs
   WHERE
     nickname = ? AND
     site = ?;
-  `);
+  `, [nickname, site]);
   if (0 === res.length) {
     return null;
   }
