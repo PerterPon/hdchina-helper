@@ -56,8 +56,8 @@ export function getConfig(): TTBSConfig {
     return config[site];
 }
 
-export let site: string = 'hdchina';
-export let uid: string = '325966';
+export let site: string = 'mteam';
+export let uid: string = '269651';
 
 export function setSite(siteValue): void {
     site = siteValue || site;
