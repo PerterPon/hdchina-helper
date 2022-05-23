@@ -153,7 +153,8 @@ async function downloadItem(items: TItem[]): Promise<TItem[]> {
         responseType: 'stream',
         headers: {
           ...utils.downloadHeader
-        }
+        },
+        timeout: 600000
       });
       await utils.writeFile(res.data, fileWriter);
       log.log(`download torrent: [${fileName}], size: [${filesize(size)}]]`);
