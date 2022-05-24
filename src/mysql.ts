@@ -15,6 +15,7 @@ export interface TPTUserInfo {
   cookie: string;
   uid: string;
   cycleTime: number;
+  vip: boolean;
 }
 
 export async function init(): Promise<void> {
@@ -198,10 +199,11 @@ export async function getUserInfo(nickname: string, site: string): Promise<TPTUs
   if (0 === res.length) {
     return null;
   }
-  const { cookie, uid, uploadCount, paid, cycle_time } = res[0];
+  const { cookie, uid, vip, uploadCount, paid, cycle_time } = res[0];
   const userInfo: TPTUserInfo = { 
     cookie, site, uid, uploadCount, paid, nickname,
-    cycleTime: cycle_time
+    cycleTime: cycle_time,
+    vip: Boolean(vip)
   };
   return userInfo;
 }

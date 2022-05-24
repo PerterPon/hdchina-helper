@@ -78,8 +78,14 @@ async function main(): Promise<void> {
   // 3.
   const configInfo = config.getConfig();
   const { torrentPage } = configInfo;
+  const ptUserInfo: mysql.TPTUserInfo = await mysql.getUserInfo(config.nickname, config.site);
   for (const pageUrl of torrentPage) {
-    const freeItems: TItem[] = await puppeteer.filterFreeItem(pageUrl);
+    let freeItems: TItem[] = [];
+    if (true === ptUserInfo.vip) {
+      freeItems = await puppeteer.filterVIPItem(pageUrl);
+    } else {
+      await puppeteer.filterFreeItem(pageUrl);
+    }
     log.log(`got free items: [${JSON.stringify(freeItems)}]`);
     log.message(`free item count: [${freeItems.length}]`);
     // 4. 

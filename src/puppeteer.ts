@@ -141,6 +141,50 @@ export async function loadTorrentPage(torrentPageUrl: string): Promise<void> {
   }
 }
 
+export async function filterVIPItem(torrentPageUrl: string): Promise<TItem[]> {
+  log.log(`[PUPPETEER] filterVIPItem with url: [${torrentPageUrl}]`);
+  const freeItems: TItem[] = [];
+  const configInfo = config.getConfig();
+  const currentSite = siteMap[config.site];
+  if (null === torrentPage) {
+    await loadTorrentPage(torrentPageUrl);
+  }
+
+  let torrentItems: puppeteer.ElementHandle<HTMLTableRowElement>[] = [];
+
+  const { siteAnchor } = configInfo;
+
+  try {
+    await torrentPage.waitForSelector(siteAnchor.torrentItemWaiter, {
+      timeout: 10 * 1000
+    });
+    torrentItems = await torrentPage.$$(siteAnchor.torrentItem);
+  } catch (e) {
+    log.log(`[Puppeteer] failed to launch page with error: [${e.message}], wait for retry`);
+  }
+
+  for(const item of torrentItems) {
+    let freeTime: Date = new Date('2030-01-01');
+
+    let torrentUrl: string = await item.$eval(siteAnchor.torrentUrlAnchor, (el) => (el.parentNode as HTMLAnchorElement).getAttribute('href'))
+    torrentUrl = `${configInfo.domain}/${torrentUrl}`;
+
+    const id: string = await currentSite.getSiteId(item, torrentUrl);
+    const title: string = await currentSite.getTitle(item);
+    const size: number = await currentSite.getSize(item);
+
+    freeItems.push({
+      id, title, size,
+      freeUntil: freeTime,
+      free: true,
+      uid: config.uid,
+      torrentUrl: torrentUrl,
+      site: config.site
+    });
+  }
+  return freeItems;
+}
+
 export async function filterFreeItem(torrentPageUrl: string, retryTime: number = 0): Promise<TItem[]> {
   log.log(`[Puppeteer] filterFreeItem with time: [${retryTime}]`);
   const freeItems: TItem[] = [];
@@ -224,7 +268,7 @@ export async function filterFreeItem(torrentPageUrl: string, retryTime: number =
   if (0 === freeItems.length && 0 === freeTarget.length) {
     await sleep(5 * 1000);
     torrentPage = null;
-    return filterFreeItem(torrentPageUrl, retryTime);
+    return filterFreeItem(torrentPageUrl, isVip, retryTime);
   }
   return freeItems;
 }
