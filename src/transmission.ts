@@ -113,6 +113,7 @@ export async function getAllItems(serverId: number = -1): Promise<TTransItem[]> 
 }
 
 async function getServerItems(serverId: number, type: 'all'|'active'): Promise<TTransItem[]> {
+  log.log(`[Transmission] getServerItems serverId: [${serverId}], type: [${type}]`);
   const downloadingItems: TTransItem[] = [];
     
   const server = getServer(serverId);

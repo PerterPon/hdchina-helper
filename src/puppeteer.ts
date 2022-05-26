@@ -186,6 +186,7 @@ export async function filterVIPItem(torrentPageUrl: string): Promise<TItem[]> {
   }
 
   const stickyItems: TItem[] = [];
+  torrentItems = torrentItems.slice(1);
   for(const item of torrentItems) {
 
     let freeTime: Date = new Date('2030-01-01');
