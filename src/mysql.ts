@@ -210,13 +210,14 @@ export async function getUserInfoByUid(uid: string): Promise<TPTUserInfo> {
   if (0 === res.length) {
     return null;
   }
-  const { cookie, vip, uploadCount, site, nickname, paid, bind_server, cycle_time, rss_passkey } = res[0];
+  const { cookie, vip, uploadCount, site, nickname, paid, bind_server, cycle_time, rss_passkey, user_data_dir } = res[0];
   const userInfo: TPTUserInfo = { 
     cookie, site, uid, uploadCount, paid, nickname,
     cycleTime: cycle_time,
     vip: Boolean(vip),
     serverIds: bind_server,
-    passkey: rss_passkey
+    passkey: rss_passkey,
+    userDataDir: user_data_dir
   };
   return userInfo;
 }
@@ -234,13 +235,14 @@ export async function getUserInfo(nickname: string, site: string): Promise<TPTUs
   if (0 === res.length) {
     return null;
   }
-  const { cookie, uid, vip, bind_server, uploadCount, paid, cycle_time, rss_passkey } = res[0];
+  const { cookie, uid, vip, bind_server, uploadCount, paid, cycle_time, rss_passkey, user_data_dir } = res[0];
   const userInfo: TPTUserInfo = { 
     cookie, site, uid, uploadCount, paid, nickname,
     cycleTime: cycle_time,
     vip: Boolean(vip),
     serverIds: bind_server,
-    passkey: rss_passkey
+    passkey: rss_passkey,
+    userDataDir: user_data_dir
   };
   return userInfo;
 }

@@ -6,6 +6,7 @@ import { sleep } from './utils';
 import * as log from './log';
 import * as oss from './oss';
 import * as utils from './utils';
+import * as mysql from './mysql';
 
 import * as fs from 'fs-extra';
 import * as path from 'path';
@@ -29,15 +30,14 @@ export async function init(): Promise<void> {
   if (browser !== null) {
     return;
   }
-  const configInfo = config.getConfig();
-  const { userDataDir } = configInfo.puppeteer;
-  await mkdirp(userDataDir);
+  const userInfo: TPTUserInfo = await mysql.getUserInfoByUid(config.uid);
+  await mkdirp(userInfo.userDataDir);
   browser = await puppeteer.launch({
     headless: true,
     executablePath: null,
     ignoreDefaultArgs: [],
     args: [
-        `--user-data-dir=${userDataDir}`,
+        `--user-data-dir=${userInfo.userDataDir}`,
         '--no-sandbox',
         '--disable-setuid-sandbox'
     ],
@@ -100,7 +100,9 @@ export async function setCookie(currentPage: puppeteer.Page): Promise<void> {
 export async function setCookieAndStorage(currentPage: puppeteer.Page): Promise<void> {
   log.log(`[PUPPETEER] setCookieAndStorage`);
   const configInfo = config.getConfig();
-  const { userDataDir, cookie } = configInfo.puppeteer;
+  const { cookie } = configInfo.puppeteer;
+  const userInfo: TPTUserInfo = await mysql.getUserInfoByUid(config.uid);
+  const { userDataDir } = userInfo;
   const cookieFile: string = path.join(userDataDir, cookieFileName);
   const storageFile: string = path.join(userDataDir, storageFileName);
   if (true === fs.existsSync(cookieFile)) {
@@ -147,7 +149,8 @@ export async function loadTorrentPage(torrentPageUrl: string): Promise<void> {
       timeout: 15 * 1000
     });
     const { cookies } = await (page as any)._client.send('Network.getAllCookies') || {};
-    const { userDataDir } = configInfo.puppeteer;
+    const userInfo: TPTUserInfo = await mysql.getUserInfoByUid(config.uid);
+    const { userDataDir } = userInfo;
     const cookieFile: string = path.join(userDataDir, cookieFileName);
     fs.writeFileSync(cookieFile, JSON.stringify(cookies));
 

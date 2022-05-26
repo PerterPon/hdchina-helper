@@ -24,6 +24,7 @@ export interface TPTUserInfo {
   vip: boolean;
   serverIds: number[];
   passkey: string;
+  userDataDir: string;
 }
 
 export interface TPTServer {
