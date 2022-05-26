@@ -13,6 +13,8 @@ import * as path from 'path';
 import * as filesize from 'filesize';
 import { mkdirpSync } from 'fs-extra';
 import { Command } from 'commander';
+import * as moment from 'moment-timezone';
+
 import { TPageUserInfo } from './sites/basic';
 
 import { TItem, TPTUserInfo } from './types';
@@ -29,7 +31,7 @@ program.parse(process.argv);
 config.setSite(program.site);
 config.setNick(program.nickname);
 
-log.message(`nickname: [${config.nickname}] site: [${config.site}], uid: [${config.uid}]`);
+log.message(`[${utils.displayTime()}] nickname: [${config.nickname}] site: [${config.site}], uid: [${config.uid}]`);
 
 config.init();
 
@@ -99,6 +101,7 @@ async function init(): Promise<void> {
   await config.init();
   await mysql.init();
   const ptUserInfo: TPTUserInfo = await mysql.getUserInfo(config.nickname, config.site);
+  console.log(ptUserInfo);
   config.setUid(ptUserInfo.uid);
   config.setVip(ptUserInfo.vip);
   await transmission.init(ptUserInfo.uid);

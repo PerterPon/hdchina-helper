@@ -1,10 +1,14 @@
 
-import * as moment from 'moment';
-import * as config from './config';
+import * as moment from 'moment-timezone';
+import * as puppeteer from 'puppeteer';
 import axios, { AxiosResponse } from 'axios';
 import * as fs from 'fs';
 import * as qs from 'qs';
+
+import * as config from './config';
 import * as log from './log';
+import { TPTUserInfo } from './types';
+import * as mysql from './mysql';
 
 let currentCsrfToken: string = null;
 let currentPhpSessionId: string = null;
@@ -16,7 +20,7 @@ export function sleep(time: number): Promise<void> {
 }
 
 export function displayTime(): string {
-  return moment().format('YYYY-MM-DD HH:mm:SS');
+  return moment().tz('Asia/Shanghai').format('YYYY-MM-DD_HH:mm:SS');
 }
 
 export async function fetchCsrfTokenAndPHPSessionId(): Promise<{csrfToken: string; phpSessionId: string;}> {
@@ -84,6 +88,24 @@ export function randomInt(input: number): number {
   return Math.round(
     Math.random() * input
   );
+}
+
+export async function getUserCookie(uid): Promise<puppeteer.SetCookie[]> {
+  const configInfo = config.getConfig();
+  const userInfo: TPTUserInfo = await mysql.getUserInfoByUid(uid);
+  const { cookie } = userInfo;
+  const cookieItems: string[] = cookie.split(';');
+  const cookies: puppeteer.SetCookie[] = [];
+  const { domain } = configInfo.puppeteer.cookie;
+  for (const item of cookieItems) {
+    const [name, value] = item.split('=');
+    cookies.push({
+      name: name.trim(),
+      value: value.trim(),
+      domain: domain
+    });
+  }
+  return cookies;
 }
 
 

@@ -8,7 +8,7 @@ import * as message from './message';
 import axios, { AxiosResponse } from 'axios';
 import * as _ from 'lodash';
 import { parse as parseUrl, UrlWithParsedQuery } from 'url';
-import * as fs from 'fs';
+import * as fs from 'fs-extra';
 import * as path from 'path';
 import * as filesize from 'filesize';
 import * as moment from 'moment';
@@ -16,6 +16,7 @@ import * as mysql from './mysql';
 import { mkdirpSync } from 'fs-extra';
 import * as log from './log';
 import { siteMap } from './sites/basic';
+import * as puppeteer from './puppeteer';
 
 import { TItem, TPTServer, TPTUserInfo } from './types';
 
@@ -98,17 +99,17 @@ async function downloadItem(items: TItem[]): Promise<TItem[]> {
     log.message(`target download items: [${items.length}], reduce to [${5}]`);
     items = items.splice(0, 5);
   }
-  const configInfo = config.getConfig();
-  const { downloadUrl,  } = configInfo;
   let downloadCount: number = 0;
   let existsTorrentCount: number = 0;
   let downloadErrorCount: number = 0;
   const downloadSuccessItems: TItem[] = [];
+  const userInfo: TPTUserInfo = await mysql.getUserInfoByUid(config.uid);
   for (const item of items) {
     await utils.sleep(2 * 1000);
     const { site, title, id, size, freeUntil, torrentUrl } = item;
-    const fileName: string = path.join(tempFolder, `${site}_${id}_${config.uid}.torrent`);
-    if (true === fs.existsSync(fileName)) {
+    const fileFullName: string = path.join(tempFolder, `${site}_${id}_${config.uid}.torrent`);
+    const fileName: string = `${site}_${id}_${config.uid}.torrent`;
+    if (true === fs.existsSync(fileFullName)) {
       existsTorrentCount++;
       downloadSuccessItems.push(item);
       continue;
@@ -117,24 +118,22 @@ async function downloadItem(items: TItem[]): Promise<TItem[]> {
     try {
       // not exist, download
       const downloadLink = await siteMap[config.site].getDownloadUrl(item);
-      
-      const fileWriter = fs.createWriteStream(fileName);
+
+      const fileWriter = fs.createWriteStream(fileFullName);
       const downloadHeader = await siteMap[config.site].getDownloadHeader();
       log.log(`download link: [${downloadLink}], header: [${JSON.stringify(downloadHeader)}]`);
-      const res: AxiosResponse = await axios({
-        url: downloadLink,
-        method: 'get',
-        responseType: 'stream',
-        headers: downloadHeader
+      const res: AxiosResponse = await axios.get(`${downloadLink}&passkey=${userInfo.passkey}`, {
+        responseType: 'stream'
       });
       await utils.writeFile(res.data, fileWriter);
       const leftTime: number = moment(freeUntil).unix() - moment().unix();
-      log.log(`download torrent: [${fileName}], size: [${filesize(size)}], free time: [${moment(freeUntil).diff(moment(), 'hours')} H]`);
+      log.log(`download torrent: [${fileFullName}], size: [${filesize(size)}], free time: [${moment(freeUntil).diff(moment(), 'hours')} H]`);
       downloadCount++;
       downloadSuccessItems.push(item);
     } catch (e) {
       downloadErrorCount++;
-      console.error(`[ERROR]download file: [${fileName}] with error: [${e.message}]`);
+      console.error(`[ERROR]download file: [${fileFullName}] with error: [${e.message}]`);
+      fs.removeSync(fileFullName);
     }
   }
   if (0 < downloadCount) {
@@ -147,6 +146,7 @@ async function downloadItem(items: TItem[]): Promise<TItem[]> {
 
 async function uploadItem(items: TItem[]): Promise<void> {
   log.log(`upload items: [${JSON.stringify(items)}]`);
+  const configInfo = config.getConfig();
   for (const item of items) {
     const { site, id } = item;
     const fileName: string = `${config.uid}/${site}_${id}.torrent`;
@@ -224,7 +224,8 @@ async function getDownloadingItems(): Promise<TItem[]> {
   log.log(`getDownloadingItems`);
   const downloadingTransItems: transmission.TTransItem[] = await transmission.getDownloadingItems();
   const downloadingHash: string[] = [];
-  const configInfo = config.getConfig();
+
+
   for (const item of downloadingTransItems) {
     const { hash, downloadDir } = item;
     const server: TPTServer = transmission.serverConfigMap.get(item.serverId);
@@ -286,6 +287,7 @@ async function reduceLeftSpace(): Promise<void> {
 
 async function doReduceLeftSpace(serverId: number): Promise<void> {
   log.log(`doReduceLeftSpace server: [${serverId}]`);
+  // let freeSpace: {serverId: number; size: number}[] = await transmission.freeSpace(serverId);
   const serverInfo: TPTServer = transmission.serverConfigMap.get(serverId);
   if (undefined === serverInfo) {
     throw new Error(`[Downloader] reduce left space with error: [${serverId}]`);

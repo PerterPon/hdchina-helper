@@ -5,6 +5,7 @@ export interface TItem {
   site: string;
   free?: boolean;
   freeUntil?: Date;
+  publishDate: Date;
   size: number;
   title: string;
   torrentUrl: string;
@@ -22,6 +23,7 @@ export interface TPTUserInfo {
   cycleTime: number;
   vip: boolean;
   serverIds: number[];
+  passkey: string;
 }
 
 export interface TPTServer {
@@ -32,10 +34,20 @@ export interface TPTServer {
   password: string;
   type: string;
   box: boolean;
+  oriFileDownloadPath: string;
   fileDownloadPath: string;
   minSpaceLeft: number;
   minStayFileSize: number;
   downloadSpeed?: number;
   uploadSpeed?: number;
   activeNumber?: number;
+}
+
+export interface TTransmission {
+  get(...params: any[]): Promise<any>;
+  active(...params: any[]): Promise<any>;
+  addUrl(...params: any[]): Promise<any>;
+  sessionStats(...params: any[]): Promise<any>;
+  freeSpace(...params: any[]): Promise<any>;
+  remove(...params: any[]): Promise<any>;
 }

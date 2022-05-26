@@ -7,9 +7,7 @@ import * as log from './log';
 import * as filesize from 'filesize';
 import * as mysql from './mysql';
 
-import { getServers } from './mysql';
-
-import { TPTServer } from './types';
+import { TPTServer, TTransmission } from './types';
 
 export interface TTransItem {
   id: number;
@@ -25,7 +23,7 @@ export interface TTransItem {
 
 export let servers: TPTServer[] = [];
 export const serverConfigMap: Map<number, TPTServer> = new Map();
-const serverMap: Map<number, any> = new Map();
+const serverMap: Map<number, TTransmission> = new Map();
 
 export async function init(uid: string): Promise<void> {
   if (servers.length > 0) {
@@ -48,6 +46,7 @@ async function initServerInfo(uid: string): Promise<void> {
 
 async function initServer(): Promise<void> {
   log.log(`[Transmission] initServer`);
+  let downloadingServer: string[] = [];
   for (const server of servers) {
     const { id, ip, port, username, password, box } = server;
 
@@ -64,11 +63,15 @@ async function initServer(): Promise<void> {
       }
     }
 
+    serverMap.set(id, transmissionClient);
+
     const activeItem = await getServerItems(id, 'active');
     server.activeNumber = activeItem.length;
-    serverMap.set(id, transmissionClient);
+    downloadingServer.push(server.ip);
     log.log(`[Transmission] init server: [${id}], active number: [${server.activeNumber}]`);
   }
+
+  log.message(`downloading server: [${downloadingServer}]`);
 }
 
 export async function getDownloadingItems(serverId: number = -1): Promise<TTransItem[]> {
@@ -112,10 +115,7 @@ export async function getAllItems(serverId: number = -1): Promise<TTransItem[]> 
 async function getServerItems(serverId: number, type: 'all'|'active'): Promise<TTransItem[]> {
   const downloadingItems: TTransItem[] = [];
     
-  const server = serverMap.get(serverId);
-  if (undefined === server) {
-    return [];
-  }
+  const server = getServer(serverId);
   let data = {
     torrents: []
   };
@@ -143,10 +143,11 @@ export async function removeItem(id: number, serverId: number): Promise<void> {
 }
 
 export async function addUrl(url: string, serverId: number): Promise<{transId: string; hash: string; serverId: number;}> {
-  log.log(`[Transmission] add url: [${url}]`);
   const server = getServer(serverId);
+  const serverConfig = getServerConfig(serverId);
+  log.log(`[Transmission] add url: [${url}], server id: [${serverId}], download dir: [${serverConfig.fileDownloadPath}]`);
   const res = await server.addUrl(url, {
-    'download-dir': server.fileDownloadPath
+    'download-dir': serverConfig.fileDownloadPath
   });
   log.log(`[Transmission] add url with result: [${JSON.stringify(res)}]`);
   const { id, hashString } = res;
@@ -171,17 +172,14 @@ export async function freeSpace(serverId: number = -1): Promise<{serverId: numbe
   }
 
   async function getFreeSpace(serverId: number): Promise<{serverId: number; size: number}[]> {
-    log.log(`[Transmission] getFreeSpace server id: [${serverId}]`);
-    const serverInfo: TPTServer = await serverConfigMap.get(serverId);
-    const serverClient = await serverMap.get(serverId);
-    if (undefined === serverInfo || undefined === serverClient) {
-      log.log(`[WARN] [Transmission] trying to get free space but something is wrong, server Info: [${JSON.stringify(serverInfo)}], server client: [${serverClient}]`);
-      return [];
-    }
-    const { fileDownloadPath } = serverInfo;
-    const res = await serverClient.freeSpace(fileDownloadPath);
+    const serverInfo: TPTServer = getServerConfig(serverId);
+    const { oriFileDownloadPath } = serverInfo;
+    log.log(`[Transmission] getFreeSpace server id: [${serverId}], fileDownloadPath: [${oriFileDownloadPath}]`);
+
+    const serverClient = getServer(serverId);
+    const res = await serverClient.freeSpace(oriFileDownloadPath);
     log.message(`left space total: [${filesize(res['size-bytes'])}]`);
-    log.log(`[Transmission] free space: [${fileDownloadPath}], total: [${filesize(res['size-bytes'])}]`);
+    log.log(`[Transmission] free space: [${oriFileDownloadPath}], total: [${filesize(res['size-bytes'])}]`);
     return [{
       serverId,
       size: res['size-bytes']
@@ -240,7 +238,7 @@ export async function canAddServers(vip: boolean): Promise<number[]> {
   return canAddServerIds;
 }
 
-function getServer(serverId: number): any {
+function getServer(serverId: number): TTransmission {
   const server = serverMap.get(serverId);
   if (undefined === server) {
     throw new Error(`trying to get server with server id: [${serverId}], but server not found!`);
@@ -248,5 +246,12 @@ function getServer(serverId: number): any {
   return server;
 }
 
+function getServerConfig(serverId: number): TPTServer {
+  const server = serverConfigMap.get(serverId);
+  if (undefined === server) {
+    throw new Error(`trying to get server config with server id: [${serverId}], but server not found!`);
+  }
+  return server;
+}
 
 export const status: any = {};

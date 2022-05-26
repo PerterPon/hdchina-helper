@@ -4,11 +4,14 @@ import { TItem, TPTUserInfo } from './types';
 import * as config from './config';
 import { sleep } from './utils';
 import * as log from './log';
-import * as moment from 'moment';
 import * as oss from './oss';
-import * as fs from 'fs';
+import * as utils from './utils';
+
+import * as fs from 'fs-extra';
 import * as path from 'path';
 import * as mkdirp from 'mkdirp';
+import * as _ from 'lodash';
+import * as filesize from 'filesize';
 
 import { TPageUserInfo } from './sites/basic';
 
@@ -27,7 +30,7 @@ export async function init(): Promise<void> {
     return;
   }
   const configInfo = config.getConfig();
-  const { cookie, userDataDir } = configInfo.puppeteer;
+  const { userDataDir } = configInfo.puppeteer;
   await mkdirp(userDataDir);
   browser = await puppeteer.launch({
     headless: true,
@@ -49,14 +52,21 @@ export async function init(): Promise<void> {
 export async function loadPage(url: string, force: boolean = false): Promise<puppeteer.Page> {
   log.log(`[Puppeteer] loadPage url: [${url}], force: [${force}]`);
   let page: puppeteer.Page = pageMap.get(url);
+  const configInfo = config.getConfig();
   if (undefined === page || true === force) {
     log.log(`[Puppeteer] force lode page url: [${url}], force: [${force}]`);
 
     page = await browser.newPage();
     await setCookie(page);
     pageMap.set(url, page);
-    console.log('======', url);
-    await page.goto(url);
+    page.goto(url, {
+      timeout: 600 * 1000
+    }).catch((e) => {
+      log.log(e);
+    });
+    await page.waitForSelector(configInfo.siteAnchor.pageWaiter, {
+      timeout: 60 * 1000
+    });
     await sleep(5 * 1000);
   }
   return page;
@@ -130,7 +140,7 @@ export async function loadTorrentPage(torrentPageUrl: string): Promise<void> {
     const { cdnHost } = configInfo.aliOss;
     const page = await loadPage(torrentPageUrl);
     const screenShot: Buffer = await page.screenshot() as unknown as Buffer;
-    const screenShotName: string = `${config.site}_${config.uid}_${moment().format('YYYY-MM-DD_HH:mm:ss')}.png`;
+    const screenShotName: string = `${config.site}_${config.uid}_${utils.displayTime()}.png`;
     await oss.uploadScreenShot(screenShotName, screenShot);
     log.message(`[Puppeteer] screenshot: [http://${cdnHost}/screenshot/${screenShotName}]`);
     await page.waitForSelector(configInfo.siteAnchor.pageWaiter, {
@@ -171,7 +181,6 @@ export async function filterVIPItem(torrentPageUrl: string): Promise<TItem[]> {
   }
 
   for(const item of torrentItems) {
-
     const downloaded: boolean = await currentSite.isDownloaded(item);
     if (true === downloaded) {
       continue;
@@ -185,9 +194,10 @@ export async function filterVIPItem(torrentPageUrl: string): Promise<TItem[]> {
     const id: string = await currentSite.getSiteId(item, torrentUrl);
     const title: string = await currentSite.getTitle(item);
     const size: number = await currentSite.getSize(item);
+    const publishDate: Date = await currentSite.publishDate(item);
 
     freeItems.push({
-      id, title, size,
+      id, title, size, publishDate,
       freeUntil: freeTime,
       free: true,
       uid: config.uid,
@@ -196,7 +206,11 @@ export async function filterVIPItem(torrentPageUrl: string): Promise<TItem[]> {
       serverId: -1
     });
   }
-  return freeItems;
+
+  const dateSortedItems: TItem[] = _.sortBy(freeItems, 'publishDate');
+  // vip only take the latest 5 item.
+  const vipItem: TItem[] = dateSortedItems.slice(0, 5);
+  return vipItem;
 }
 
 export async function filterFreeItem(torrentPageUrl: string, retryTime: number = 0): Promise<TItem[]> {
@@ -235,6 +249,8 @@ export async function filterFreeItem(torrentPageUrl: string, retryTime: number =
     log.log(`[Puppeteer] failed to launch page with error: [${e.message}], wait for retry`);
   }
 
+  // the first one is title
+  torrentItems = torrentItems.slice(1);
   for(const item of torrentItems) {
     let freeItem = null;
     freeItem = await item.$(siteAnchor.freeItem1up);
@@ -242,17 +258,13 @@ export async function filterFreeItem(torrentPageUrl: string, retryTime: number =
       freeItem = await item.$(siteAnchor.freeItem2up);
     }
 
-    try {
-      const title1: string = await currentSite.getTitle(item);
-      console.log(title1, null === freeItem);
-    } catch (e) {
-      console.log(e.message);
-    }
+    const title: string = await currentSite.getTitle(item);
+    const size: number = await currentSite.getSize(item);
+    const publishDate: Date = await currentSite.publishDate(item);
+    const downloaded: boolean = await currentSite.isDownloaded(item);
+    log.log(`[Puppeteer] scraping item: [${title}] downloaded: [${downloaded}], size: [${filesize(size)}], publish date: [${publishDate}]`);
 
-    const downloaded: boolean = false; // await currentSite.isDownloaded(item);
-
-    console.log(downloaded);
-    if( null === freeItem ) {
+    if( null === freeItem || true === downloaded ) {
       log.log(`[PUPPETEER] free Item === null: [${null === freeItem}] downloaded: [${downloaded}]`);
       continue;
     }
@@ -272,13 +284,10 @@ export async function filterFreeItem(torrentPageUrl: string, retryTime: number =
 
     let torrentUrl: string = await item.$eval(siteAnchor.torrentUrlAnchor, (el) => (el.parentNode as HTMLAnchorElement).getAttribute('href'))
     torrentUrl = `${configInfo.domain}/${torrentUrl}`;
-
     const id: string = await currentSite.getSiteId(item, torrentUrl);
-    const title: string = await currentSite.getTitle(item);
-    const size: number = await currentSite.getSize(item);
 
     freeItems.push({
-      id, title, size,
+      id, title, size, publishDate,
       freeUntil: freeTime,
       free: true,
       uid: config.uid,
@@ -291,6 +300,28 @@ export async function filterFreeItem(torrentPageUrl: string, retryTime: number =
     await sleep(5 * 1000);
     return filterFreeItem(torrentPageUrl, retryTime);
   }
-  console.log(JSON.stringify(freeItems));
   return freeItems;
+}
+
+export async function downloadFile(downloadUrl: string, downloadPath: string, fileName: string): Promise<void> {
+  log.log(`[Puppeteer] downloadFile, downloadUrl: [${downloadUrl}], downloadPath: [${downloadPath}], fileName: [${fileName}]`);
+  const puppeteerTempPath: string = path.join(downloadPath, 'puppeteer_temp');
+  fs.removeSync(puppeteerTempPath);
+
+  const page: puppeteer.Page = await browser.newPage();
+  await (page as any)._client.send('Page.setDownloadBehavior', {
+    behavior: 'allow',
+    downloadPath: puppeteerTempPath,
+  });
+  await mkdirp(puppeteerTempPath);
+  const res: puppeteer.Response = await page.goto(downloadUrl);
+  await sleep(3 * 1000);
+  const files: string[] = fs.readdirSync(puppeteerTempPath);
+  if (0 === files.length) {
+    log.log(`[ERROR][Puppeteer] trying to download file but failed!`);
+    return;
+  }
+  const srcFile: string = files[0];
+  const tarFile: string = path.join(downloadPath, fileName);
+  fs.moveSync(srcFile, tarFile);
 }

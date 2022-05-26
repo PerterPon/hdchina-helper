@@ -5,3 +5,4 @@ etc/default.yaml
 torrents
 test-string.js
 temp
+test-*

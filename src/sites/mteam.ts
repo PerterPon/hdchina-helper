@@ -1,10 +1,11 @@
 
 import * as moment from 'moment';
 import * as puppeteer from 'puppeteer';
-import { TItem } from '../types';
+import { TItem, TPTUserInfo } from '../types';
 import * as utils from '../utils';
-import * as config from '../config';
 import * as log from '../log';
+import * as config from '../config';
+import * as mysql from '../mysql';
 
 import { TPageUserInfo } from "./basic";
 
@@ -22,10 +23,11 @@ export async function getUserInfo(torrentPage: puppeteer.Page): Promise<TPageUse
   try {
     magicP = await torrentPage.$('#info_block .bottom');
     const magicPointContent: string = await magicP.evaluate((el) => el.textContent) || '';
-    const [trash1, magicPoint] = magicPointContent.match(/魔力值\s\[使用\]\:(.*)\s邀請/);
-    const [trash2, shareRatio] = magicPointContent.match(/分享率： (.*)  上傳量/);
-    const [trash3, uploadCount] = magicPointContent.match(/上傳量： (.*) GB 下載量/);
-    const [trash4, downloadCount] = magicPointContent.match(/下載量： (.*) GB/);
+    console.log(magicPointContent);
+    const [trash1, magicPoint] = magicPointContent.match(/魔力值\s\[使用\]\:(.*)\s邀請/)  || ['', ''];
+    const [trash2, shareRatio] = magicPointContent.match(/分享率： (\d*\.*\d*)\s/) || ['', ''];
+    const [trash3, uploadCount] = magicPointContent.match(/上傳量： (\d*\.*\d*)\s/)  || ['', ''];
+    const [trash4, downloadCount] = magicPointContent.match(/下載量： (\d*\.*\d*)\s/)  || ['', ''];
     userInfo.shareRatio = shareRatio.replace(',', '');
     userInfo.magicPoint = magicPoint.replace(',', '').trim();
     userInfo.downloadCount = downloadCount.replace(',', '');
@@ -81,6 +83,10 @@ export async function getSiteId(el: puppeteer.ElementHandle, torrentUrl): Promis
 }
 
 export async function getTitle(el: puppeteer.ElementHandle): Promise<string> {
+  const titleEl = await el.$('.embedded a b');
+  if (null === titleEl) {
+    return '';
+  }
   const title: any = await el.$eval('.embedded a b', (el) => el.textContent);
   return title;
 }
@@ -88,7 +94,6 @@ export async function getTitle(el: puppeteer.ElementHandle): Promise<string> {
 export async function getSize(el: puppeteer.ElementHandle): Promise<number> {
   return 0;
   const row = await el.$('td:nth-child(5)');
-  console.log(row);
   const sizeString = await el.$eval('td:nth-child(5)', (el) => el.innerHTML);
   const [ sizeNumberString ] = sizeString.match(/\d+.*\d+/);
   const sizeNumber: number = Number(sizeNumberString)
@@ -108,11 +113,14 @@ export async function getDownloadUrl(item: TItem): Promise<string> {
 }
 
 export async function getDownloadHeader(): Promise<any> {
-  const configInfo = config.getConfig();
-  const { name, value } = configInfo.puppeteer.cookie;
+  const cookies: puppeteer.SetCookie[] = await utils.getUserCookie(config.uid);
+  let cookieString: string = '';
+  for (const cookie of cookies) {
+    cookieString += `${cookie.name}=${cookie.value};`
+  }
   return {
     ...utils.downloadHeader,
-    cookie: `${name}=${value}`
+    cookie: cookieString
   }
 }
 

@@ -1,22 +1,24 @@
 const Transmission = require('transmission');
 const transmission = new Transmission({
-  host: 'ptbox.perterpon.com',
+  host: 'home.perterpon.com',
   port: 9091,
   username: 'perterpon', 
-  password: 'Perterpon423904_',
+  password: 'pon423904',
   ssl: false
 });
 
-transmission.sessionStats((error, data) => {
-  console.log(error, data);
-});
+// transmission.addUrl('http://cdn-pt.perterpon.com/hdchina/269592/mteam_578991.torrent', {
+//   'download-dir': '/volume1/homes/download/pt/3333'
+// }, (e, e2) => {
+//   console.log(e, e2);
+// });
 
 // transmission.active((error, data) => {
 //   console.log(data);
 // });
-// transmission.freeSpace('/volume1',(error, data) => {
-//   console.log(data);
-// });
+transmission.freeSpace('/volume1/homes/download/pt/mteam/269592',(error, data) => {
+  console.log(data);
+});
 
 // transmission.addUrl('http://cdn-pt.perterpon.com/hdchina/325966/hdchina_608432.torrent', function(error, data) {
 //   console.log(transmission.status, data);
