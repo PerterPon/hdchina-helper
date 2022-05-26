@@ -23,7 +23,6 @@ export async function getUserInfo(torrentPage: puppeteer.Page): Promise<TPageUse
   try {
     magicP = await torrentPage.$('#info_block .bottom');
     const magicPointContent: string = await magicP.evaluate((el) => el.textContent) || '';
-    console.log(magicPointContent);
     const [trash1, magicPoint] = magicPointContent.match(/魔力值\s\[使用\]\:(.*)\s邀請/)  || ['', ''];
     const [trash2, shareRatio] = magicPointContent.match(/分享率： (\d*\.*\d*)\s/) || ['', ''];
     const [trash3, uploadCount] = magicPointContent.match(/上傳量： (\d*\.*\d*)\s/)  || ['', ''];

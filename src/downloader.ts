@@ -118,10 +118,10 @@ async function downloadItem(items: TItem[]): Promise<TItem[]> {
     try {
       // not exist, download
       const downloadLink = await siteMap[config.site].getDownloadUrl(item);
+      log.log(`downloading file: [${downloadLink}]`);
 
       const fileWriter = fs.createWriteStream(fileFullName);
-      const downloadHeader = await siteMap[config.site].getDownloadHeader();
-      log.log(`download link: [${downloadLink}], header: [${JSON.stringify(downloadHeader)}]`);
+      // const downloadHeader = await siteMap[config.site].getDownloadHeader();
       const res: AxiosResponse = await axios.get(`${downloadLink}&passkey=${userInfo.passkey}`, {
         responseType: 'stream'
       });
@@ -132,7 +132,7 @@ async function downloadItem(items: TItem[]): Promise<TItem[]> {
       downloadSuccessItems.push(item);
     } catch (e) {
       downloadErrorCount++;
-      console.error(`[ERROR]download file: [${fileFullName}] with error: [${e.message}]`);
+      console.error(`[ERROR] download file: [${fileFullName}] with error: [${e.message}]`);
       fs.removeSync(fileFullName);
     }
   }
@@ -161,6 +161,7 @@ async function addItemToTransmission(items: TItem[]): Promise<{transId: string; 
   const configInfo = config.getConfig();
   const { cdnHost } = configInfo.aliOss;
   let errorCount: number = 0;
+  let successCount: number = 0;
   for (const item of items) {
     const { site, uid, id, title } = item;
     const torrentUrl: string = `http://${cdnHost}/hdchina/${uid}/${site}_${id}.torrent`;
@@ -168,8 +169,12 @@ async function addItemToTransmission(items: TItem[]): Promise<{transId: string; 
     const canAddServerIds: number[] = await transmission.canAddServers(config.vip);
     for (const canAddServerId of canAddServerIds) {
       const res = await doAddToTransmission(torrentUrl, canAddServerId);
+      successCount++;
       resInfo.push(res);
     }
+  }
+  if (0 < successCount) {
+    log.message(`add transmission success count: [${successCount}]`);
   }
   if (0 < errorCount) {
     log.message(`add transmission error count: [${errorCount}]`);

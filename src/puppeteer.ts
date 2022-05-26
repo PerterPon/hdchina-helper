@@ -20,8 +20,6 @@ import { siteMap } from './sites/basic';
 import { getUserInfo as getPTUserInfo } from './mysql';
 
 let browser: puppeteer.Browser = null;
-// let page: puppeteer.Page = null;
-// let torrentPage: puppeteer.Page = null;
 let cookieFileName: string = 'cookie';
 let storageFileName: string = 'storage';
 const pageMap: Map<string, puppeteer.Page> = new Map();
@@ -30,14 +28,14 @@ export async function init(): Promise<void> {
   if (browser !== null) {
     return;
   }
-  const userInfo: TPTUserInfo = await mysql.getUserInfoByUid(config.uid);
-  await mkdirp(userInfo.userDataDir);
+  const userDataDir: string = await getUserDataDir();
+  await mkdirp(userDataDir);
   browser = await puppeteer.launch({
     headless: true,
     executablePath: null,
     ignoreDefaultArgs: [],
     args: [
-        `--user-data-dir=${userInfo.userDataDir}`,
+        `--user-data-dir=${userDataDir}`,
         '--no-sandbox',
         '--disable-setuid-sandbox'
     ],
@@ -107,8 +105,7 @@ export async function setCookieAndStorage(currentPage: puppeteer.Page): Promise<
   log.log(`[PUPPETEER] setCookieAndStorage`);
   const configInfo = config.getConfig();
   const { cookie } = configInfo.puppeteer;
-  const userInfo: TPTUserInfo = await mysql.getUserInfoByUid(config.uid);
-  const { userDataDir } = userInfo;
+  const userDataDir: string = await getUserDataDir();
   const cookieFile: string = path.join(userDataDir, cookieFileName);
   const storageFile: string = path.join(userDataDir, storageFileName);
   if (true === fs.existsSync(cookieFile)) {
@@ -155,8 +152,7 @@ export async function loadTorrentPage(torrentPageUrl: string): Promise<void> {
       timeout: 15 * 1000
     });
     const { cookies } = await (page as any)._client.send('Network.getAllCookies') || {};
-    const userInfo: TPTUserInfo = await mysql.getUserInfoByUid(config.uid);
-    const { userDataDir } = userInfo;
+    const userDataDir: string = await getUserDataDir();
     const cookieFile: string = path.join(userDataDir, cookieFileName);
     fs.writeFileSync(cookieFile, JSON.stringify(cookies));
 
@@ -190,10 +186,10 @@ export async function filterVIPItem(torrentPageUrl: string): Promise<TItem[]> {
   }
 
   for(const item of torrentItems) {
-    const downloaded: boolean = await currentSite.isDownloaded(item);
-    if (true === downloaded) {
-      continue;
-    }
+    // const downloaded: boolean = await currentSite.isDownloaded(item);
+    // if (true === downloaded) {
+    //   continue;
+    // }
 
     let freeTime: Date = new Date('2030-01-01');
 
@@ -273,7 +269,7 @@ export async function filterFreeItem(torrentPageUrl: string, retryTime: number =
     const downloaded: boolean = await currentSite.isDownloaded(item);
     log.log(`[Puppeteer] scraping item: [${title}] downloaded: [${downloaded}], size: [${filesize(size)}], publish date: [${publishDate}]`);
 
-    if( null === freeItem || true === downloaded ) {
+    if( null === freeItem ) {
       log.log(`[PUPPETEER] free Item === null: [${null === freeItem}] downloaded: [${downloaded}]`);
       continue;
     }
@@ -333,4 +329,9 @@ export async function downloadFile(downloadUrl: string, downloadPath: string, fi
   const srcFile: string = files[0];
   const tarFile: string = path.join(downloadPath, fileName);
   fs.moveSync(srcFile, tarFile);
+}
+
+async function getUserDataDir(): Promise<string> {
+  const userInfo: TPTUserInfo = await mysql.getUserInfoByUid(config.uid);
+  return path.join(config.tempFolder, 'puppeteer', userInfo.uid);
 }

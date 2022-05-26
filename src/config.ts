@@ -63,6 +63,7 @@ export let site: string = 'hdchina';
 export let uid: string = '325966';
 export let nickname: string = 'perterpon';
 export let vip: boolean = false;
+export let tempFolder: string = '';
 
 export function setSite(siteValue): void {
     site = siteValue || site;
@@ -78,4 +79,8 @@ export function setNick(nicknameValue): void {
 
 export function setVip(vipValue): void {
     vip = vipValue || vip
+}
+
+export function setTempFolder(folderValue): void {
+    tempFolder = folderValue || tempFolder;
 }

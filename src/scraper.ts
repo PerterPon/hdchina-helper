@@ -99,16 +99,15 @@ async function main(): Promise<void> {
 
 async function init(): Promise<void> {
   await config.init();
+  await initTempFolder();
   await mysql.init();
   const ptUserInfo: TPTUserInfo = await mysql.getUserInfo(config.nickname, config.site);
-  console.log(ptUserInfo);
   config.setUid(ptUserInfo.uid);
   config.setVip(ptUserInfo.vip);
   await transmission.init(ptUserInfo.uid);
   await oss.init();
   await message.init();
   await puppeteer.init();
-  await initTempFolder();
 }
 
 async function initTempFolder(): Promise<void> {
@@ -117,6 +116,7 @@ async function initTempFolder(): Promise<void> {
   const fullTempFolder = path.join(__dirname, tempFolderConfig);
   mkdirpSync(fullTempFolder);
   tempFolder = fullTempFolder;
+  config.setTempFolder(tempFolder);
 }
 
 start();

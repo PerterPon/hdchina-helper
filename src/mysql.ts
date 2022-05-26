@@ -61,7 +61,8 @@ export async function getFreeItems(): Promise<TItem[]> {
         downloader
       ON
         torrents.site = downloader.site AND
-        torrents.site_id = downloader.site_id
+        torrents.site_id = downloader.site_id AND
+        torrents.uid = downloader.uid
       WHERE
         torrents.is_free = 1 AND
         torrents.free_until > NOW() AND
@@ -249,7 +250,6 @@ export async function getUserInfo(nickname: string, site: string): Promise<TPTUs
 
 export async function getServers(uid: string): Promise<TPTServer[]> {
   const userInfo: TPTUserInfo = await getUserInfoByUid(uid);
-  console.log(userInfo);
   const [res]: any = await pool.query(`
   SELECT
     *
