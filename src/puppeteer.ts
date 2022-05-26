@@ -185,11 +185,8 @@ export async function filterVIPItem(torrentPageUrl: string): Promise<TItem[]> {
     log.log(`[Puppeteer] failed to launch page with error: [${e.message}], wait for retry`);
   }
 
+  const stickyItems: TItem[] = [];
   for(const item of torrentItems) {
-    // const downloaded: boolean = await currentSite.isDownloaded(item);
-    // if (true === downloaded) {
-    //   continue;
-    // }
 
     let freeTime: Date = new Date('2030-01-01');
 
@@ -200,22 +197,36 @@ export async function filterVIPItem(torrentPageUrl: string): Promise<TItem[]> {
     const title: string = await currentSite.getTitle(item);
     const size: number = await currentSite.getSize(item);
     const publishDate: Date = await currentSite.publishDate(item);
+    const isSticky: boolean = await currentSite.isSticky(item);
 
-    freeItems.push({
-      id, title, size, publishDate,
-      freeUntil: freeTime,
-      free: true,
-      uid: config.uid,
-      torrentUrl: torrentUrl,
-      site: config.site,
-      serverId: -1
-    });
+    if (true === isSticky) {
+      stickyItems.push({
+        id, title, size, publishDate,
+        freeUntil: freeTime,
+        free: true,
+        uid: config.uid,
+        torrentUrl: torrentUrl,
+        site: config.site,
+        serverId: -1
+      });
+    } else {
+      freeItems.push({
+        id, title, size, publishDate,
+        freeUntil: freeTime,
+        free: true,
+        uid: config.uid,
+        torrentUrl: torrentUrl,
+        site: config.site,
+        serverId: -1
+      });
+    }
   }
 
   const dateSortedItems: TItem[] = _.sortBy(freeItems, 'publishDate');
   // vip only take the latest 5 item.
-  const vipItem: TItem[] = dateSortedItems.slice(0, 5);
-  return vipItem;
+  const latestItems: TItem[] = dateSortedItems.slice(0, 5);
+  const vipItems = latestItems.concat(stickyItems);
+  return vipItems;
 }
 
 export async function filterFreeItem(torrentPageUrl: string, retryTime: number = 0): Promise<TItem[]> {

@@ -81,3 +81,8 @@ export async function isDownloaded(el: puppeteer.ElementHandle): Promise<boolean
   const progress = await el.$('.progressarea');
   return null !== progress;
 }
+
+export async function isSticky(el: puppeteer.ElementHandle): Promise<boolean> {
+  const stickyFlag = await el.$('.sticky');
+  return null !== stickyFlag;
+}
