@@ -17,7 +17,7 @@ import { mkdirpSync } from 'fs-extra';
 import * as log from './log';
 import { siteMap } from './sites/basic';
 
-import { TItem } from './types';
+import { TItem, TPTServer, TPTUserInfo } from './types';
 
 let tempFolder: string = null;
 
@@ -51,7 +51,7 @@ export async function main(): Promise<void> {
   // 7.
   await uploadItem(downloadSuccessItem);
 
-  let trans: { transId: string; hash: string; }[] = [];
+  let trans: { transId: string; hash: string; serverId: number }[] = [];
   try {
     trans = await addItemToTransmission(downloadSuccessItem);
   } catch (e) {
@@ -77,7 +77,8 @@ export async function main(): Promise<void> {
 async function init(): Promise<void> {
   await config.init();
   await mysql.init();
-  await transmission.init();
+  const ptUserInfo: TPTUserInfo = await mysql.getUserInfo(config.nickname, config.site);
+  await transmission.init(ptUserInfo.uid);
   await oss.init();
   await message.init();
   await initTempFolder();
@@ -146,7 +147,6 @@ async function downloadItem(items: TItem[]): Promise<TItem[]> {
 
 async function uploadItem(items: TItem[]): Promise<void> {
   log.log(`upload items: [${JSON.stringify(items)}]`);
-  const configInfo = config.getConfig();
   for (const item of items) {
     const { site, id } = item;
     const fileName: string = `${config.uid}/${site}_${id}.torrent`;
@@ -155,9 +155,9 @@ async function uploadItem(items: TItem[]): Promise<void> {
   }
 }
 
-async function addItemToTransmission(items: TItem[]): Promise<{transId: string; hash: string;}[]> {
+async function addItemToTransmission(items: TItem[]): Promise<{transId: string; hash: string; serverId: number; }[]> {
   log.log(`addItemToTransmission: [${JSON.stringify(items)}]`);
-  const transIds: {transId: string; hash: string;}[] = [];
+  const resInfo: {transId: string; hash: string; serverId: number}[] = [];
   const configInfo = config.getConfig();
   const { cdnHost } = configInfo.aliOss;
   let errorCount: number = 0;
@@ -165,45 +165,58 @@ async function addItemToTransmission(items: TItem[]): Promise<{transId: string; 
     const { site, uid, id, title } = item;
     const torrentUrl: string = `http://${cdnHost}/hdchina/${uid}/${site}_${id}.torrent`;
     log.log(`add file to transmission: [${title}]`);
-    try {
-      const transRes: { transId: string; hash: string } = await transmission.addUrl(torrentUrl);
-      transIds.push(transRes);
-    } catch(e) {
-      if ('invalid or corrupt torrent file' === e.message) {
-        transIds.push({
-          transId: '0',
-          hash: '0'
-        });
-      } else {
-        transIds.push({
-          transId: '-1',
-          hash: '-1'
-        });
-      }
-      errorCount++;
-      log.log(e.message);
-      log.log(e.stack);
+    const canAddServerIds: number[] = await transmission.canAddServers(config.vip);
+    for (const canAddServerId of canAddServerIds) {
+      const res = await doAddToTransmission(torrentUrl, canAddServerId);
+      resInfo.push(res);
     }
   }
   if (0 < errorCount) {
     log.message(`add transmission error count: [${errorCount}]`);
   }
-  return transIds;
+  return resInfo;
 }
 
-async function storeDownloadAction(transIds: {transId: string; hash: string}[], items: TItem[]): Promise<void> {
+async function doAddToTransmission(torrentUrl: string, serverId: number): Promise<{transId: string; hash: string; serverId: number}> {
+  log.log(`doAddToTransmission torrent url: [${torrentUrl}], server id: [${serverId}]`);
+  let res: {transId: string; hash: string; serverId: number; } = null;
+  try {
+    res = await transmission.addUrl(torrentUrl, serverId);
+  } catch(e) {
+    if ('invalid or corrupt torrent file' === e.message) {
+      res = {
+        transId: '0',
+        hash: '0',
+        serverId
+      }
+    } else {
+      res = {
+        transId: '-1',
+        hash: '-1',
+        serverId
+      }
+    }
+
+    log.log(e.message);
+    log.log(e.stack);
+  }
+
+  return res;
+}
+
+async function storeDownloadAction(transIds: {transId: string; hash: string; serverId: number}[], items: TItem[]): Promise<void> {
   log.log(`updateTransId2Item transIds: [${JSON.stringify(transIds)}], items: [${JSON.stringify(items)}]`);
   const configInfo = config.getConfig();
 
   for (let i = 0; i < transIds.length; i++) {
-    const { transId, hash } = transIds[i];
+    const { transId, hash, serverId } = transIds[i];
     if ('-1' === transId) {
       continue;
     }
     const item: TItem = items[i];
     const { site, id, uid } = item;
     await mysql.updateTorrentHashBySiteAndId(site, id, hash);
-    await mysql.storeDownloadAction(site, id, uid, transId, hash);
+    await mysql.storeDownloadAction(site, id, uid, transId, hash, serverId);
   }
 }
 
@@ -212,9 +225,14 @@ async function getDownloadingItems(): Promise<TItem[]> {
   const downloadingTransItems: transmission.TTransItem[] = await transmission.getDownloadingItems();
   const downloadingHash: string[] = [];
   const configInfo = config.getConfig();
-  const { fileDownloadPath } = configInfo.transmission;
   for (const item of downloadingTransItems) {
     const { hash, downloadDir } = item;
+    const server: TPTServer = transmission.serverConfigMap.get(item.serverId);
+    if (undefined == server) {
+      log.log(`trying to get downloading item with server id: [${item.serverId}], server not found`);
+      continue;
+    }
+    const { fileDownloadPath } = server;
     // only the specific torrent we need to remove.
     if (downloadDir === fileDownloadPath) {
       downloadingHash.push(hash);
@@ -247,8 +265,8 @@ async function removeItemFromTransmission(items: TItem[]): Promise<void> {
   for (let i = 0; i < items.length; i++) {
     const transId: string = transIds[i];
     const item: TItem = items[i];
-    log.log(`removing torrent: [${item.title}]`);
-    await transmission.removeItem(Number(transId));
+    log.log(`removing torrent: [${item.title}], server: [${item.serverId}]`);
+    await transmission.removeItem(Number(transId), Number(item.serverId));
   }
   if (0 < items.length) {
     log.message(`remove torrent count: [${items.length}]`);
@@ -258,8 +276,23 @@ async function removeItemFromTransmission(items: TItem[]): Promise<void> {
 async function reduceLeftSpace(): Promise<void> {
   log.log(`reduceLeftSpace`);
   const configInfo = config.getConfig();
-  let freeSpace: number = await transmission.freeSpace();
-  const { minSpaceLeft, fileDownloadPath, minStayFileSize } = configInfo.transmission;
+
+  for (const server of transmission.servers) {
+    const { id } = server;
+    await doReduceLeftSpace(id);
+  }
+
+}
+
+async function doReduceLeftSpace(serverId: number): Promise<void> {
+  log.log(`doReduceLeftSpace server: [${serverId}]`);
+  const serverInfo: TPTServer = transmission.serverConfigMap.get(serverId);
+  if (undefined === serverInfo) {
+    throw new Error(`[Downloader] reduce left space with error: [${serverId}]`);
+  }
+
+  let [{ size: freeSpace }] = await transmission.freeSpace(serverId);
+  const { minSpaceLeft, fileDownloadPath, minStayFileSize } = serverInfo;
   const allItems: transmission.TTransItem[] = await transmission.getAllItems();
   const datedItems: transmission.TTransItem[] = _.orderBy(allItems, ['activityDate']);
   let reducedTotal: number = 0;
@@ -276,12 +309,12 @@ async function reduceLeftSpace(): Promise<void> {
     ) {
       log.message(`remove item because of min left space: [${name}], size: [${filesize(size)}]`);
       reducedTotal += size;
-      await transmission.removeItem(id);
+      await transmission.removeItem(id, serverId);
       freeSpace += size;
     }
   }
   if (0 < reducedTotal) {
-    log.message(`reduce space total: [${filesize(reducedTotal)}]`);
+    log.message(`server id: [${serverId}] reduce space total: [${filesize(reducedTotal)}]`);
   }
 }
 

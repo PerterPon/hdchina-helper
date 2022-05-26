@@ -5,18 +5,9 @@ import * as config from './config';
 import * as _ from 'lodash';
 import * as log from './log';
 
-export let pool: mysql.Pool = null;
+import { TPTUserInfo, TPTServer } from './types';
 
-export interface TPTUserInfo {
-  nickname: string;
-  uploadCount: number;
-  paid: number;
-  site: string;
-  cookie: string;
-  uid: string;
-  cycleTime: number;
-  vip: boolean;
-}
+export let pool: mysql.Pool = null;
 
 export async function init(): Promise<void> {
   if (null !== pool) {
@@ -29,7 +20,6 @@ export async function init(): Promise<void> {
     acquireTimeout: 20000,
     connectTimeout: 20000
   });
-
 }
 
 export async function storeItem(items: TItem[]): Promise<void> {
@@ -62,7 +52,8 @@ export async function getFreeItems(): Promise<TItem[]> {
         torrents.free_until AS free_until,
         torrents.title AS title,
         torrents.torrent_url AS torrent_url,
-        downloader.id AS downloader_id
+        downloader.id AS downloader_id,
+        downloader.server_id AS server_id
       FROM
         torrents
       LEFT JOIN
@@ -82,25 +73,26 @@ export async function getFreeItems(): Promise<TItem[]> {
   log.log(`[MYSQL] get free item: [${JSON.stringify(data)}]`);
   const freeItems: TItem[] = [];
   for (const item of data) {
-    const { site_id, uid, site, size, title, is_free, free_until, torrent_url } = item;
+    const { server_id, site_id, uid, site, size, title, is_free, free_until, torrent_url } = item;
     freeItems.push({
       id: site_id,
       site,
       uid,
       freeUntil: free_until,
       size, title,
-      torrentUrl: torrent_url
+      torrentUrl: torrent_url,
+      serverId: server_id
     });
   }
   return freeItems;
 }
 
-export async function storeDownloadAction(site: string, siteId: string, uid: string, transId: string, torrentHash: string): Promise<void> {
-  log.log(`[MYSQL] storeDownloadAction site: [${site}], site id: [${siteId}], uid: [${uid}], trans id: [${transId}], torrent hash: [${torrentHash}]`);
+export async function storeDownloadAction(site: string, siteId: string, uid: string, transId: string, torrentHash: string, serverId: number): Promise<void> {
+  log.log(`[MYSQL] storeDownloadAction site: [${site}], site id: [${siteId}], uid: [${uid}], trans id: [${transId}], torrent hash: [${torrentHash}] server id: [${serverId}]`);
   await pool.query(`
-  INSERT INTO downloader(gmt_create, gmt_modify, uid, trans_id, torrent_hash, site, site_id)
-  VALUES (NOW(), NOW(), ?, ?, ?, ?, ?)
-  `, [uid, transId, torrentHash, site, siteId]);
+  INSERT INTO downloader(gmt_create, gmt_modify, uid, trans_id, torrent_hash, site, site_id, server_id)
+  VALUES (NOW(), NOW(), ?, ?, ?, ?, ?, ?)
+  `, [uid, transId, torrentHash, site, siteId, serverId]);
 }
 
 export async function updateTorrentHashBySiteAndId(site: string ,siteId: string, torrentHash: string): Promise<void> {
@@ -148,15 +140,30 @@ export async function getItemByHash(hash: string[]): Promise<TItem[]> {
   }
   const [res]: any = await pool.query(`
   SELECT
-    *
+    torrents.site_id as site_id,
+    torrents.uid as uid,
+    torrents.site as site,
+    torrents.title as title,
+    torrents.size as size,
+    torrents.torrent_url as torrent_url,
+    torrents.torrent_hash as torrent_hash,
+    torrents.free_until as free_until,
+    downloader.server_id as server_id
   FROM
     torrents
+  LEFT JOIN
+    downloader
+  ON
+    torrents.site = downloader.site AND
+    torrents.site_id = downloader.site_id AND
+    torrents.uid = downloader.uid
   WHERE
-    torrent_hash IN (?)
-  `, [hash]);
+    torrents.uid = ? AND
+    torrents.torrent_hash IN (?);
+  `, [config.uid, hash]);
   const items: TItem[] = [];
   for (const item of res) {
-    const { site_id, uid, site, title, size, torrent_url, torrent_hash, free_until } = item;
+    const { site_id, uid, site, title, size, torrent_url, torrent_hash, free_until, server_id } = item;
     items.push({
       size, title,
       id: site_id,
@@ -164,7 +171,8 @@ export async function getItemByHash(hash: string[]): Promise<TItem[]> {
       uid,
       torrentUrl: torrent_url,
       transHash: torrent_hash,
-      freeUntil: free_until
+      freeUntil: free_until,
+      serverId: server_id
     });
   }
   return items;
@@ -186,6 +194,28 @@ export async function storeSiteInfo(
   `, [config.site, config.uid, shareRatio || 0, downloadCount || 0, uploadCount || 0, magicPoint || 0, uploadSpeed || 0, downloadSpeed]);
 }
 
+export async function getUserInfoByUid(uid: string): Promise<TPTUserInfo> {
+  const [res]: any = await pool.query(`
+  SELECT 
+    *
+  FROM
+    users
+  WHERE
+    uid = ?;
+  `, [uid]);
+  if (0 === res.length) {
+    return null;
+  }
+  const { cookie, vip, uploadCount, site, nickname, paid, bind_server, cycle_time } = res[0];
+  const userInfo: TPTUserInfo = { 
+    cookie, site, uid, uploadCount, paid, nickname,
+    cycleTime: cycle_time,
+    vip: Boolean(vip),
+    serverIds: bind_server
+  };
+  return userInfo;
+}
+
 export async function getUserInfo(nickname: string, site: string): Promise<TPTUserInfo> {
   const [res]: any = await pool.query(`
   SELECT 
@@ -199,11 +229,36 @@ export async function getUserInfo(nickname: string, site: string): Promise<TPTUs
   if (0 === res.length) {
     return null;
   }
-  const { cookie, uid, vip, uploadCount, paid, cycle_time } = res[0];
+  const { cookie, uid, vip, bind_server, uploadCount, paid, cycle_time } = res[0];
   const userInfo: TPTUserInfo = { 
     cookie, site, uid, uploadCount, paid, nickname,
     cycleTime: cycle_time,
-    vip: Boolean(vip)
+    vip: Boolean(vip),
+    serverIds: bind_server
   };
   return userInfo;
+}
+
+export async function getServers(uid: string): Promise<TPTServer[]> {
+  const userInfo: TPTUserInfo = await getUserInfoByUid(uid);
+  const [res]: any = await pool.query(`
+  SELECT
+    *
+  FROM
+    servers
+  WHERE
+    id in (?);
+  `, [userInfo.serverIds]);
+  const servers: TPTServer[] = [];
+  for (const item of res) {
+    const { id, ip, port, username, password, type, box, file_download_path, min_space_left, min_stay_file_size } = item;
+    servers.push({
+      id, ip, port, username, password, type,
+      box: Boolean(box),
+      fileDownloadPath: file_download_path,
+      minSpaceLeft: min_space_left,
+      minStayFileSize: min_stay_file_size
+    });
+  }
+  return servers;
 }

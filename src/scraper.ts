@@ -15,7 +15,7 @@ import { mkdirpSync } from 'fs-extra';
 import { Command } from 'commander';
 import { TPageUserInfo } from './sites/basic';
 
-import { TItem } from './types';
+import { TItem, TPTUserInfo } from './types';
 
 import { main as startDownloader } from './downloader';
 
@@ -23,16 +23,13 @@ const program = new Command();
 
 program
   .option('-s, --site <char>', 'separator character')
-  .option('-u, --uid <char>', 'separator character')
-  .option('-e, --env <char>', 'separator character')
   .option('-n, --nickname <char>', 'separator character');
 
 program.parse(process.argv);
 config.setSite(program.site);
-config.setUid(program.uid);
 config.setNick(program.nickname);
 
-log.message(`site: [${config.site}], uid: [${config.uid}], nickname: [${config.nickname}]`);
+log.message(`nickname: [${config.nickname}] site: [${config.site}], uid: [${config.uid}]`);
 
 config.init();
 
@@ -68,23 +65,28 @@ async function main(): Promise<void> {
   log.message(`download count: [${downloadCount || ''}]`);
   log.message(`magic point: [${magicPoint || ''}]`)
 
-  const { uploadSpeed, downloadSpeed } = await transmission.sessionStates();
-  log.message(`upload speed: [${filesize(uploadSpeed)}/s]`);
-  log.message(`download speed: [${filesize(downloadSpeed)}/s]`);
+  const statesRes = await transmission.sessionStates();
+  let totalUploadSpeed: number = 0;
+  let totalDownloadSpeed: number = 0;
+  for (const state of statesRes) {
+    const { serverId, uploadSpeed, downloadSpeed } = state;
+    totalUploadSpeed += uploadSpeed || 0;
+    totalDownloadSpeed += downloadSpeed || 0;
+    log.message(`[${serverId}] [${filesize(uploadSpeed)}/s] [${filesize(downloadSpeed)}/s]`);
+  }
 
   // 2.
-  await mysql.storeSiteInfo(Number(shareRatio), Number(downloadCount), Number(uploadCount), Number(magicPoint), Number(uploadSpeed), Number(downloadSpeed));
+  await mysql.storeSiteInfo(Number(shareRatio), Number(downloadCount), Number(uploadCount), Number(magicPoint), Number(totalUploadSpeed), Number(totalDownloadSpeed));
 
   // 3.
   const configInfo = config.getConfig();
   const { torrentPage } = configInfo;
-  const ptUserInfo: mysql.TPTUserInfo = await mysql.getUserInfo(config.nickname, config.site);
   for (const pageUrl of torrentPage) {
     let freeItems: TItem[] = [];
-    if (true === ptUserInfo.vip) {
+    if (true === config.vip) {
       freeItems = await puppeteer.filterVIPItem(pageUrl);
     } else {
-      await puppeteer.filterFreeItem(pageUrl);
+      freeItems = await puppeteer.filterFreeItem(pageUrl);
     }
     log.log(`got free items: [${JSON.stringify(freeItems)}]`);
     log.message(`free item count: [${freeItems.length}]`);
@@ -96,7 +98,10 @@ async function main(): Promise<void> {
 async function init(): Promise<void> {
   await config.init();
   await mysql.init();
-  await transmission.init();
+  const ptUserInfo: TPTUserInfo = await mysql.getUserInfo(config.nickname, config.site);
+  config.setUid(ptUserInfo.uid);
+  config.setVip(ptUserInfo.vip);
+  await transmission.init(ptUserInfo.uid);
   await oss.init();
   await message.init();
   await puppeteer.init();

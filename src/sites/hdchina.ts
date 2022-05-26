@@ -76,3 +76,8 @@ export async function getDownloadHeader(): Promise<any> {
     ...utils.downloadHeader,
   }
 }
+
+export async function isDownloaded(el: puppeteer.ElementHandle): Promise<boolean> {
+  const progress = await el.$('.progressarea');
+  return null !== progress;
+}

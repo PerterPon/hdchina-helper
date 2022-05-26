@@ -4,6 +4,7 @@ import * as puppeteer from 'puppeteer';
 import { TItem } from '../types';
 import * as utils from '../utils';
 import * as config from '../config';
+import * as log from '../log';
 
 import { TPageUserInfo } from "./basic";
 
@@ -26,10 +27,12 @@ export async function getUserInfo(torrentPage: puppeteer.Page): Promise<TPageUse
     const [trash3, uploadCount] = magicPointContent.match(/上傳量： (.*) GB 下載量/);
     const [trash4, downloadCount] = magicPointContent.match(/下載量： (.*) GB/);
     userInfo.shareRatio = shareRatio.replace(',', '');
-    userInfo.magicPoint = magicPoint.replace(',', '');
+    userInfo.magicPoint = magicPoint.replace(',', '').trim();
     userInfo.downloadCount = downloadCount.replace(',', '');
     userInfo.uploadCount = uploadCount.replace(',', '');
-  } catch (e) {}
+  } catch (e) {
+    log.log(`[SITE] [MTEAM] get user info: [${e.message}], [${e.stack}]`);
+  }
   return userInfo;
 }
 
@@ -113,3 +116,12 @@ export async function getDownloadHeader(): Promise<any> {
   }
 }
 
+export async function isDownloaded(el: puppeteer.ElementHandle): Promise<boolean> {
+  const progress: string = await el.$eval('td:nth-child(9)', (el) => el.textContent);
+  return '--' !== progress;
+}
+
+export async function publishDate(el: puppeteer.ElementHandle): Promise<Date> {
+  const dateString: string = await el.$eval('td:nth-child(5)', (el) => el.getAttribute('title'));
+  return new Date(dateString);
+}

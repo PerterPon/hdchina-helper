@@ -1,9 +1,8 @@
 
 import * as puppeteer from 'puppeteer';
-import { TItem } from './types';
+import { TItem, TPTUserInfo } from './types';
 import * as config from './config';
-import { sleep, randomInt } from './utils';
-import * as url from 'url';
+import { sleep } from './utils';
 import * as log from './log';
 import * as moment from 'moment';
 import * as oss from './oss';
@@ -14,13 +13,14 @@ import * as mkdirp from 'mkdirp';
 import { TPageUserInfo } from './sites/basic';
 
 import { siteMap } from './sites/basic';
-import { TPTUserInfo, getUserInfo as getPTUserInfo } from './mysql';
+import { getUserInfo as getPTUserInfo } from './mysql';
 
 let browser: puppeteer.Browser = null;
-let page: puppeteer.Page = null;
-let torrentPage: puppeteer.Page = null;
+// let page: puppeteer.Page = null;
+// let torrentPage: puppeteer.Page = null;
 let cookieFileName: string = 'cookie';
 let storageFileName: string = 'storage';
+const pageMap: Map<string, puppeteer.Page> = new Map();
 
 export async function init(): Promise<void> {
   if (browser !== null) {
@@ -44,9 +44,22 @@ export async function init(): Promise<void> {
     }
   });
 
-  page = await browser.newPage();
-  await setCookie(page);
+}
 
+export async function loadPage(url: string, force: boolean = false): Promise<puppeteer.Page> {
+  log.log(`[Puppeteer] loadPage url: [${url}], force: [${force}]`);
+  let page: puppeteer.Page = pageMap.get(url);
+  if (undefined === page || true === force) {
+    log.log(`[Puppeteer] force lode page url: [${url}], force: [${force}]`);
+
+    page = await browser.newPage();
+    await setCookie(page);
+    pageMap.set(url, page);
+    console.log('======', url);
+    await page.goto(url);
+    await sleep(5 * 1000);
+  }
+  return page;
 }
 
 export async function close(): Promise<void> {
@@ -71,10 +84,10 @@ export async function setCookie(currentPage: puppeteer.Page): Promise<void> {
     });
   }
 
-  await page.setCookie(...cookies);
+  await currentPage.setCookie(...cookies);
 }
 
-export async function setCookieAndStorage(): Promise<void> {
+export async function setCookieAndStorage(currentPage: puppeteer.Page): Promise<void> {
   log.log(`[PUPPETEER] setCookieAndStorage`);
   const configInfo = config.getConfig();
   const { userDataDir, cookie } = configInfo.puppeteer;
@@ -85,18 +98,18 @@ export async function setCookieAndStorage(): Promise<void> {
     log.log(`[PUPPETEER] set local cookie: [${cookiesValue}]`);
     try {
       const cookie = JSON.parse(cookiesValue);
-      page.setCookie(...cookie);
+      currentPage.setCookie(...cookie);
     } catch (e) {
       log.log(e, cookiesValue);
     }
   } else {
-    page.setCookie(cookie);
+    currentPage.setCookie(cookie);
   }
 
   if (true === fs.existsSync(storageFile)) {
     const storageValue: string = fs.readFileSync(storageFile, 'utf-8');
     log.log(`[PUPPETEER] set storage with value: [${storageFile}]`);
-    await page.evaluate((storageValue) => {
+    await currentPage.evaluate((storageValue) => {
       const storage = JSON.parse(storageValue);
       (window as any).localStorage = storage;
     }, storageValue);
@@ -106,10 +119,8 @@ export async function setCookieAndStorage(): Promise<void> {
 export async function getUserInfo(): Promise<TPageUserInfo> {
   log.log(`[PUPPETEER] get user info`);
   const configInfo = config.getConfig();
-  if (null === torrentPage) {
-    await loadTorrentPage(configInfo.indexPage);
-  }
-  return siteMap[config.site].getUserInfo(torrentPage);
+  const page: puppeteer.Page = await loadPage(configInfo.torrentPage[0]);
+  return siteMap[config.site].getUserInfo(page);
 }
 
 export async function loadTorrentPage(torrentPageUrl: string): Promise<void> {
@@ -117,8 +128,7 @@ export async function loadTorrentPage(torrentPageUrl: string): Promise<void> {
   try {
     const configInfo = config.getConfig();
     const { cdnHost } = configInfo.aliOss;
-    page.goto(torrentPageUrl);
-    await sleep(5 * 1000);
+    const page = await loadPage(torrentPageUrl);
     const screenShot: Buffer = await page.screenshot() as unknown as Buffer;
     const screenShotName: string = `${config.site}_${config.uid}_${moment().format('YYYY-MM-DD_HH:mm:ss')}.png`;
     await oss.uploadScreenShot(screenShotName, screenShot);
@@ -134,7 +144,6 @@ export async function loadTorrentPage(torrentPageUrl: string): Promise<void> {
     const localStorage: string = await page.evaluate(() => JSON.stringify(window.localStorage));
     const storageFile: string = path.join(userDataDir, storageFileName);
     fs.writeFileSync(storageFile, localStorage);
-    torrentPage = page;
   } catch (e) {
     log.log(e.message);
     log.log(e.stack);
@@ -146,24 +155,28 @@ export async function filterVIPItem(torrentPageUrl: string): Promise<TItem[]> {
   const freeItems: TItem[] = [];
   const configInfo = config.getConfig();
   const currentSite = siteMap[config.site];
-  if (null === torrentPage) {
-    await loadTorrentPage(torrentPageUrl);
-  }
+  const page: puppeteer.Page = await loadPage(torrentPageUrl);
 
   let torrentItems: puppeteer.ElementHandle<HTMLTableRowElement>[] = [];
 
   const { siteAnchor } = configInfo;
 
   try {
-    await torrentPage.waitForSelector(siteAnchor.torrentItemWaiter, {
+    await page.waitForSelector(siteAnchor.torrentItemWaiter, {
       timeout: 10 * 1000
     });
-    torrentItems = await torrentPage.$$(siteAnchor.torrentItem);
+    torrentItems = await page.$$(siteAnchor.torrentItem);
   } catch (e) {
     log.log(`[Puppeteer] failed to launch page with error: [${e.message}], wait for retry`);
   }
 
   for(const item of torrentItems) {
+
+    const downloaded: boolean = await currentSite.isDownloaded(item);
+    if (true === downloaded) {
+      continue;
+    }
+
     let freeTime: Date = new Date('2030-01-01');
 
     let torrentUrl: string = await item.$eval(siteAnchor.torrentUrlAnchor, (el) => (el.parentNode as HTMLAnchorElement).getAttribute('href'))
@@ -179,7 +192,8 @@ export async function filterVIPItem(torrentPageUrl: string): Promise<TItem[]> {
       free: true,
       uid: config.uid,
       torrentUrl: torrentUrl,
-      site: config.site
+      site: config.site,
+      serverId: -1
     });
   }
   return freeItems;
@@ -194,27 +208,26 @@ export async function filterFreeItem(torrentPageUrl: string, retryTime: number =
   if (retryTime >= globalRetryTime) {
     return [];
   }
-  if (null === torrentPage || 0 === retryTime) {
-    await loadTorrentPage(torrentPageUrl);
-  }
+  const shouldForceLoad: boolean = 0 < retryTime;
+  const page: puppeteer.Page = await loadPage(torrentPageUrl, shouldForceLoad);
   retryTime++;
 
   let torrentItems: puppeteer.ElementHandle<HTMLTableRowElement>[] = [];
   let freeTarget: puppeteer.ElementHandle<HTMLTableRowElement>[] = [];
-  
+
   const { siteAnchor } = configInfo;
 
   try {
-    await torrentPage.waitForSelector(siteAnchor.torrentItemWaiter, {
+    await page.waitForSelector(siteAnchor.torrentItemWaiter, {
       timeout: 10 * 1000
     });
-    torrentItems = await torrentPage.$$(siteAnchor.torrentItem);
+    torrentItems = await page.$$(siteAnchor.torrentItem);
     try {
-      const freeTarget1up = await torrentPage.$$(siteAnchor.freeItem1upTag);
+      const freeTarget1up = await page.$$(siteAnchor.freeItem1upTag);
       freeTarget.push(...freeTarget1up);
     } catch (e) {}
     try {
-      const freeTarget2up = await torrentPage.$$(siteAnchor.freeItem2upTag);
+      const freeTarget2up = await page.$$(siteAnchor.freeItem2upTag);
       freeTarget.push(...freeTarget2up);
     } catch (e) {}
     log.log(`[Puppeteer] free target count: [${freeTarget.length}]`);
@@ -229,8 +242,18 @@ export async function filterFreeItem(torrentPageUrl: string, retryTime: number =
       freeItem = await item.$(siteAnchor.freeItem2up);
     }
 
-    const progressArea = await item.$(siteAnchor.progressArea);
-    if( null === freeItem || null !== progressArea ) {
+    try {
+      const title1: string = await currentSite.getTitle(item);
+      console.log(title1, null === freeItem);
+    } catch (e) {
+      console.log(e.message);
+    }
+
+    const downloaded: boolean = false; // await currentSite.isDownloaded(item);
+
+    console.log(downloaded);
+    if( null === freeItem ) {
+      log.log(`[PUPPETEER] free Item === null: [${null === freeItem}] downloaded: [${downloaded}]`);
       continue;
     }
     let freeTime: Date = null;
@@ -254,21 +277,20 @@ export async function filterFreeItem(torrentPageUrl: string, retryTime: number =
     const title: string = await currentSite.getTitle(item);
     const size: number = await currentSite.getSize(item);
 
-    const urlItem = url.parse(torrentUrl, true);
-
     freeItems.push({
       id, title, size,
       freeUntil: freeTime,
       free: true,
       uid: config.uid,
       torrentUrl: torrentUrl,
-      site: config.site
+      site: config.site,
+      serverId: -1
     });
   }
   if (0 === freeItems.length && 0 === freeTarget.length) {
     await sleep(5 * 1000);
-    torrentPage = null;
-    return filterFreeItem(torrentPageUrl, isVip, retryTime);
+    return filterFreeItem(torrentPageUrl, retryTime);
   }
+  console.log(JSON.stringify(freeItems));
   return freeItems;
 }

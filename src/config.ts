@@ -2,6 +2,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { load } from 'js-yaml';
 import * as _ from 'lodash';
+import { TPTUserInfo } from './types';
 
 export interface TTBSConfig {
     [key: string]: any;
@@ -62,6 +63,7 @@ export function getConfig(): TTBSConfig {
 export let site: string = 'hdchina';
 export let uid: string = '325966';
 export let nickname: string = 'perterpon';
+export let vip: boolean = false;
 
 export function setSite(siteValue): void {
     site = siteValue || site;
@@ -73,4 +75,8 @@ export function setUid(uidValue): void {
 
 export function setNick(nicknameValue): void {
     nickname = nicknameValue || nickname;
+}
+
+export function setVip(vipValue): void {
+    vip = vipValue || vip
 }

@@ -5,6 +5,11 @@ import { promisify } from 'util';
 import * as config from './config';
 import * as log from './log';
 import * as filesize from 'filesize';
+import * as mysql from './mysql';
+
+import { getServers } from './mysql';
+
+import { TPTServer } from './types';
 
 export interface TTransItem {
   id: number;
@@ -15,97 +20,237 @@ export interface TTransItem {
   size: number;
   activityDate: Date;
   isFinished: boolean;
+  serverId: number;
 }
 
-let transmission: any = null;
+export let servers: TPTServer[] = [];
+export const serverConfigMap: Map<number, TPTServer> = new Map();
+const serverMap: Map<number, any> = new Map();
 
-export async function init(): Promise<void> {
-  if (null !== transmission) {
+export async function init(uid: string): Promise<void> {
+  if (servers.length > 0) {
     return;
   }
-  const configInfo = config.getConfig();
-  const { host, port, username, password, ssl } = configInfo.transmission;
-  transmission = new Transmission({
-    host, port, username, password, ssl
-  });
-  Object.assign(status, transmission.status);
-  for (const fnName in transmission) {
-    const fn = transmission[fnName];
-    if (true === _.isFunction(fn)) {
-      transmission[fnName] = promisify(fn);
-    }
+
+  await initServerInfo(uid);
+  await initServer();
+}
+
+async function initServerInfo(uid: string): Promise<void> {
+  log.log(`[Transmission] initServerInfo`);
+  servers = await mysql.getServers(uid);
+  for (const server of servers) {
+    const { id } = server;
+    serverConfigMap.set(id, server);
   }
 }
 
-export async function getDownloadingItems(): Promise<TTransItem[]> {
-  log.log(`[Transmission] get download items`);
-  const data = await transmission.active();
-  const downloadingItems: TTransItem[] = [];
-  for (const item of data.torrents) {
-    if( transmission.status.DOWNLOAD === item.status) {
-      const { status, id, name, downloadDir, hashString, sizeWhenDone: size, activityDate, isFinished } = item;
-      downloadingItems.push({
-        id, name, downloadDir, status, size, activityDate, isFinished,
-        hash: hashString
-      });
+async function initServer(): Promise<void> {
+  log.log(`[Transmission] initServer`);
+  for (const server of servers) {
+    const { id, ip, port, username, password, box } = server;
+
+    const transmissionClient = new Transmission({
+      host: ip,
+      ssl: false,
+      port, username, password
+    });
+    console.log({
+      host: ip,
+      ssl: false,
+      port, username, password
+    });
+    Object.assign(status, transmissionClient.status);
+    for (const fnName in transmissionClient) {
+      const fn = transmissionClient[fnName];
+      if (true === _.isFunction(fn)) {
+        transmissionClient[fnName] = promisify(fn);
+      }
     }
+
+    const activeItem = await getServerItems(id, 'active');
+    server.activeNumber = activeItem.length;
+    serverMap.set(id, transmissionClient);
+    log.log(`[Transmission] init server: [${id}], active number: [${server.activeNumber}]`);
   }
+}
+
+export async function getDownloadingItems(serverId: number = -1): Promise<TTransItem[]> {
+  log.log(`[Transmission] get download items with server id: [${serverId}]`);
+
+  if (-1 !== serverId) {
+    return getServerItems(serverId, 'active');
+  }
+
+  const downloadingItems: TTransItem[] = [];
+  const mapArr = Array.from(serverMap);
+  for (const itemArr of mapArr) {
+    const currentServerId: number = itemArr[0];
+    const items = await getServerItems(currentServerId, 'active');
+    downloadingItems.push(...items);
+  }
+
   return downloadingItems;
 }
 
-export async function getAllItems(): Promise<TTransItem[]> {
+export async function getAllItems(serverId: number = -1): Promise<TTransItem[]> {
   log.log(`[Transmission] getAllItems`);
-  const data = await transmission.get();
+
+  if (-1 !== serverId) {
+    return getServerItems(serverId, 'all');
+  }
+
   const downloadingItems: TTransItem[] = [];
+  const mapArr = Array.from(serverMap);
+  if (-1 === serverId) {
+    for (const itemArr of mapArr) {
+      const currentServerId: number = itemArr[0];
+      const items = await getServerItems(currentServerId, 'all');
+      downloadingItems.push(...items);
+    }
+  }
+
+  return downloadingItems;
+}
+
+async function getServerItems(serverId: number, type: 'all'|'active'): Promise<TTransItem[]> {
+  const downloadingItems: TTransItem[] = [];
+    
+  const server = serverMap.get(serverId);
+  if (undefined === server) {
+    return [];
+  }
+  let data = {
+    torrents: []
+  };
+  if ('all' === type) {
+    data = await server.get();
+  } else if ('active' === type) {
+    data = await server.active();
+  }
   for (const item of data.torrents) {
     const { status, id, name, downloadDir, hashString, sizeWhenDone: size, activityDate, isFinished } = item;
     downloadingItems.push({
-      id, name, downloadDir, status, size, activityDate, isFinished,
+      id, name, downloadDir, status, size, activityDate, isFinished, serverId,
       hash: hashString
     });
   }
   return downloadingItems;
 }
 
-export async function removeItem(id: number): Promise<void> {
+export async function removeItem(id: number, serverId: number): Promise<void> {
   log.log(`[Transmission] remove item: [${id}]`);
-  const result = await transmission.remove(id, true);
+  const server = getServer(serverId);
+
+  const result = await server.remove(id, true);
   log.log(`[Transmission] remove item: [${id}] with result: [${JSON.stringify(result)}]`);
 }
 
-export async function addUrl(url: string): Promise<{transId: string; hash: string;}> {
+export async function addUrl(url: string, serverId: number): Promise<{transId: string; hash: string; serverId: number;}> {
   log.log(`[Transmission] add url: [${url}]`);
-  const configInfo = config.getConfig();
-  const { fileDownloadPath } = configInfo.transmission;
-  const res = await transmission.addUrl(url, {
-    'download-dir':  fileDownloadPath
+  const server = getServer(serverId);
+  const res = await server.addUrl(url, {
+    'download-dir': server.fileDownloadPath
   });
   log.log(`[Transmission] add url with result: [${JSON.stringify(res)}]`);
   const { id, hashString } = res;
   return {
     transId: id,
-    hash: hashString
+    hash: hashString,
+    serverId
   };
 }
 
-export async function freeSpace(): Promise<number> {
-  const configInfo = config.getConfig();
-  const { fileDownloadPath } = configInfo.transmission;
-  const res = await transmission.freeSpace(fileDownloadPath);
-  log.message(`left space total: [${filesize(res['size-bytes'])}]`);
-  log.log(`[Transmission] free space: [${fileDownloadPath}], total: [${filesize(res['size-bytes'])}]`);
-  return res['size-bytes'];
+export async function freeSpace(serverId: number = -1): Promise<{serverId: number; size: number;}[]> {
+  if (-1 !== serverId) {
+    return getFreeSpace(serverId);
+  }
+
+  const freeSpaceInfo = [];
+  const mapArr = Array.from(serverMap);
+  for (const itemArr of mapArr) {
+    const [currentServerId, server] = itemArr;
+    const info = await getFreeSpace(currentServerId);
+    freeSpaceInfo.push(...info);
+  }
+
+  async function getFreeSpace(serverId: number): Promise<{serverId: number; size: number}[]> {
+    log.log(`[Transmission] getFreeSpace server id: [${serverId}]`);
+    const serverInfo: TPTServer = await serverConfigMap.get(serverId);
+    const serverClient = await serverMap.get(serverId);
+    if (undefined === serverInfo || undefined === serverClient) {
+      log.log(`[WARN] [Transmission] trying to get free space but something is wrong, server Info: [${JSON.stringify(serverInfo)}], server client: [${serverClient}]`);
+      return [];
+    }
+    const { fileDownloadPath } = serverInfo;
+    const res = await serverClient.freeSpace(fileDownloadPath);
+    log.message(`left space total: [${filesize(res['size-bytes'])}]`);
+    log.log(`[Transmission] free space: [${fileDownloadPath}], total: [${filesize(res['size-bytes'])}]`);
+    return [{
+      serverId,
+      size: res['size-bytes']
+    }]
+  }
+
+  return freeSpaceInfo;
 }
 
-export async function sessionStates(): Promise<{
+export async function sessionStates(serverId: number = -1): Promise<{
   uploadSpeed: number,
-  downloadSpeed: number
-}> {
-  const res = await transmission.sessionStats();
-  return {
-    uploadSpeed: res.uploadSpeed,
-    downloadSpeed: res.downloadSpeed
+  downloadSpeed: number,
+  serverId: number
+}[]> {
+  if (-1 !== serverId) {
+    const server = getServer(serverId);
+    const res = await server.sessionStats();
+    return [{
+      serverId,
+      uploadSpeed: res.uploadSpeed,
+      downloadSpeed: res.downloadSpeed
+    }]
   }
+
+  const resFreeSpaceInfo:{
+    uploadSpeed: number,
+    downloadSpeed: number,
+    serverId: number
+  }[] = [];
+  const mapArr = Array.from(serverMap);
+  for (const itemArr of mapArr) {
+    const [currentServerId, server] = itemArr;
+    const res = await server.sessionStats();
+    resFreeSpaceInfo.push({
+      serverId,
+      uploadSpeed: res.uploadSpeed,
+      downloadSpeed: res.downloadSpeed
+    });
+  }
+  return resFreeSpaceInfo;
 }
+
+export async function canAddServers(vip: boolean): Promise<number[]> {
+  const canAddServerIds: number[] = [];
+  for (const server of servers) {
+    const { box, id } = server;
+    if (
+      ( true === box && false === vip ) ||
+      ( false === box && true === vip )
+    ) {
+      continue;
+    }
+    canAddServerIds.push(id);
+
+  }
+  return canAddServerIds;
+}
+
+function getServer(serverId: number): any {
+  const server = serverMap.get(serverId);
+  if (undefined === server) {
+    throw new Error(`trying to get server with server id: [${serverId}], but server not found!`);
+  }
+  return server;
+}
+
 
 export const status: any = {};
