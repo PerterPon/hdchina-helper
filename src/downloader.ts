@@ -95,9 +95,9 @@ async function initTempFolder(): Promise<void> {
 
 async function downloadItem(items: TItem[]): Promise<TItem[]> {
   log.log(`downloadItem: [${JSON.stringify(items)}]`);
-  if (items.length > 5) {
-    log.message(`target download items: [${items.length}], reduce to [${5}]`);
-    items = items.splice(0, 5);
+  if (items.length > 10) {
+    log.message(`target download items: [${items.length}], reduce to [${10}]`);
+    items = items.splice(0, 10);
   }
   let downloadCount: number = 0;
   let existsTorrentCount: number = 0;
@@ -127,7 +127,7 @@ async function downloadItem(items: TItem[]): Promise<TItem[]> {
       });
       await utils.writeFile(res.data, fileWriter);
       const leftTime: number = moment(freeUntil).unix() - moment().unix();
-      log.log(`download torrent: [${fileFullName}], size: [${filesize(size)}], free time: [${moment(freeUntil).diff(moment(), 'hours')} H]`);
+      log.message(`download torrent: [${fileFullName}], size: [${filesize(size)}], free time: [${moment(freeUntil).diff(moment(), 'hours')} H]`);
       downloadCount++;
       downloadSuccessItems.push(item);
     } catch (e) {
@@ -146,7 +146,6 @@ async function downloadItem(items: TItem[]): Promise<TItem[]> {
 
 async function uploadItem(items: TItem[]): Promise<void> {
   log.log(`upload items: [${JSON.stringify(items)}]`);
-  const configInfo = config.getConfig();
   for (const item of items) {
     const { site, id } = item;
     const fileName: string = `${config.uid}/${site}_${id}.torrent`;
