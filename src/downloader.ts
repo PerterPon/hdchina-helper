@@ -127,7 +127,7 @@ async function downloadItem(items: TItem[]): Promise<TItem[]> {
       });
       await utils.writeFile(res.data, fileWriter);
       const leftTime: number = moment(freeUntil).unix() - moment().unix();
-      log.message(`download torrent: [${fileFullName}], size: [${filesize(size)}], free time: [${moment(freeUntil).diff(moment(), 'hours')} H]`);
+      log.message(`download torrent: [${title}], size: [${filesize(size)}], free time: [${moment(freeUntil).diff(moment(), 'hours')} H]`);
       downloadCount++;
       downloadSuccessItems.push(item);
     } catch (e) {
