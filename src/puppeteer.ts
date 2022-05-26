@@ -68,6 +68,12 @@ export async function loadPage(url: string, force: boolean = false): Promise<pup
       timeout: 60 * 1000
     });
     await sleep(5 * 1000);
+
+    const screenShot: Buffer = await page.screenshot() as unknown as Buffer;
+    const screenShotName: string = `${config.site}_${config.uid}_${utils.displayTime()}.png`;
+    await oss.uploadScreenShot(screenShotName, screenShot);
+    log.message(`[Puppeteer] screenshot: [http://${configInfo.aliOss.cdnHost}/screenshot/${screenShotName}]`);
+
   }
   return page;
 }
