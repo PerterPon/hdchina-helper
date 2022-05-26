@@ -42,6 +42,7 @@ async function initServerInfo(uid: string): Promise<void> {
   for (const server of servers) {
     const { id } = server;
     serverConfigMap.set(id, server);
+    server.fileDownloadPath = `${server.fileDownloadPath}/${config.site}/${config.uid}`;
   }
 }
 
@@ -51,11 +52,6 @@ async function initServer(): Promise<void> {
     const { id, ip, port, username, password, box } = server;
 
     const transmissionClient = new Transmission({
-      host: ip,
-      ssl: false,
-      port, username, password
-    });
-    console.log({
       host: ip,
       ssl: false,
       port, username, password
