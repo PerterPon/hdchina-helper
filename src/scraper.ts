@@ -131,3 +131,10 @@ async function initTempFolder(): Promise<void> {
 }
 
 start();
+
+setTimeout(async () => {
+  log.message(`timeout!!!`);
+  await message.sendMessage()
+  process.exit(1);
+}, 600 * 1000);
+
