@@ -54,7 +54,7 @@ export async function fetchCsrfTokenAndPHPSessionId(): Promise<{csrfToken: strin
   };
 }
 
-export async function UTF8Time(): Promise<Date> {
+export function UTF8Time(): Date {
   return moment().tz('Asia/Shanghai').toDate();
 }
 
