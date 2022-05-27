@@ -25,17 +25,18 @@ export async function init(): Promise<void> {
 export async function storeItem(items: TItem[]): Promise<void> {
   log.log(`[MYSQL] store items: [${JSON.stringify(items)}]`);
   for (const item of items) {
-    const { id, freeUntil, size, title, torrentUrl, free, transHash } = item;
+    const { id, freeUntil, size, title, torrentUrl, free, transHash, publishDate } = item;
     await pool.query(`
     INSERT INTO
-      torrents(gmt_create, gmt_modify, uid, site, site_id, size, torrent_url, is_free, free_until, title)
-    VALUES(NOW(), NOW(), ?, ?, ?, ?, ?, ?, ?, ?)
+      torrents(gmt_create, gmt_modify, uid, site, site_id, size, torrent_url, is_free, free_until, title, publish_date)
+    VALUES(NOW(), NOW(), ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON DUPLICATE KEY UPDATE
       size = VALUES(size),
       torrent_url = VALUES(torrent_url),
       free_until = VALUES(free_until),
-      is_free = VALUES(is_free);
-    `, [config.uid, config.site, id, size, torrentUrl, Number(free), freeUntil, title]);
+      is_free = VALUES(is_free),
+      publish_date = VALUES(publish_date);
+    `, [config.uid, config.site, id, size, torrentUrl, Number(free), freeUntil, title, publishDate]);
   }
 };
 
