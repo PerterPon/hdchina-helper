@@ -230,6 +230,9 @@ async function storeDownloadAction(transIds: {transId: string; hash: string; ser
       continue;
     }
     const item: TItem = items[i];
+    if (undefined === item) {
+      continue;
+    }
     const { site, id, uid } = item;
     await mysql.updateTorrentHashBySiteAndId(site, id, hash);
     await mysql.storeDownloadAction(site, id, uid, transId, hash, serverId);
