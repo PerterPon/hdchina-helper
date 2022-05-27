@@ -62,16 +62,24 @@ export async function loadPage(url: string, force: boolean = false): Promise<pup
     }).catch((e) => {
       log.log(e);
     });
-    await page.waitForSelector(configInfo.siteAnchor.pageWaiter, {
-      timeout: 60 * 1000
-    });
-    await sleep(5 * 1000);
-
+    log.log(`[Puppeteer] waiting for load page: [${url}]`);
+    let loadPageError: Error = null;
+    try {
+      await page.waitForSelector(configInfo.siteAnchor.pageWaiter, {
+        timeout: 60 * 1000
+      });
+      await sleep(5 * 1000);
+    } catch (e) {
+      loadPageError = e;
+    }
     const screenShot: Buffer = await page.screenshot() as unknown as Buffer;
     const screenShotName: string = `${config.site}_${config.uid}_${utils.displayTime()}.png`;
     await oss.uploadScreenShot(screenShotName, screenShot);
     log.message(`[Puppeteer] screenshot: [http://${configInfo.aliOss.cdnHost}/screenshot/${screenShotName}]`);
 
+    if (loadPageError !== null) {
+      throw loadPageError;
+    }
   }
   return page;
 }
@@ -270,6 +278,7 @@ export async function filterFreeItem(torrentPageUrl: string, retryTime: number =
   torrentItems = torrentItems.slice(1);
   for(const item of torrentItems) {
     let freeItem = null;
+    let isFree: boolean = false;
     freeItem = await item.$(siteAnchor.freeItem1up);
     if (null === freeItem) {
       freeItem = await item.$(siteAnchor.freeItem2up);
@@ -283,20 +292,23 @@ export async function filterFreeItem(torrentPageUrl: string, retryTime: number =
 
     if( null === freeItem ) {
       log.log(`[PUPPETEER] free Item === null: [${null === freeItem}] downloaded: [${downloaded}]`);
-      continue;
+      isFree = false;
+    } else {
+      isFree = true;
     }
+
     let freeTime: Date = null;
     try {
       freeTime = await currentSite.getFreeTime(item);
     } catch (e) {
-      log.log(e.message, e.stack);
+      // log.log(e.message, e.stack);
     }
     try {
       if (null === freeTime) {
         freeTime = await currentSite.getFreeTime2up(item);
       }
     } catch (e) {
-      log.log(e.message, e.stack);
+      // log.log(e.message, e.stack);
     }
 
     let torrentUrl: string = await item.$eval(siteAnchor.torrentUrlAnchor, (el) => (el.parentNode as HTMLAnchorElement).getAttribute('href'))
@@ -306,7 +318,7 @@ export async function filterFreeItem(torrentPageUrl: string, retryTime: number =
     freeItems.push({
       id, title, size, publishDate,
       freeUntil: freeTime,
-      free: true,
+      free: isFree,
       uid: config.uid,
       torrentUrl: torrentUrl,
       site: config.site,

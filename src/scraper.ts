@@ -84,16 +84,20 @@ async function main(): Promise<void> {
   const configInfo = config.getConfig();
   const { torrentPage } = configInfo;
   for (const pageUrl of torrentPage) {
-    let freeItems: TItem[] = [];
-    if (true === config.vip) {
-      freeItems = await puppeteer.filterVIPItem(pageUrl);
-    } else {
-      freeItems = await puppeteer.filterFreeItem(pageUrl);
+    try {
+      let freeItems: TItem[] = [];
+      if (true === config.vip) {
+        freeItems = await puppeteer.filterVIPItem(pageUrl);
+      } else {
+        freeItems = await puppeteer.filterFreeItem(pageUrl);
+      }
+      log.log(`got free items: [${JSON.stringify(freeItems)}]`);
+      log.message(`free item count: [${freeItems.length}]`);
+      // 4. 
+      await mysql.storeItem(freeItems);
+    } catch (e) {
+      log.log(`[WARN] ${e} ${e.stack}`);
     }
-    log.log(`got free items: [${JSON.stringify(freeItems)}]`);
-    log.message(`free item count: [${freeItems.length}]`);
-    // 4. 
-    await mysql.storeItem(freeItems);
   }
 }
 
