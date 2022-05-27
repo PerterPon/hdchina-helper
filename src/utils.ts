@@ -54,6 +54,10 @@ export async function fetchCsrfTokenAndPHPSessionId(): Promise<{csrfToken: strin
   };
 }
 
+export async function UTF8Time(): Promise<Date> {
+  return moment().tz('Asia/Shanghai').toDate();
+}
+
 export async function getItemDetailByIds(ids: string[]): Promise<any> {
   log.log(`[Utils], getItemDetailByIds: [${ids}]`);
 

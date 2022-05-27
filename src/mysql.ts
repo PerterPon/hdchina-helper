@@ -6,6 +6,7 @@ import * as _ from 'lodash';
 import * as log from './log';
 
 import { TPTUserInfo, TPTServer } from './types';
+import { UTF8Time } from './utils';
 
 export let pool: mysql.Pool = null;
 
@@ -29,14 +30,14 @@ export async function storeItem(items: TItem[]): Promise<void> {
     await pool.query(`
     INSERT INTO
       torrents(gmt_create, gmt_modify, uid, site, site_id, size, torrent_url, is_free, free_until, title, publish_date)
-    VALUES(NOW(), NOW(), ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON DUPLICATE KEY UPDATE
       size = VALUES(size),
       torrent_url = VALUES(torrent_url),
       free_until = VALUES(free_until),
       is_free = VALUES(is_free),
       publish_date = VALUES(publish_date);
-    `, [config.uid, config.site, id, size, torrentUrl, Number(free), freeUntil, title, publishDate]);
+    `, [UTF8Time(), UTF8Time(), config.uid, config.site, id, size, torrentUrl, Number(free), freeUntil, title, publishDate]);
   }
 };
 
@@ -67,13 +68,13 @@ export async function getFreeItems(): Promise<TItem[]> {
         torrents.uid = downloader.uid
       WHERE
         torrents.is_free = 1 AND
-        torrents.free_until > NOW() AND
+        torrents.free_until > ? AND
         torrents.uid = ? AND
         torrents.site = ?
     ) AS temp
     WHERE
       downloader_id IS NULL;
-    `, [config.uid, config.site]);
+    `, [UTF8Time(), config.uid, config.site]);
   log.log(`[MYSQL] get free item: [${JSON.stringify(data)}]`);
   const freeItems: TItem[] = [];
   for (const item of data) {
@@ -96,8 +97,8 @@ export async function storeDownloadAction(site: string, siteId: string, uid: str
   log.log(`[MYSQL] storeDownloadAction site: [${site}], site id: [${siteId}], uid: [${uid}], trans id: [${transId}], torrent hash: [${torrentHash}] server id: [${serverId}]`);
   await pool.query(`
   INSERT INTO downloader(gmt_create, gmt_modify, uid, trans_id, torrent_hash, site, site_id, server_id)
-  VALUES (NOW(), NOW(), ?, ?, ?, ?, ?, ?)
-  `, [uid, transId, torrentHash, site, siteId, serverId]);
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `, [UTF8Time(), UTF8Time(), uid, transId, torrentHash, site, siteId, serverId]);
 }
 
 export async function updateTorrentHashBySiteAndId(site: string ,siteId: string, torrentHash: string): Promise<void> {
@@ -197,8 +198,8 @@ export async function storeSiteInfo(
   await pool.query(`
   INSERT INTO 
     site_data(gmt_create, gmt_modify, site, uid, share_ratio, download_count, upload_count, magic_point, upload_speed, download_speed)
-  VALUE(NOW(), NOW(), ?, ?, ?, ?, ?, ?, ?, ?)
-  `, [config.site, config.uid, shareRatio || 0, downloadCount || 0, uploadCount || 0, magicPoint || 0, uploadSpeed || 0, downloadSpeed]);
+  VALUE(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `, [UTF8Time(), UTF8Time(), config.site, config.uid, shareRatio || 0, downloadCount || 0, uploadCount || 0, magicPoint || 0, uploadSpeed || 0, downloadSpeed]);
 }
 
 export async function getUserInfoByUid(uid: string): Promise<TPTUserInfo> {
