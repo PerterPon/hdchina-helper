@@ -47,14 +47,14 @@ export async function main(): Promise<void> {
   const canDownloadItem: TItem[] = await mysql.getFreeItems();
 
   // 6. 
-  // const downloadSuccessItem: TItem[] = await downloadItem(canDownloadItem);
+  const downloadSuccessItem: TItem[] = await downloadItem(canDownloadItem);
 
   // 7.
-  // await uploadItem(downloadSuccessItem);
+  await uploadItem(downloadSuccessItem);
 
   let trans: { transId: string; hash: string; serverId: number }[] = [];
   try {
-    trans = await addItemToTransmission(canDownloadItem);
+    trans = await addItemToTransmission(downloadSuccessItem);
   } catch (e) {
     log.log(e.message);
     log.log(e.stack);

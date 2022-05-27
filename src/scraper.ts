@@ -41,10 +41,10 @@ async function start(): Promise<void> {
   try {
     await init();
 
-    // await storeSiteData();
+    await storeSiteData();
     const userInfo: TPTUserInfo = await mysql.getUserInfoByUid(config.uid);
     if (false === userInfo.siteDataOnly) {
-      // await main();
+      await main();
       await startDownloader();
     }
 
