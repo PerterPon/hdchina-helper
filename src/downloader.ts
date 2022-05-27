@@ -161,19 +161,30 @@ async function addItemToTransmission(items: TItem[]): Promise<{transId: string; 
   const { cdnHost } = configInfo.aliOss;
   let errorCount: number = 0;
   let successCount: number = 0;
+  let canAddServerIds: number[] = await transmission.canAddServers(config.vip);
+  canAddServerIds = _.shuffle(canAddServerIds);
+  const serverAddNumMap: Map<number, number> = new Map();
   for (const item of items) {
     const { site, uid, id, title } = item;
     const torrentUrl: string = `http://${cdnHost}/hdchina/${uid}/${site}_${id}.torrent`;
     log.log(`add file to transmission: [${title}]`);
-    const canAddServerIds: number[] = await transmission.canAddServers(config.vip);
-    for (const canAddServerId of canAddServerIds) {
-      const res = await doAddToTransmission(torrentUrl, canAddServerId);
-      successCount++;
-      resInfo.push(res);
+    const serverId: number = canAddServerIds.shift();
+    const res = await doAddToTransmission(torrentUrl, serverId);
+    successCount++;
+    resInfo.push(res);
+    canAddServerIds.push(serverId);
+    let addedNumber: number = serverAddNumMap.get(serverId);
+    if (undefined === addedNumber) {
+      addedNumber = 0;
     }
+    addedNumber++;
+    serverAddNumMap.set(serverId, addedNumber);
   }
   if (0 < successCount) {
     log.message(`add transmission success count: [${successCount}]`);
+    for (const serverId of canAddServerIds) {
+      log.message(`server: [${serverId}] add success count: [${serverAddNumMap.get(serverId) || 0}]`);
+    }
   }
   if (0 < errorCount) {
     log.message(`add transmission error count: [${errorCount}]`);

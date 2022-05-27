@@ -213,11 +213,17 @@ export async function getUserInfoByUid(uid: string): Promise<TPTUserInfo> {
     return null;
   }
   const { cookie, vip, uploadCount, site, nickname, paid, bind_server, cycle_time, rss_passkey, user_data_dir, site_data_only } = res[0];
+  const servers: string[] = bind_server.split(',');
+  const numServers: number[] = [];
+  for (let i = 0; i < servers.length; i++) {
+    const server: string = servers[i];
+    numServers.push(Number(server));
+  }
   const userInfo: TPTUserInfo = { 
     cookie, site, uid, uploadCount, paid, nickname,
     cycleTime: cycle_time,
     vip: Boolean(vip),
-    serverIds: bind_server,
+    serverIds: numServers,
     passkey: rss_passkey,
     userDataDir: user_data_dir,
     siteDataOnly: Boolean(site_data_only)

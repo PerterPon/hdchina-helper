@@ -1,6 +1,6 @@
 const Transmission = require('transmission');
 const transmission = new Transmission({
-  host: 'home.perterpon.com',
+  host: 'mikipt.perterpon.com',
   port: 9091,
   username: 'perterpon', 
   password: 'pon423904',
@@ -16,7 +16,7 @@ const transmission = new Transmission({
 // transmission.active((error, data) => {
 //   console.log(data);
 // });
-transmission.freeSpace('/volume1/homes/download/pt/mteam/269592',(error, data) => {
+transmission.freeSpace('/Volumes/pt',(error, data) => {
   console.log(data);
 });
 

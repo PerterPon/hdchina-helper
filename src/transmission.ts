@@ -215,7 +215,7 @@ export async function sessionStates(serverId: number = -1): Promise<{
     const [currentServerId, server] = itemArr;
     const res = await server.sessionStats();
     resFreeSpaceInfo.push({
-      serverId,
+      serverId: currentServerId,
       uploadSpeed: res.uploadSpeed,
       downloadSpeed: res.downloadSpeed
     });
