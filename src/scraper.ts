@@ -40,8 +40,13 @@ let tempFolder: string = null;
 async function start(): Promise<void> {
   try {
     await init();
-    await main();
-    await startDownloader();
+
+    await storeSiteData();
+    const userInfo: TPTUserInfo = await mysql.getUserInfoByUid(config.uid);
+    if (false === userInfo.siteDataOnly) {
+      await main();
+      await startDownloader();
+    }
 
     await puppeteer.close();
     await message.sendMessage();
@@ -58,8 +63,8 @@ async function start(): Promise<void> {
   }
 }
 
-async function main(): Promise<void> {
-  // 1. 
+async function storeSiteData(): Promise<void> {
+  log.log('storeSiteData');
   const userInfo: TPageUserInfo = await puppeteer.getUserInfo();
   const { shareRatio, downloadCount, uploadCount, magicPoint } = userInfo;
   log.message(`share ratio: [${shareRatio || ''}]`);
@@ -79,7 +84,9 @@ async function main(): Promise<void> {
 
   // 2.
   await mysql.storeSiteInfo(Number(shareRatio), Number(downloadCount), Number(uploadCount), Number(magicPoint), Number(totalUploadSpeed), Number(totalDownloadSpeed));
+}
 
+async function main(): Promise<void> {
   // 3.
   const configInfo = config.getConfig();
   const { torrentPage } = configInfo;

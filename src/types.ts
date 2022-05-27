@@ -25,6 +25,7 @@ export interface TPTUserInfo {
   serverIds: number[];
   passkey: string;
   userDataDir: string;
+  siteDataOnly: boolean;
 }
 
 export interface TPTServer {
