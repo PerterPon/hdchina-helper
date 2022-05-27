@@ -91,20 +91,22 @@ export async function getTitle(el: puppeteer.ElementHandle): Promise<string> {
 }
 
 export async function getSize(el: puppeteer.ElementHandle): Promise<number> {
-  return 0;
-  const row = await el.$('td:nth-child(5)');
-  const sizeString = await el.$eval('td:nth-child(5)', (el) => el.innerHTML);
-  const [ sizeNumberString ] = sizeString.match(/\d+.*\d+/);
-  const sizeNumber: number = Number(sizeNumberString)
-  let size: number = 0;
-  if (-1 < sizeString.indexOf('GB')) {
-    size = sizeNumber * 1024 * 1024 * 1024
-  } else if (-1 < sizeString.indexOf('MB')) {
-    size = sizeNumber * 1024 * 1024;
-  } else if (-1 < sizeString.indexOf('TB')) {
-    size = sizeNumber * 1024 * 1024 * 1024;
+  try {
+    const sizeString = await el.$eval('td:nth-child(5)', (el) => el.textContent);
+    const [ sizeNumberString ] = sizeString.match(/\d*\.*\d*/);
+    const sizeNumber: number = Number(sizeNumberString)
+    let size: number = 0;
+    if (-1 < sizeString.indexOf('GB')) {
+      size = sizeNumber * 1024 * 1024 * 1024
+    } else if (-1 < sizeString.indexOf('MB')) {
+      size = sizeNumber * 1024 * 1024;
+    } else if (-1 < sizeString.indexOf('TB')) {
+      size = sizeNumber * 1024 * 1024 * 1024;
+    }
+    return size;
+  } catch (e) {
+    return 0;
   }
-  return size;
 }
 
 export async function getDownloadUrl(item: TItem): Promise<string> {
@@ -129,7 +131,7 @@ export async function isDownloaded(el: puppeteer.ElementHandle): Promise<boolean
 }
 
 export async function publishDate(el: puppeteer.ElementHandle): Promise<Date> {
-  const dateString: string = await el.$eval('td:nth-child(5)', (el) => el.getAttribute('title'));
+  const dateString: string = await el.$eval('td:nth-child(4) span', (el) => el.getAttribute('title'));
   return new Date(dateString);
 }
 
