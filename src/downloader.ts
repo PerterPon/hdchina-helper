@@ -47,21 +47,21 @@ export async function main(): Promise<void> {
   const canDownloadItem: TItem[] = await mysql.getFreeItems();
 
   // 6. 
-  const downloadSuccessItem: TItem[] = await downloadItem(canDownloadItem);
+  // const downloadSuccessItem: TItem[] = await downloadItem(canDownloadItem);
 
   // 7.
-  await uploadItem(downloadSuccessItem);
+  // await uploadItem(downloadSuccessItem);
 
   let trans: { transId: string; hash: string; serverId: number }[] = [];
   try {
-    trans = await addItemToTransmission(downloadSuccessItem);
+    trans = await addItemToTransmission(canDownloadItem);
   } catch (e) {
     log.log(e.message);
     log.log(e.stack);
   }
 
   // 8.
-  await storeDownloadAction(trans, downloadSuccessItem);
+  await storeDownloadAction(trans, canDownloadItem);
   await utils.sleep(5 * 1000);
   // 9. 
   const downloadingItems: TItem[] = await getDownloadingItems();
@@ -161,14 +161,15 @@ async function addItemToTransmission(items: TItem[]): Promise<{transId: string; 
   const { cdnHost } = configInfo.aliOss;
   let errorCount: number = 0;
   let successCount: number = 0;
-  let canAddServerIds: number[] = await transmission.canAddServers(config.vip);
+  const userInfo: TPTUserInfo = await mysql.getUserInfoByUid(config.uid);
+  let canAddServerIds: number[] = userInfo.serverIds;
   canAddServerIds = _.shuffle(canAddServerIds);
   const serverAddNumMap: Map<number, number> = new Map();
   for (const item of items) {
     const { site, uid, id, title } = item;
     const torrentUrl: string = `http://${cdnHost}/hdchina/${uid}/${site}_${id}.torrent`;
-    log.log(`add file to transmission: [${title}]`);
     const serverId: number = canAddServerIds.shift();
+    log.log(`add file to transmission: [${title}], server id: [${serverId}]`);
     const res = await doAddToTransmission(torrentUrl, serverId);
     successCount++;
     resInfo.push(res);
