@@ -349,7 +349,7 @@ export async function getLatestSiteData(uid: string, site: string): Promise<TSit
     site = ?
   ORDER BY gmt_create DESC
   LIMIT 1;
-  `);
+  `, [uid, site]);
   const { share_ratio, upload_count, magic_point, download_count, upload_speed, download_speed } = res[0];
   return {
     shareRatio: share_ratio,
