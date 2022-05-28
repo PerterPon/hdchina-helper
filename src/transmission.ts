@@ -7,7 +7,7 @@ import * as log from './log';
 import * as filesize from 'filesize';
 import * as mysql from './mysql';
 
-import { TPTServer, TTransmission } from './types';
+import { ETransmissionStatus, TPTServer, TTransmission } from './types';
 
 export interface TTransItem {
   id: number;
@@ -36,7 +36,7 @@ export async function init(uid: string): Promise<void> {
 
 async function initServerInfo(uid: string): Promise<void> {
   log.log(`[Transmission] initServerInfo`);
-  servers = await mysql.getServers(uid);
+  servers = await mysql.getServers(uid, config.userInfo.serverIds);
   for (const server of servers) {
     const { id } = server;
     serverConfigMap.set(id, server);
@@ -65,16 +65,30 @@ async function initServer(): Promise<void> {
 
     serverMap.set(id, transmissionClient);
 
-    const activeItem = await getServerItems(id, 'active');
-    server.activeNumber = activeItem.length;
+    // const activeItem = await getServerItems(id, 'active');
+    // server.activeNumber = activeItem.length;
     downloadingServer.push(server.ip);
-    log.log(`[Transmission] init server: [${id}], active number: [${server.activeNumber}]`);
+    log.log(`[Transmission] init server: [${id}]`);
   }
 
   log.message(`downloading server: [${downloadingServer}]`);
 }
 
-export async function getDownloadingItems(serverId: number = -1): Promise<TTransItem[]> {
+export async function filterDownloadingItems(serverId: number, ids: number[]): Promise<TTransItem[]> {
+  log.log(`[Transmission] filterDownloadingItems serverId: [${serverId}], ids: [${ids}]`);
+  const items: TTransItem[] = await getAllItems(serverId, ids);
+  const downloadingItems: TTransItem[] = [];
+  for (const item of items) {
+    const { status } = item;
+    if (-1 < [ETransmissionStatus.SEED_WAIT, ETransmissionStatus.SEED].indexOf(status)) {
+      continue;
+    }
+    downloadingItems.push(item);
+  }
+  return downloadingItems;
+}
+
+export async function getDownloadingItems2(serverId: number = -1): Promise<TTransItem[]> {
   log.log(`[Transmission] get download items with server id: [${serverId}]`);
 
   if (-1 !== serverId) {
@@ -92,11 +106,11 @@ export async function getDownloadingItems(serverId: number = -1): Promise<TTrans
   return downloadingItems;
 }
 
-export async function getAllItems(serverId: number = -1): Promise<TTransItem[]> {
-  log.log(`[Transmission] getAllItems`);
+export async function getAllItems(serverId: number = -1, ids: number[] = []): Promise<TTransItem[]> {
+  log.log(`[Transmission] getAllItems, serverId: [${serverId}] ids: [${ids}]`);
 
   if (-1 !== serverId) {
-    return getServerItems(serverId, 'all');
+    return getServerItems(serverId, 'all', ids);
   }
 
   const downloadingItems: TTransItem[] = [];
@@ -104,7 +118,7 @@ export async function getAllItems(serverId: number = -1): Promise<TTransItem[]> 
   if (-1 === serverId) {
     for (const itemArr of mapArr) {
       const currentServerId: number = itemArr[0];
-      const items = await getServerItems(currentServerId, 'all');
+      const items = await getServerItems(currentServerId, 'all', ids);
       downloadingItems.push(...items);
     }
   }
@@ -112,16 +126,15 @@ export async function getAllItems(serverId: number = -1): Promise<TTransItem[]> 
   return downloadingItems;
 }
 
-async function getServerItems(serverId: number, type: 'all'|'active'): Promise<TTransItem[]> {
-  log.log(`[Transmission] getServerItems serverId: [${serverId}], type: [${type}]`);
+async function getServerItems(serverId: number, type: 'all'|'active', ids?: number[]): Promise<TTransItem[]> {
+  log.log(`[Transmission] getServerItems serverId: [${serverId}], type: [${type}], ids: [${ids}]`);
   const downloadingItems: TTransItem[] = [];
-    
   const server = getServer(serverId);
   let data = {
     torrents: []
   };
   if ('all' === type) {
-    data = await server.get();
+    data = await server.get(ids);
   } else if ('active' === type) {
     data = await server.active();
   }
@@ -136,7 +149,7 @@ async function getServerItems(serverId: number, type: 'all'|'active'): Promise<T
 }
 
 export async function removeItem(id: number, serverId: number): Promise<void> {
-  log.log(`[Transmission] remove item: [${id}]`);
+  log.log(`[Transmission] remove item: [${id}] serverId: [${serverId}]`);
   const server = getServer(serverId);
 
   const result = await server.remove(id, true);

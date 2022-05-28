@@ -96,7 +96,7 @@ export function randomInt(input: number): number {
 
 export async function getUserCookie(uid): Promise<puppeteer.SetCookie[]> {
   const configInfo = config.getConfig();
-  const userInfo: TPTUserInfo = await mysql.getUserInfoByUid(uid);
+  const userInfo: TPTUserInfo = config.userInfo;
   const { cookie } = userInfo;
   const cookieItems: string[] = cookie.split(';');
   const cookies: puppeteer.SetCookie[] = [];
@@ -111,7 +111,6 @@ export async function getUserCookie(uid): Promise<puppeteer.SetCookie[]> {
   }
   return cookies;
 }
-
 
 export const ajaxHeader = {
   "accept": "*/*",

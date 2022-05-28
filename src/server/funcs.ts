@@ -17,8 +17,8 @@ export async function getCrontab(ctx: koa.Context): Promise<void> {
 
 export async function removeCrontab(ctx: koa.Context): Promise<void> {
   const uid: string = ctx.query.uid as string;
-  const userInfo: TPTUserInfo = await mysql.getUserInfoByUid(uid);
-
+  const site: string = ctx.query.site as string;
+  const userInfo: TPTUserInfo = await mysql.getUserInfoByUid(uid, site);
 }
 
 export async function addCrontab(ctx: koa.Context): Promise<void> {

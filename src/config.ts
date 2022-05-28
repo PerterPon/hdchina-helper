@@ -64,6 +64,7 @@ export let uid: string = '325966';
 export let nickname: string = 'perterpon';
 export let vip: boolean = false;
 export let tempFolder: string = '';
+export let userInfo: TPTUserInfo = null;
 
 export function setSite(siteValue): void {
     site = siteValue || site;
@@ -83,4 +84,8 @@ export function setVip(vipValue): void {
 
 export function setTempFolder(folderValue): void {
     tempFolder = folderValue || tempFolder;
+}
+
+export function setUserInfo(userInfoValue): void {
+    userInfo = userInfoValue;
 }

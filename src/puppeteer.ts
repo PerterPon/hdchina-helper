@@ -232,8 +232,8 @@ export async function filterVIPItem(torrentPageUrl: string): Promise<TItem[]> {
   }
 
   const dateSortedItems: TItem[] = _.sortBy(freeItems, 'publishDate');
-  // vip only take the latest 5 item.
-  const latestItems: TItem[] = dateSortedItems.slice(0, 5);
+  const { vipNormalItemCount } = config.userInfo;
+  const latestItems: TItem[] = dateSortedItems.slice(0, vipNormalItemCount);
   const vipItems = latestItems.concat(stickyItems);
   return vipItems;
 }
@@ -356,6 +356,6 @@ export async function downloadFile(downloadUrl: string, downloadPath: string, fi
 }
 
 async function getUserDataDir(): Promise<string> {
-  const userInfo: TPTUserInfo = await mysql.getUserInfoByUid(config.uid);
+  const userInfo: TPTUserInfo = config.userInfo;
   return path.join(config.tempFolder, 'puppeteer', userInfo.uid);
 }

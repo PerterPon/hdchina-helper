@@ -126,8 +126,8 @@ export async function getDownloadHeader(): Promise<any> {
 }
 
 export async function isDownloaded(el: puppeteer.ElementHandle): Promise<boolean> {
-  const progress: string = await el.$eval('td:nth-child(9)', (el) => el.textContent);
-  return '--' !== progress;
+  const peerActive = await el.$('.peer-active');
+  return null === peerActive;
 }
 
 export async function publishDate(el: puppeteer.ElementHandle): Promise<Date> {

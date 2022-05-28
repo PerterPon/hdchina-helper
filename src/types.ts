@@ -3,7 +3,7 @@ export interface TItem {
   id: string;
   uid: string;
   site: string;
-  free?: boolean;
+  free: boolean;
   freeUntil?: Date;
   publishDate: Date;
   size: number;
@@ -26,6 +26,7 @@ export interface TPTUserInfo {
   passkey: string;
   userDataDir: string;
   siteDataOnly: boolean;
+  vipNormalItemCount: number;
 }
 
 export interface TPTServer {
@@ -45,6 +46,17 @@ export interface TPTServer {
   activeNumber?: number;
 }
 
+export enum ETransmissionStatus {
+  STOPPED       = 0, //  # Torrent is stopped
+  CHECK_WAIT    = 1, //  # Queued to check files
+  CHECK         = 2, //  # Checking files
+  DOWNLOAD_WAIT = 3, //  # Queued to download
+  DOWNLOAD      = 4, //  # Downloading
+  SEED_WAIT     = 5, //  # Queued to seed
+  SEED          = 6, //  # Seeding
+  ISOLATED      = 7, //  # Torrent can't find peers
+};
+
 export interface TTransmission {
   get(...params: any[]): Promise<any>;
   active(...params: any[]): Promise<any>;
@@ -52,4 +64,9 @@ export interface TTransmission {
   sessionStats(...params: any[]): Promise<any>;
   freeSpace(...params: any[]): Promise<any>;
   remove(...params: any[]): Promise<any>;
+  status: ETransmissionStatus;
+}
+
+export interface remoteConfig {
+  vipNormalItemCount: number;
 }

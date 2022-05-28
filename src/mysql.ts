@@ -23,8 +23,8 @@ export async function init(): Promise<void> {
   });
 }
 
-export async function storeItem(items: TItem[]): Promise<void> {
-  log.log(`[MYSQL] store items: [${JSON.stringify(items)}]`);
+export async function storeItem(uid: string, site: string, items: TItem[]): Promise<void> {
+  log.log(`[Mysql] storeItem uid: [${uid}], items: [${JSON.stringify(items)}]`);
   for (const item of items) {
     const { id, freeUntil, size, title, torrentUrl, free, transHash, publishDate } = item;
     await pool.query(`
@@ -37,12 +37,12 @@ export async function storeItem(items: TItem[]): Promise<void> {
       free_until = VALUES(free_until),
       is_free = VALUES(is_free),
       publish_date = VALUES(publish_date);
-    `, [UTF8Time(), UTF8Time(), config.uid, config.site, id, size, torrentUrl, Number(free), freeUntil, title, publishDate]);
+    `, [UTF8Time(), UTF8Time(), uid, site, id, size, torrentUrl, Number(free), freeUntil, title, publishDate]);
   }
 };
 
-export async function getFreeItems(): Promise<TItem[]> {
-  log.log(`[MYSQL] get free item`);
+export async function getFreeItems(uid: string, site: string): Promise<TItem[]> {
+  log.log(`[Mysql] get free item`);
   const [data]: any = await pool.query(`
     SELECT *
     FROM (
@@ -74,8 +74,8 @@ export async function getFreeItems(): Promise<TItem[]> {
     ) AS temp
     WHERE
       downloader_id IS NULL;
-    `, [UTF8Time(), config.uid, config.site]);
-  log.log(`[MYSQL] get free item: [${JSON.stringify(data)}]`);
+    `, [UTF8Time(), uid, site]);
+  log.log(`[Mysql] get free item: [${JSON.stringify(data)}]`);
   const freeItems: TItem[] = [];
   for (const item of data) {
     const { server_id, site_id, uid, site, size, title, is_free, free_until, torrent_url, publish_date } = item;
@@ -87,49 +87,56 @@ export async function getFreeItems(): Promise<TItem[]> {
       size, title,
       torrentUrl: torrent_url,
       serverId: server_id,
-      publishDate: publish_date
+      publishDate: publish_date,
+      free: Boolean(is_free)
     });
   }
   return freeItems;
 }
 
 export async function storeDownloadAction(site: string, siteId: string, uid: string, transId: string, torrentHash: string, serverId: number): Promise<void> {
-  log.log(`[MYSQL] storeDownloadAction site: [${site}], site id: [${siteId}], uid: [${uid}], trans id: [${transId}], torrent hash: [${torrentHash}] server id: [${serverId}]`);
+  log.log(`[Mysql] storeDownloadAction site: [${site}], site id: [${siteId}], uid: [${uid}], trans id: [${transId}], torrent hash: [${torrentHash}] server id: [${serverId}]`);
   await pool.query(`
   INSERT INTO downloader(gmt_create, gmt_modify, uid, trans_id, torrent_hash, site, site_id, server_id)
   VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `, [UTF8Time(), UTF8Time(), uid, transId, torrentHash, site, siteId, serverId]);
 }
 
-export async function updateTorrentHashBySiteAndId(site: string ,siteId: string, torrentHash: string): Promise<void> {
-  log.log(`[MYSQL] updateTorrentHashBySiteAndId, site: [${site}], site id: [${siteId}], torrent hash: [${torrentHash}]`);
+export async function updateTorrentHashBySiteAndId(uid: string, site: string ,siteId: string, torrentHash: string): Promise<void> {
+  log.log(`[Mysql] updateTorrentHashBySiteAndId, site: [${site}], site id: [${siteId}], torrent hash: [${torrentHash}]`);
   await pool.query(`
   UPDATE
     torrents
   SET
     torrent_hash = ?
   WHERE
-    site = ? AND site_id = ?;
-  `, [torrentHash, site, siteId]);
+    site = ? AND
+    site_id = ? AND
+    uid = ?;
+  `, [torrentHash, site, siteId, uid]);
 }
 
-export async function getTransIdByItem(items: TItem[]): Promise<string[]> {
-  log.log(`[MYSQL] getTransIdByItem: [${JSON.stringify(items)}]`);
+export async function getTransIdByItem(uid: string, items: TItem[]): Promise<number[]> {
+  log.log(`[Mysql] getTransIdByItem: [${JSON.stringify(items)}]`);
   if (0 === items.length) {
     return [];
   }
   const itemIds: string[] = [];
-  const transIds: string[] = [];
+  const transIds: number[] = [];
   for (const item of items) {
     const { id } = item;
     itemIds.push(id);
     try {
       const [res] = await pool.query(`
-      SELECT *
-      FROM downloader
+      SELECT
+        *
+      FROM
+        downloader
       WHERE
-        site = ? AND site_id = ?;
-      `,[item.site, item.id]);
+        site = ? AND 
+        site_id = ? AND
+        uid = ?;
+      `,[item.site, item.id, uid]);
       transIds.push(res[0].trans_id);
     } catch (e) {
       log.log(e.message);
@@ -139,8 +146,8 @@ export async function getTransIdByItem(items: TItem[]): Promise<string[]> {
   return transIds;
 }
 
-export async function getItemByHash(hash: string[]): Promise<TItem[]> {
-  log.log(`[MYSQL] get item by hash: [${JSON.stringify(hash)}]`);
+export async function getItemByHash(uid: string, site: string, hash: string[]): Promise<TItem[]> {
+  log.log(`[Mysql] get item by hash: [${JSON.stringify(hash)}]`);
   if (0 === hash.length) {
     return [];
   }
@@ -154,6 +161,7 @@ export async function getItemByHash(hash: string[]): Promise<TItem[]> {
     torrents.torrent_url as torrent_url,
     torrents.torrent_hash as torrent_hash,
     torrents.free_until as free_until,
+    torrents.is_free as is_free,
     torrents.publish_date as publish_date,
     downloader.server_id as server_id
   FROM
@@ -166,11 +174,12 @@ export async function getItemByHash(hash: string[]): Promise<TItem[]> {
     torrents.uid = downloader.uid
   WHERE
     torrents.uid = ? AND
-    torrents.torrent_hash IN (?);
-  `, [config.uid, hash]);
+    torrents.torrent_hash IN (?) AND
+    torrents.site = ?;
+  `, [uid, hash, site]);
   const items: TItem[] = [];
   for (const item of res) {
-    const { site_id, uid, site, title, size, torrent_url, torrent_hash, free_until, server_id, publish_date } = item;
+    const { site_id, uid, site, is_free, title, size, torrent_url, torrent_hash, free_until, server_id, publish_date } = item;
     items.push({
       size, title,
       id: site_id,
@@ -180,13 +189,16 @@ export async function getItemByHash(hash: string[]): Promise<TItem[]> {
       transHash: torrent_hash,
       freeUntil: free_until,
       serverId: server_id,
-      publishDate: publish_date
+      publishDate: publish_date,
+      free: Boolean(is_free),
     });
   }
   return items;
 }
 
 export async function storeSiteInfo(
+  uid: string,
+  site: string,
   shareRatio: number, 
   downloadCount: number,
   uploadCount: number,
@@ -194,27 +206,28 @@ export async function storeSiteInfo(
   uploadSpeed: number,
   downloadSpeed: number
 ): Promise<void> {
-  log.log(`[MYSQL] store site info, share ratio: [${shareRatio}], download count: [${downloadCount}], upload count: [${uploadCount}], magic point: [${magicPoint}], upload speed: [${uploadSpeed}], download speed: [${downloadSpeed}]`);
+  log.log(`[Mysql] store site info, share ratio: [${shareRatio}], download count: [${downloadCount}], upload count: [${uploadCount}], magic point: [${magicPoint}], upload speed: [${uploadSpeed}], download speed: [${downloadSpeed}]`);
   await pool.query(`
   INSERT INTO 
     site_data(gmt_create, gmt_modify, site, uid, share_ratio, download_count, upload_count, magic_point, upload_speed, download_speed)
   VALUE(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `, [UTF8Time(), UTF8Time(), config.site, config.uid, shareRatio || 0, downloadCount || 0, uploadCount || 0, magicPoint || 0, uploadSpeed || 0, downloadSpeed]);
+  `, [UTF8Time(), UTF8Time(), site, uid, shareRatio || 0, downloadCount || 0, uploadCount || 0, magicPoint || 0, uploadSpeed || 0, downloadSpeed]);
 }
 
-export async function getUserInfoByUid(uid: string): Promise<TPTUserInfo> {
+export async function getUserInfoByUid(uid: string, site: string): Promise<TPTUserInfo> {
   const [res]: any = await pool.query(`
   SELECT 
     *
   FROM
     users
   WHERE
-    uid = ?;
-  `, [uid]);
+    uid = ? AND
+    site = ?;
+  `, [uid, site]);
   if (0 === res.length) {
     return null;
   }
-  const { cookie, vip, uploadCount, site, nickname, paid, bind_server, cycle_time, rss_passkey, user_data_dir, site_data_only } = res[0];
+  const { cookie, vip, uploadCount, nickname, paid, bind_server, cycle_time, rss_passkey, user_data_dir, site_data_only, vip_normal_item_count } = res[0];
   const servers: string[] = bind_server.split(',');
   const numServers: number[] = [];
   for (let i = 0; i < servers.length; i++) {
@@ -228,7 +241,8 @@ export async function getUserInfoByUid(uid: string): Promise<TPTUserInfo> {
     serverIds: numServers,
     passkey: rss_passkey,
     userDataDir: user_data_dir,
-    siteDataOnly: Boolean(site_data_only)
+    siteDataOnly: Boolean(site_data_only),
+    vipNormalItemCount: vip_normal_item_count
   };
   return userInfo;
 }
@@ -246,21 +260,28 @@ export async function getUserInfo(nickname: string, site: string): Promise<TPTUs
   if (0 === res.length) {
     return null;
   }
-  const { cookie, uid, vip, bind_server, uploadCount, paid, cycle_time, rss_passkey, user_data_dir, site_data_only } = res[0];
+  const { cookie, uid, vip, bind_server, uploadCount, paid, cycle_time, rss_passkey, user_data_dir, site_data_only, vip_normal_item_count } = res[0];
+  const servers: string[] = bind_server.split(',');
+  const numServers: number[] = [];
+  for (let i = 0; i < servers.length; i++) {
+    const server: string = servers[i];
+    numServers.push(Number(server));
+  }
   const userInfo: TPTUserInfo = {
     cookie, site, uid, uploadCount, paid, nickname,
     cycleTime: cycle_time,
     vip: Boolean(vip),
-    serverIds: bind_server,
+    serverIds: numServers,
     passkey: rss_passkey,
     userDataDir: user_data_dir,
-    siteDataOnly: Boolean(site_data_only)
+    siteDataOnly: Boolean(site_data_only),
+    vipNormalItemCount: vip_normal_item_count
   };
   return userInfo;
 }
 
-export async function getServers(uid: string): Promise<TPTServer[]> {
-  const userInfo: TPTUserInfo = await getUserInfoByUid(uid);
+export async function getServers(uid: string, serverIds: number[]): Promise<TPTServer[]> {
+  log.log(`[Mysql] getServers: [${uid}], userIds: [${serverIds}]`);
   const [res]: any = await pool.query(`
   SELECT
     *
@@ -268,7 +289,7 @@ export async function getServers(uid: string): Promise<TPTServer[]> {
     servers
   WHERE
     id in (?);
-  `, [userInfo.serverIds]);
+  `, [serverIds]);
   const servers: TPTServer[] = [];
   for (const item of res) {
     const { id, ip, port, username, password, type, box, file_download_path, min_space_left, min_stay_file_size } = item;
@@ -282,4 +303,40 @@ export async function getServers(uid: string): Promise<TPTServer[]> {
     });
   }
   return servers;
+}
+
+export async function getUserActiveTransId(uid: string, site: string, serverId: number): Promise<number[]> {
+  log.log(`[Mysql] getUserActiveTransId, uid: [${uid}] serverId: [${serverId}]`);
+  const [res]: any = await pool.query(`
+  SELECT
+    *
+  FROM
+    downloader
+  WHERE
+    uid = ? AND
+    server_id = ? AND
+    deleted = 0 AND
+    site = ?;
+  `, [uid, serverId, site]);
+  const activeIds: number[] = [];
+  for (const item of res) {
+    const { trans_id } = item;
+    activeIds.push(trans_id);
+  }
+  return activeIds;
+}
+
+export async function deleteDownloaderItem(uid: string, site: string, serverId: number, transId: number): Promise<void> {
+  log.log(`[Mysql] deleteDownloaderItem uid: [${uid}], site: [${site}] serverId: [${serverId}] transId: [${transId}]`);
+  await pool.query(`
+  UPDATE
+    downloader
+  SET
+    deleted = 1
+  WHERE
+    uid = ? AND
+    server_id = ? AND
+    trans_id = ? AND
+    site = ?;
+  `, [uid, serverId, transId, site]);
 }

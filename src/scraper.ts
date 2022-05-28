@@ -39,10 +39,11 @@ let tempFolder: string = null;
 
 async function start(): Promise<void> {
   try {
+    const startDate: Date = new Date();
     await init();
 
     await storeSiteData();
-    const userInfo: TPTUserInfo = await mysql.getUserInfoByUid(config.uid);
+    const userInfo: TPTUserInfo = config.userInfo;
     if (false === userInfo.siteDataOnly) {
       await main();
       await startDownloader();
@@ -51,6 +52,9 @@ async function start(): Promise<void> {
     await puppeteer.close();
     await message.sendMessage();
     await utils.sleep(5 * 1000);
+    const endDate: Date = new Date();
+    const diffTime: number = endDate.getTime() - startDate.getTime();
+    log.message(`current task take time: [${(diffTime / 1000 / 60).toFixed(2)}m]`);
     process.exit(0);
   } catch(e) {
     log.log(e.message);
@@ -83,7 +87,7 @@ async function storeSiteData(): Promise<void> {
   }
 
   // 2.
-  await mysql.storeSiteInfo(Number(shareRatio), Number(downloadCount), Number(uploadCount), Number(magicPoint), Number(totalUploadSpeed), Number(totalDownloadSpeed));
+  await mysql.storeSiteInfo(config.uid, config.site, Number(shareRatio), Number(downloadCount), Number(uploadCount), Number(magicPoint), Number(totalUploadSpeed), Number(totalDownloadSpeed));
 }
 
 async function main(): Promise<void> {
@@ -101,7 +105,7 @@ async function main(): Promise<void> {
       log.log(`got free items: [${JSON.stringify(freeItems)}]`);
       log.message(`free item count: [${freeItems.length}]`);
       // 4. 
-      await mysql.storeItem(freeItems);
+      await mysql.storeItem(config.uid, config.site, freeItems);
     } catch (e) {
       log.log(`[WARN] ${e} ${e.stack}`);
     }
@@ -115,6 +119,7 @@ async function init(): Promise<void> {
   const ptUserInfo: TPTUserInfo = await mysql.getUserInfo(config.nickname, config.site);
   config.setUid(ptUserInfo.uid);
   config.setVip(ptUserInfo.vip);
+  config.setUserInfo(ptUserInfo);
   await transmission.init(ptUserInfo.uid);
   await oss.init();
   await message.init();
