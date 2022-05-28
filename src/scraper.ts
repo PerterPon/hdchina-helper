@@ -73,7 +73,9 @@ async function storeSiteData(): Promise<void> {
   const { shareRatio, downloadCount, uploadCount, magicPoint } = userInfo;
 
   const latestSiteData: TSiteData = await mysql.getLatestSiteData(config.uid, config.site);
-  log.message(`increase upload: [${Number(uploadCount) - latestSiteData.uploadCount}], download: [${Number(downloadCount) - latestSiteData.downloadCount}]`);
+  const increaseUpload: string = (Number(uploadCount) - latestSiteData.uploadCount).toFixed(3);
+  const increaseDownload: string = (Number(downloadCount) - latestSiteData.downloadCount).toFixed(3);
+  log.message(`increase upload: [${increaseUpload}], download: [${increaseDownload}]`);
   log.message(`share ratio: [${shareRatio || ''}]`);
   log.message(`upload count: [${uploadCount || ''}]`);
   log.message(`download count: [${downloadCount || ''}]`);
