@@ -1,6 +1,6 @@
 
 import * as mysql from 'mysql2/promise';
-import { TItem } from './types';
+import { TItem, TSiteData } from './types';
 import * as config from './config';
 import * as _ from 'lodash';
 import * as log from './log';
@@ -199,13 +199,9 @@ export async function getItemByHash(uid: string, site: string, hash: string[]): 
 export async function storeSiteInfo(
   uid: string,
   site: string,
-  shareRatio: number, 
-  downloadCount: number,
-  uploadCount: number,
-  magicPoint: number,
-  uploadSpeed: number,
-  downloadSpeed: number
+  siteData: TSiteData
 ): Promise<void> {
+  const { shareRatio, downloadCount, uploadCount, magicPoint, uploadSpeed, downloadSpeed } = siteData;
   log.log(`[Mysql] store site info, share ratio: [${shareRatio}], download count: [${downloadCount}], upload count: [${uploadCount}], magic point: [${magicPoint}], upload speed: [${uploadSpeed}], download speed: [${downloadSpeed}]`);
   await pool.query(`
   INSERT INTO 
@@ -339,4 +335,28 @@ export async function deleteDownloaderItem(uid: string, site: string, serverId: 
     trans_id = ? AND
     site = ?;
   `, [uid, serverId, transId, site]);
+}
+
+export async function getLatestSiteData(uid: string, site: string): Promise<TSiteData> {
+  log.log(`[Mysql] getLatestSiteData`);
+  const [res]: any = await pool.query(`
+  SELECT
+    *
+  FROM
+    site_data
+  WHERE
+    uid = ? AND
+    site = ?
+  ORDER BY gmt_create DESC
+  LIMIT 1;
+  `);
+  const { share_ratio, upload_count, magic_point, download_count, upload_speed, download_speed } = res[0];
+  return {
+    shareRatio: share_ratio,
+    uploadCount: upload_count,
+    downloadCount: download_count,
+    magicPoint: magic_point,
+    uploadSpeed: upload_speed,
+    downloadSpeed: download_speed
+  };
 }

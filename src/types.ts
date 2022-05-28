@@ -67,6 +67,11 @@ export interface TTransmission {
   status: ETransmissionStatus;
 }
 
-export interface remoteConfig {
-  vipNormalItemCount: number;
-}
+export interface TSiteData {
+  uploadCount: number;
+  downloadCount: number;
+  shareRatio: number;
+  magicPoint: number;
+  uploadSpeed: number;
+  downloadSpeed: number;
+};

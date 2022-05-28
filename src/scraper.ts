@@ -17,7 +17,7 @@ import * as moment from 'moment-timezone';
 
 import { TPageUserInfo } from './sites/basic';
 
-import { TItem, TPTUserInfo } from './types';
+import { TItem, TPTUserInfo, TSiteData } from './types';
 
 import { main as startDownloader } from './downloader';
 
@@ -71,6 +71,9 @@ async function storeSiteData(): Promise<void> {
   log.log('storeSiteData');
   const userInfo: TPageUserInfo = await puppeteer.getUserInfo();
   const { shareRatio, downloadCount, uploadCount, magicPoint } = userInfo;
+
+  const latestSiteData: TSiteData = await mysql.getLatestSiteData(config.uid, config.site);
+  log.message(`increase upload: [${Number(uploadCount) - latestSiteData.uploadCount}], download: [${Number(downloadCount) - latestSiteData.downloadCount}]`);
   log.message(`share ratio: [${shareRatio || ''}]`);
   log.message(`upload count: [${uploadCount || ''}]`);
   log.message(`download count: [${downloadCount || ''}]`);
@@ -86,8 +89,16 @@ async function storeSiteData(): Promise<void> {
     log.message(`[${serverId}] [${filesize(uploadSpeed)}/s] [${filesize(downloadSpeed)}/s]`);
   }
 
+
   // 2.
-  await mysql.storeSiteInfo(config.uid, config.site, Number(shareRatio), Number(downloadCount), Number(uploadCount), Number(magicPoint), Number(totalUploadSpeed), Number(totalDownloadSpeed));
+  await mysql.storeSiteInfo(config.uid, config.site, {
+    shareRatio: Number(shareRatio),
+    downloadCount: Number(downloadCount),
+    uploadCount: Number(uploadCount),
+    magicPoint: Number(magicPoint),
+    uploadSpeed: Number(totalUploadSpeed),
+    downloadSpeed: Number(totalDownloadSpeed),
+  });
 }
 
 async function main(): Promise<void> {
