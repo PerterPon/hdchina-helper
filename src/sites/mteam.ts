@@ -132,7 +132,7 @@ export async function isDownloaded(el: puppeteer.ElementHandle): Promise<boolean
 
 export async function publishDate(el: puppeteer.ElementHandle): Promise<Date> {
   const dateString: string = await el.$eval('td:nth-child(4) span', (el) => el.getAttribute('title'));
-  return new Date(dateString);
+  return utils.parseCSTDate(dateString);
 }
 
 export async function isSticky(el: puppeteer.ElementHandle): Promise<boolean> {

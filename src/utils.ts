@@ -23,6 +23,10 @@ export function displayTime(): string {
   return moment().tz('Asia/Shanghai').format('YYYY-MM-DD_HH:mm:SS');
 }
 
+export function parseCSTDate(dateString: string): Date {
+  return moment(dateString).utcOffset(480, true).toDate();
+}
+
 export async function fetchCsrfTokenAndPHPSessionId(): Promise<{csrfToken: string; phpSessionId: string;}> {
   if (null !== currentCsrfToken && null !== currentPhpSessionId) {
     return {

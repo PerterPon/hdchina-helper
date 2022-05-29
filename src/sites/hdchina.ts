@@ -36,7 +36,7 @@ export async function getUserInfo(torrentPage: puppeteer.Page): Promise<TPageUse
 export async function getFreeTime(el: puppeteer.ElementHandle): Promise<Date> {
   const freeTimeContainer: string =  await el.$eval('.pro_free', (el) => el.getAttribute('onmouseover'));
   const [timeString] = freeTimeContainer.match(/\d\d\d\d-\d\d-\d\d\s\d\d:\d\d:\d\d/);
-  return new Date(timeString);
+  return utils.parseCSTDate(timeString);
 }
 
 export async function getFreeTime2up(el: puppeteer.ElementHandle): Promise<string> {

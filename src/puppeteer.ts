@@ -197,7 +197,7 @@ export async function filterVIPItem(torrentPageUrl: string): Promise<TItem[]> {
   torrentItems = torrentItems.slice(1);
   for(const item of torrentItems) {
 
-    let freeTime: Date = new Date('2030-01-01');
+    let freeTime: Date = utils.parseCSTDate('2030-01-01');
 
     let torrentUrl: string = await item.$eval(siteAnchor.torrentUrlAnchor, (el) => (el.parentNode as HTMLAnchorElement).getAttribute('href'))
     torrentUrl = `${configInfo.domain}/${torrentUrl}`;
@@ -231,7 +231,7 @@ export async function filterVIPItem(torrentPageUrl: string): Promise<TItem[]> {
     }
   }
 
-  const dateSortedItems: TItem[] = _.sortBy(freeItems, 'publishDate');
+  const dateSortedItems: TItem[] = _.sortBy(freeItems, 'publishDate').reverse();
   const { vipNormalItemCount } = config.userInfo;
   const latestItems: TItem[] = dateSortedItems.slice(0, vipNormalItemCount);
   const vipItems = latestItems.concat(stickyItems);

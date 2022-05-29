@@ -50,11 +50,11 @@ async function start(): Promise<void> {
     }
 
     await puppeteer.close();
-    await message.sendMessage();
-    await utils.sleep(5 * 1000);
     const endDate: Date = new Date();
     const diffTime: number = endDate.getTime() - startDate.getTime();
     log.message(`current task take time: [${(diffTime / 1000 / 60).toFixed(2)}m]`);
+    await message.sendMessage();
+    await utils.sleep(5 * 1000);
     process.exit(0);
   } catch(e) {
     log.log(e.message);
