@@ -6,3 +6,4 @@ torrents
 temp
 test-*
 *.torrent
+package-lock.json
