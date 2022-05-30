@@ -20,7 +20,7 @@ export function sleep(time: number): Promise<void> {
 }
 
 export function displayTime(): string {
-  return moment().tz('Asia/Shanghai').format('YYYY-MM-DD_HH:mm:SS');
+  return moment().tz('Asia/Shanghai').format('YYYY-MM-DD_HH:mm:ss');
 }
 
 export function parseCSTDate(dateString: string): Date {

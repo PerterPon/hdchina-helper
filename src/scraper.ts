@@ -127,6 +127,7 @@ async function main(): Promise<void> {
 }
 
 async function init(): Promise<void> {
+  log.log(`init`);
   await config.init();
   await initTempFolder();
   await mysql.init();
@@ -141,6 +142,7 @@ async function init(): Promise<void> {
 }
 
 async function initTempFolder(): Promise<void> {
+  log.log(`initTempFolder`);
   const configInfo = config.getConfig();
   const { tempFolder: tempFolderConfig } = configInfo;
   const fullTempFolder = path.join(__dirname, tempFolderConfig);
@@ -152,8 +154,7 @@ async function initTempFolder(): Promise<void> {
 start();
 
 setTimeout(async () => {
-  log.message(`timeout!!!`);
+  log.message(`[${utils.displayTime()}] timeout!!!`);
   await message.sendMessage()
   process.exit(1);
 }, 600 * 1000);
-

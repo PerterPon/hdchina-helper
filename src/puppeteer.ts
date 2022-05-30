@@ -208,6 +208,7 @@ export async function filterVIPItem(torrentPageUrl: string): Promise<TItem[]> {
     const publishDate: Date = await currentSite.publishDate(item);
     const isSticky: boolean = await currentSite.isSticky(item);
 
+    log.log(`[Puppeteer] scraping item: [${title}], size: [${filesize(size)}], publish date: [${publishDate}]`);
     if (true === isSticky) {
       stickyItems.push({
         id, title, size, publishDate,
