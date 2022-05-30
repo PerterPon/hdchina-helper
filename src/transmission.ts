@@ -208,6 +208,7 @@ export async function sessionStates(serverId: number = -1): Promise<{
   downloadSpeed: number,
   serverId: number
 }[]> {
+  log.log(`[Puppeteer] sessionStates serverId: [${serverId}]`);
   if (-1 !== serverId) {
     const server = getServer(serverId);
     const res = await server.sessionStats();
@@ -237,6 +238,7 @@ export async function sessionStates(serverId: number = -1): Promise<{
 }
 
 export async function canAddServers(vip: boolean): Promise<number[]> {
+  log.log(`[Puppeteer] canAddServers vip: [${vip}]`);
   const canAddServerIds: number[] = [];
   for (const server of servers) {
     const { box, id } = server;
@@ -253,6 +255,7 @@ export async function canAddServers(vip: boolean): Promise<number[]> {
 }
 
 function getServer(serverId: number): TTransmission {
+  log.log(`[Puppeteer] getServer serverId: [${serverId}]`);
   const server = serverMap.get(serverId);
   if (undefined === server) {
     throw new Error(`trying to get server with server id: [${serverId}], but server not found!`);
@@ -261,6 +264,7 @@ function getServer(serverId: number): TTransmission {
 }
 
 function getServerConfig(serverId: number): TPTServer {
+  log.log(`[Puppeteer] getServerConfig serverId: [${serverId}]`);
   const server = serverConfigMap.get(serverId);
   if (undefined === server) {
     throw new Error(`trying to get server config with server id: [${serverId}], but server not found!`);

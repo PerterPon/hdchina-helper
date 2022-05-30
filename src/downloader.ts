@@ -6,11 +6,13 @@ import * as oss from './oss';
 import * as message from './message';
 
 import axios, { AxiosResponse } from 'axios';
+import * as parseTorrent from 'parse-torrent';
 import * as _ from 'lodash';
 import { parse as parseUrl, UrlWithParsedQuery } from 'url';
 import * as fs from 'fs-extra';
 import * as path from 'path';
 import * as filesize from 'filesize';
+import * as urlLib from 'url';
 import * as moment from 'moment';
 import * as mysql from './mysql';
 import { mkdirpSync } from 'fs-extra';
@@ -126,6 +128,9 @@ async function downloadItem(items: TItem[]): Promise<TItem[]> {
         responseType: 'stream'
       });
       await utils.writeFile(res.data, fileWriter);
+      if (true === config.userInfo.proxy) {
+        await addProxyToTorrentFile(fileFullName);
+      }
       const leftTime: number = moment(freeUntil).unix() - moment().unix();
       log.message(`download torrent: [${title}], size: [${filesize(size)}], free time: [${moment(freeUntil).diff(moment(), 'hours')} H]`);
       downloadCount++;
@@ -142,6 +147,25 @@ async function downloadItem(items: TItem[]): Promise<TItem[]> {
   log.log(`exists torrent count: [${existsTorrentCount}]`);
   log.log(`download error count: [${downloadErrorCount}]`);
   return downloadSuccessItems;
+}
+
+async function addProxyToTorrentFile(torrentFile: string): Promise<void> {
+  log.log(`addProxyToTorrentFile torrentFile:[${torrentFile}]`);
+  const torrentContent: Buffer = fs.readFileSync(torrentFile);
+  const parsedTorrent: parseTorrent.Instance = parseTorrent(torrentContent) as parseTorrent.Instance;
+  const announceUrl = parsedTorrent.announce[0];
+  const announceUrlItem = urlLib.parse(announceUrl, true);
+  const proxyUrlItem = {
+    hostname: 'hk.perterpon.com',
+    port: '4230',
+    query: announceUrlItem.query,
+    protocol: 'http',
+    pathname: announceUrlItem.pathname
+  };
+  const proxyUrl: string = urlLib.format(proxyUrlItem);
+  parsedTorrent.announce = [ proxyUrl ];
+  const proxyContent: Buffer = parseTorrent.toTorrentFile(parsedTorrent);
+  fs.writeFileSync(torrentFile, proxyContent);
 }
 
 async function uploadItem(items: TItem[]): Promise<void> {

@@ -27,6 +27,7 @@ export interface TPTUserInfo {
   userDataDir: string;
   siteDataOnly: boolean;
   vipNormalItemCount: number;
+  proxy: boolean;
 }
 
 export interface TPTServer {
@@ -41,6 +42,7 @@ export interface TPTServer {
   fileDownloadPath: string;
   minSpaceLeft: number;
   minStayFileSize: number;
+  proxy: string;
   downloadSpeed?: number;
   uploadSpeed?: number;
   activeNumber?: number;

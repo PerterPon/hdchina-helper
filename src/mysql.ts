@@ -223,7 +223,7 @@ export async function getUserInfoByUid(uid: string, site: string): Promise<TPTUs
   if (0 === res.length) {
     return null;
   }
-  const { cookie, vip, uploadCount, nickname, paid, bind_server, cycle_time, rss_passkey, user_data_dir, site_data_only, vip_normal_item_count } = res[0];
+  const { cookie, vip, uploadCount, nickname, paid, bind_server, cycle_time, rss_passkey, user_data_dir, site_data_only, vip_normal_item_count, proxy } = res[0];
   const servers: string[] = bind_server.split(',');
   const numServers: number[] = [];
   for (let i = 0; i < servers.length; i++) {
@@ -238,7 +238,8 @@ export async function getUserInfoByUid(uid: string, site: string): Promise<TPTUs
     passkey: rss_passkey,
     userDataDir: user_data_dir,
     siteDataOnly: Boolean(site_data_only),
-    vipNormalItemCount: vip_normal_item_count
+    vipNormalItemCount: vip_normal_item_count,
+    proxy: Boolean(proxy)
   };
   return userInfo;
 }
@@ -256,7 +257,7 @@ export async function getUserInfo(nickname: string, site: string): Promise<TPTUs
   if (0 === res.length) {
     return null;
   }
-  const { cookie, uid, vip, bind_server, uploadCount, paid, cycle_time, rss_passkey, user_data_dir, site_data_only, vip_normal_item_count } = res[0];
+  const { cookie, uid, vip, bind_server, uploadCount, paid, cycle_time, rss_passkey, user_data_dir, site_data_only, vip_normal_item_count, proxy } = res[0];
   const servers: string[] = bind_server.split(',');
   const numServers: number[] = [];
   for (let i = 0; i < servers.length; i++) {
@@ -271,7 +272,8 @@ export async function getUserInfo(nickname: string, site: string): Promise<TPTUs
     passkey: rss_passkey,
     userDataDir: user_data_dir,
     siteDataOnly: Boolean(site_data_only),
-    vipNormalItemCount: vip_normal_item_count
+    vipNormalItemCount: vip_normal_item_count,
+    proxy: Boolean(proxy)
   };
   return userInfo;
 }
@@ -288,14 +290,15 @@ export async function getServers(uid: string, serverIds: number[]): Promise<TPTS
   `, [serverIds]);
   const servers: TPTServer[] = [];
   for (const item of res) {
-    const { id, ip, port, username, password, type, box, file_download_path, min_space_left, min_stay_file_size } = item;
+    const { id, ip, port, username, password, type, box, file_download_path, min_space_left, min_stay_file_size, proxy } = item;
     servers.push({
       id, ip, port, username, password, type,
       box: Boolean(box),
       fileDownloadPath: file_download_path,
       minSpaceLeft: min_space_left,
       minStayFileSize: min_stay_file_size,
-      oriFileDownloadPath: file_download_path
+      oriFileDownloadPath: file_download_path,
+      proxy
     });
   }
   return servers;

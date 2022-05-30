@@ -104,6 +104,7 @@ async function storeSiteData(): Promise<void> {
 }
 
 async function main(): Promise<void> {
+  log.log(`main`);
   // 3.
   const configInfo = config.getConfig();
   const { torrentPage } = configInfo;
