@@ -290,7 +290,7 @@ export async function getServers(uid: string, serverIds: number[]): Promise<TPTS
   `, [serverIds]);
   const servers: TPTServer[] = [];
   for (const item of res) {
-    const { id, ip, port, username, password, type, box, file_download_path, min_space_left, min_stay_file_size, proxy } = item;
+    const { id, ip, port, username, password, type, box, file_download_path, min_space_left, min_stay_file_size, proxy, mac_address, agent_port } = item;
     servers.push({
       id, ip, port, username, password, type,
       box: Boolean(box),
@@ -298,7 +298,35 @@ export async function getServers(uid: string, serverIds: number[]): Promise<TPTS
       minSpaceLeft: min_space_left,
       minStayFileSize: min_stay_file_size,
       oriFileDownloadPath: file_download_path,
-      proxy
+      macAddress: mac_address,
+      proxy,
+      agentPort: agent_port
+    });
+  }
+  return servers;
+}
+
+export async function getAllServers(): Promise<TPTServer[]> {
+  log.log(`[Mysql] getAllServers`);
+  const [res]: any = await pool.query(`
+  SELECT
+    *
+  FROM
+    servers
+  `);
+  const servers: TPTServer[] = [];
+  for (const item of res) {
+    const { id, ip, port, username, password, type, box, file_download_path, min_space_left, min_stay_file_size, proxy, mac_address, agent_port } = item;
+    servers.push({
+      id, ip, port, username, password, type,
+      box: Boolean(box),
+      fileDownloadPath: file_download_path,
+      minSpaceLeft: min_space_left,
+      minStayFileSize: min_stay_file_size,
+      oriFileDownloadPath: file_download_path,
+      macAddress: mac_address,
+      agentPort: agent_port,
+      proxy,
     });
   }
   return servers;
@@ -362,4 +390,86 @@ export async function getLatestSiteData(uid: string, site: string): Promise<TSit
     uploadSpeed: upload_speed,
     downloadSpeed: download_speed
   };
+}
+
+export async function getItemByTransIdAndServerId(transId: number, serverId: number, uid: string, site: string): Promise<TItem> {
+  log.log(`[Mysql] getItemByTransIdAndServerId, transId: [${transId}], serverId: [${serverId}], site: [${site}], uid: [${uid}]`);
+  const [res]: any = await pool.query(`
+  SELECT
+    torrents.uid as uid,
+    torrents.site as id,
+    torrents.is_free as is_free,
+    torrents.size as size,
+    torrents.free_until as free_until,
+    torrents.publish_date as publish_date,
+    torrents.title as title,
+    downloader.server_id as server_id,
+    downloader.trans_hash as trans_hash
+  FROM
+    downloader
+  LEFT JOIN
+    torrents
+  ON
+    torrents.site = downloader.site AND
+    torrents.site_id = downloader.site_id AND
+    torrents.uid = downloader.uid
+  WHERE
+    downloader.server_id = ? AND
+    downloader.tran_id = ? AND
+    torrents.uid = ? AND
+    torrents.site = ?;
+  `, [serverId, transId, uid, site]);
+  const { trans_hash, id, torrent_url, is_free, size, free_until, publish_date, title } = res[0];
+  return {
+    uid, id, title, size, site, serverId,
+    free: Boolean(is_free),
+    freeUntil: new Date(free_until),
+    publishDate: new Date(publish_date),
+    torrentUrl: torrent_url,
+    transHash: trans_hash
+  }
+}
+
+export async function getItemBySiteIds(uid: string, site: string, siteIds: string[]): Promise<TItem[]> {
+  log.log(`[Mysql] getItemBySiteIds, uid: [${uid}], site: [${site}], siteIds: [${siteIds}]`);
+  const [res]: any = await pool.query(`
+  SELECT
+    torrents.uid as uid,
+    torrents.site as id,
+    torrents.is_free as is_free,
+    torrents.size as size,
+    torrents.free_until as free_until,
+    torrents.publish_date as publish_date,
+    torrents.title as title,
+    downloader.server_id as server_id,
+    downloader.trans_hash as trans_hash,
+    downloader.trans_id as trans_id
+  FROM
+    torrents
+  LEFT JOIN
+    downloader
+  ON
+    torrents.site = downloader.site AND
+    torrents.site_id = downloader.site_id AND
+    torrents.uid = downloader.uid
+  WHERE
+    torrents.uid = ? AND
+    torrents.site = ? AND
+    torrents.site_id IN (?);
+  `, [uid, site, siteIds]);
+  const items: TItem[] = [];
+  for (const item of res) {
+    const { trans_hash, id, server_id, trans_id, torrent_url, is_free, size, free_until, publish_date, title } = item;
+    items.push({
+      uid, id, title, size, site, 
+      serverId: server_id,
+      free: Boolean(is_free),
+      freeUntil: new Date(free_until),
+      publishDate: new Date(publish_date),
+      torrentUrl: torrent_url,
+      transHash: trans_hash,
+      transId: trans_id
+    });
+  }
+  return items;
 }

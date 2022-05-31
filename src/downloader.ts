@@ -46,10 +46,12 @@ export async function start(): Promise<void> {
 export async function main(): Promise<void> {
   await initTempFolder();
   // 5.
-  const canDownloadItem: TItem[] = await mysql.getFreeItems(config.uid, config.site);
+  // const canDownloadItem: TItem[] = await mysql.getFreeItems(config.uid, config.site);
 
+  // console.log(JSON.stringify(canDownloadItem));
+  const canDownloadItem = [{"id":"580163","site":"mteam","uid":"269573","freeUntil":"2029-12-31T16:00:00.000Z","size":44345537331,"title":"Species II 1998 1080p GBR Blu-ray AVC DTS-HD MA 5.1-CultFilms™","torrentUrl":"https://pon-pt.oss-accelerate.aliyuncs.com/hdchina/269573/mteam_579466.torrent","serverId":null,"publishDate":"2022-05-30T11:14:42.000Z","free":true}] as any;
   // 6. 
-  const downloadSuccessItem: TItem[] = await downloadItem(canDownloadItem);
+  const downloadSuccessItem: TItem[] = await downloadItem(canDownloadItem as any);
 
   // 7.
   await uploadItem(downloadSuccessItem);
@@ -119,15 +121,19 @@ async function downloadItem(items: TItem[]): Promise<TItem[]> {
 
     try {
       // not exist, download
-      const downloadLink = await siteMap[config.site].getDownloadUrl(item);
+      const downloadLink = item.torrentUrl;// await siteMap[config.site].getDownloadUrl(item);
       log.log(`downloading file: [${downloadLink}]`);
 
       const fileWriter = fs.createWriteStream(fileFullName);
       // const downloadHeader = await siteMap[config.site].getDownloadHeader();
-      const res: AxiosResponse = await axios.get(`${downloadLink}&passkey=${userInfo.passkey}`, {
+      // const res: AxiosResponse = await axios.get(`${downloadLink}&passkey=${userInfo.passkey}`, {
+      //   responseType: 'stream'
+      // });
+      const res: AxiosResponse = await axios.get(downloadLink, {
         responseType: 'stream'
       });
       await utils.writeFile(res.data, fileWriter);
+      console.log('=====', config.userInfo);
       if (true === config.userInfo.proxy) {
         await addProxyToTorrentFile(fileFullName);
       }
@@ -194,7 +200,7 @@ async function addItemToTransmission(items: TItem[]): Promise<{transId: string; 
     const torrentUrl: string = `http://${cdnHost}/hdchina/${uid}/${site}_${id}.torrent`;
     const serverId: number = canAddServerIds.shift();
     log.log(`add file to transmission: [${title}], server id: [${serverId}]`);
-    const res = await doAddToTransmission(torrentUrl, serverId);
+    const res = await doAddToTransmission(torrentUrl, serverId, id);
     successCount++;
     resInfo.push(res);
     canAddServerIds.push(serverId);
@@ -217,11 +223,11 @@ async function addItemToTransmission(items: TItem[]): Promise<{transId: string; 
   return resInfo;
 }
 
-async function doAddToTransmission(torrentUrl: string, serverId: number): Promise<{transId: string; hash: string; serverId: number}> {
-  log.log(`doAddToTransmission torrent url: [${torrentUrl}], server id: [${serverId}]`);
+async function doAddToTransmission(torrentUrl: string, serverId: number, siteId: string): Promise<{transId: string; hash: string; serverId: number}> {
+  log.log(`doAddToTransmission torrent url: [${torrentUrl}], server id: [${serverId}], siteId: [${siteId}]`);
   let res: {transId: string; hash: string; serverId: number; } = null;
   try {
-    res = await transmission.addUrl(torrentUrl, serverId);
+    res = await transmission.addUrl(torrentUrl, serverId, siteId);
   } catch(e) {
     if ('invalid or corrupt torrent file' === e.message) {
       res = {
@@ -348,7 +354,7 @@ async function removeItemFromTransmission(items: TItem[]): Promise<void> {
     const transId: number = transIds[i];
     const item: TItem = items[i];
     log.log(`removing torrent: [${item.title}], server: [${item.serverId}] because of out of date`);
-    await transmission.removeItem(Number(transId), Number(item.serverId));
+    await transmission.removeItem(Number(transId), item.id, Number(item.serverId));
     await mysql.deleteDownloaderItem(config.uid, config.site, item.serverId, transId);
   }
   if (0 < items.length) {
@@ -395,7 +401,9 @@ async function doReduceLeftSpace(serverId: number): Promise<void> {
     ) {
       log.message(`remove item because of min left space: [${name}], size: [${filesize(size)}] trans id: [${id}] server id: [${serverId}]`);
       reducedTotal += size;
-      await transmission.removeItem(id, serverId);
+      const { uid, site } = config.userInfo;
+      const itemInfo: TItem = await mysql.getItemByTransIdAndServerId(id, serverId, uid, site);
+      await transmission.removeItem(id, itemInfo.id, serverId);
       await mysql.deleteDownloaderItem(config.uid, config.site, serverId, id);
       freeSpace += size;
     }

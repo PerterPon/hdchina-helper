@@ -11,6 +11,7 @@ export interface TItem {
   torrentUrl: string;
   transHash?: string;
   serverId: number;
+  transId?: number;
 }
 
 export interface TPTUserInfo {
@@ -43,6 +44,8 @@ export interface TPTServer {
   minSpaceLeft: number;
   minStayFileSize: number;
   proxy: string;
+  macAddress: string;
+  agentPort: number;
   downloadSpeed?: number;
   uploadSpeed?: number;
   activeNumber?: number;
@@ -77,3 +80,10 @@ export interface TSiteData {
   uploadSpeed: number;
   downloadSpeed: number;
 };
+
+export interface TFileItem {
+  siteId: string;
+  downloaded: boolean;
+  createTime: number;
+  createDate?: Date;
+}

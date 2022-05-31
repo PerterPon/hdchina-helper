@@ -1,13 +1,15 @@
 
 const Transmission = require('transmission');
 import * as _ from 'lodash';
+import * as path from 'path';
 import { promisify } from 'util';
 import * as config from './config';
 import * as log from './log';
 import * as filesize from 'filesize';
 import * as mysql from './mysql';
+import * as transLite from './trans-lite';
 
-import { ETransmissionStatus, TPTServer, TTransmission } from './types';
+import { ETransmissionStatus, TFileItem, TItem, TPTServer, TTransmission } from './types';
 
 export interface TTransItem {
   id: number;
@@ -64,9 +66,6 @@ async function initServer(): Promise<void> {
     }
 
     serverMap.set(id, transmissionClient);
-
-    // const activeItem = await getServerItems(id, 'active');
-    // server.activeNumber = activeItem.length;
     downloadingServer.push(server.ip);
     log.log(`[Transmission] init server: [${id}]`);
   }
@@ -85,24 +84,6 @@ export async function filterDownloadingItems(serverId: number, ids: number[]): P
     }
     downloadingItems.push(item);
   }
-  return downloadingItems;
-}
-
-export async function getDownloadingItems2(serverId: number = -1): Promise<TTransItem[]> {
-  log.log(`[Transmission] get download items with server id: [${serverId}]`);
-
-  if (-1 !== serverId) {
-    return getServerItems(serverId, 'active');
-  }
-
-  const downloadingItems: TTransItem[] = [];
-  const mapArr = Array.from(serverMap);
-  for (const itemArr of mapArr) {
-    const currentServerId: number = itemArr[0];
-    const items = await getServerItems(currentServerId, 'active');
-    downloadingItems.push(...items);
-  }
-
   return downloadingItems;
 }
 
@@ -129,39 +110,76 @@ export async function getAllItems(serverId: number = -1, ids: number[] = []): Pr
 async function getServerItems(serverId: number, type: 'all'|'active', ids?: number[]): Promise<TTransItem[]> {
   log.log(`[Transmission] getServerItems serverId: [${serverId}], type: [${type}], ids: [${ids}]`);
   const downloadingItems: TTransItem[] = [];
-  const server = getServer(serverId);
+  // const server = getServer(serverId);
   let data = {
     torrents: []
   };
-  if ('all' === type) {
-    data = await server.get(ids);
-  } else if ('active' === type) {
-    data = await server.active();
+
+  const { uid, site } = config.userInfo;
+  const allFileItem: TFileItem[] = await transLite.get(uid, site, serverId);
+  const siteIds: string[] = _.map(allFileItem, 'siteId');
+
+  const allItem: TItem[] = await mysql.getItemBySiteIds(uid, site, siteIds);
+  const itemMap: Map<string ,TItem> = new Map();
+  for (const item of allItem) {
+    const { id } = item;
+    itemMap.set(id, item);
   }
-  for (const item of data.torrents) {
-    const { status, id, name, downloadDir, hashString, sizeWhenDone: size, activityDate, isFinished } = item;
+
+  for (const fileItem of allFileItem) {
+    const { siteId, downloaded } = fileItem;
+    const item = itemMap.get(siteId);
+    if (undefined === item) {
+      continue;
+    }
+    if ('active' === type && true === downloaded) {
+      continue;
+    }
     downloadingItems.push({
-      id, name, downloadDir, status, size, activityDate, isFinished, serverId,
-      hash: hashString
+      id: item.transId,
+      name: item.title,
+      downloadDir: '',
+      status: true === fileItem.downloaded ? 6 : 4,
+      size: item.size,
+      activityDate: new Date(fileItem.createTime),
+      isFinished: fileItem.downloaded,
+      serverId: item.serverId,
+      hash: item.torrentUrl
     });
   }
+
+  // if ('all' === type) {
+  //   // data = await server.get(ids);
+  // } else if ('active' === type) {
+  //   // data = await server.active();
+  // }
+  // for (const item of data.torrents) {
+  //   const { status, id, name, downloadDir, hashString, sizeWhenDone: size, activityDate, isFinished } = item;
+  //   downloadingItems.push({
+  //     id, name, downloadDir, status, size, activityDate, isFinished, serverId,
+  //     hash: hashString
+  //   });
+  // }
   return downloadingItems;
 }
 
-export async function removeItem(id: number, serverId: number): Promise<void> {
+export async function removeItem(id: number, siteId: string, serverId: number): Promise<void> {
   log.log(`[Transmission] remove item: [${id}] serverId: [${serverId}]`);
   const server = getServer(serverId);
 
+  const { uid, site } = config.userInfo;
+  await transLite.removeItem(uid, site, serverId, siteId);
   const result = await server.remove(id, true);
   log.log(`[Transmission] remove item: [${id}] with result: [${JSON.stringify(result)}]`);
 }
 
-export async function addUrl(url: string, serverId: number): Promise<{transId: string; hash: string; serverId: number;}> {
+export async function addUrl(url: string, serverId: number, fileId: string): Promise<{transId: string; hash: string; serverId: number;}> {
   const server = getServer(serverId);
   const serverConfig = getServerConfig(serverId);
   log.log(`[Transmission] add url: [${url}], server id: [${serverId}], download dir: [${serverConfig.fileDownloadPath}]`);
+  const curFileDownloadPath: string = path.join(serverConfig.fileDownloadPath, fileId);
   const res = await server.addUrl(url, {
-    'download-dir': serverConfig.fileDownloadPath
+    'download-dir': curFileDownloadPath
   });
   log.log(`[Transmission] add url with result: [${JSON.stringify(res)}]`);
   const { id, hashString } = res;
@@ -190,8 +208,10 @@ export async function freeSpace(serverId: number = -1): Promise<{serverId: numbe
     const { oriFileDownloadPath } = serverInfo;
     log.log(`[Transmission] getFreeSpace server id: [${serverId}], fileDownloadPath: [${oriFileDownloadPath}]`);
 
-    const serverClient = getServer(serverId);
-    const res = await serverClient.freeSpace(oriFileDownloadPath);
+    // const serverClient = getServer(serverId);
+    // const res = await serverClient.freeSpace(oriFileDownloadPath);
+    const { site, uid } = config.userInfo;
+    const res = await transLite.freeSpace(uid, site, serverId, oriFileDownloadPath);
     log.message(`left space total: [${filesize(res['size-bytes'])}]`);
     log.log(`[Transmission] free space: [${oriFileDownloadPath}], total: [${filesize(res['size-bytes'])}]`);
     return [{
@@ -254,7 +274,7 @@ export async function canAddServers(vip: boolean): Promise<number[]> {
   return canAddServerIds;
 }
 
-function getServer(serverId: number): TTransmission {
+export function getServer(serverId: number): TTransmission {
   log.log(`[Puppeteer] getServer serverId: [${serverId}]`);
   const server = serverMap.get(serverId);
   if (undefined === server) {
@@ -263,7 +283,7 @@ function getServer(serverId: number): TTransmission {
   return server;
 }
 
-function getServerConfig(serverId: number): TPTServer {
+export function getServerConfig(serverId: number): TPTServer {
   log.log(`[Puppeteer] getServerConfig serverId: [${serverId}]`);
   const server = serverConfigMap.get(serverId);
   if (undefined === server) {
