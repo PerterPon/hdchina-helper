@@ -298,9 +298,7 @@ export async function getServers(uid: string, serverIds: number[]): Promise<TPTS
       minSpaceLeft: min_space_left,
       minStayFileSize: min_stay_file_size,
       oriFileDownloadPath: file_download_path,
-      proxy,
-      macAddress: mac_address,
-      agentPort: agent_port
+      proxy
     });
   }
   return servers;
