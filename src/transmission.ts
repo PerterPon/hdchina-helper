@@ -148,18 +148,6 @@ async function getServerItems(serverId: number, type: 'all'|'active', ids?: numb
     });
   }
 
-  // if ('all' === type) {
-  //   // data = await server.get(ids);
-  // } else if ('active' === type) {
-  //   // data = await server.active();
-  // }
-  // for (const item of data.torrents) {
-  //   const { status, id, name, downloadDir, hashString, sizeWhenDone: size, activityDate, isFinished } = item;
-  //   downloadingItems.push({
-  //     id, name, downloadDir, status, size, activityDate, isFinished, serverId,
-  //     hash: hashString
-  //   });
-  // }
   return downloadingItems;
 }
 

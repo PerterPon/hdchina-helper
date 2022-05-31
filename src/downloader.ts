@@ -46,10 +46,8 @@ export async function start(): Promise<void> {
 export async function main(): Promise<void> {
   await initTempFolder();
   // 5.
-  // const canDownloadItem: TItem[] = await mysql.getFreeItems(config.uid, config.site);
+  const canDownloadItem: TItem[] = await mysql.getFreeItems(config.uid, config.site);
 
-  // console.log(JSON.stringify(canDownloadItem));
-  const canDownloadItem = [{"id":"580163","site":"mteam","uid":"269573","freeUntil":"2029-12-31T16:00:00.000Z","size":44345537331,"title":"Species II 1998 1080p GBR Blu-ray AVC DTS-HD MA 5.1-CultFilms™","torrentUrl":"https://pon-pt.oss-accelerate.aliyuncs.com/hdchina/269573/mteam_579466.torrent","serverId":null,"publishDate":"2022-05-30T11:14:42.000Z","free":true}] as any;
   // 6. 
   const downloadSuccessItem: TItem[] = await downloadItem(canDownloadItem as any);
 
@@ -121,19 +119,18 @@ async function downloadItem(items: TItem[]): Promise<TItem[]> {
 
     try {
       // not exist, download
-      const downloadLink = item.torrentUrl;// await siteMap[config.site].getDownloadUrl(item);
+      const downloadLink = await siteMap[config.site].getDownloadUrl(item);
       log.log(`downloading file: [${downloadLink}]`);
 
       const fileWriter = fs.createWriteStream(fileFullName);
       // const downloadHeader = await siteMap[config.site].getDownloadHeader();
-      // const res: AxiosResponse = await axios.get(`${downloadLink}&passkey=${userInfo.passkey}`, {
-      //   responseType: 'stream'
-      // });
-      const res: AxiosResponse = await axios.get(downloadLink, {
+      const res: AxiosResponse = await axios.get(`${downloadLink}&passkey=${userInfo.passkey}`, {
         responseType: 'stream'
       });
+      // const res: AxiosResponse = await axios.get(downloadLink, {
+      //   responseType: 'stream'
+      // });
       await utils.writeFile(res.data, fileWriter);
-      console.log('=====', config.userInfo);
       if (true === config.userInfo.proxy) {
         await addProxyToTorrentFile(fileFullName);
       }

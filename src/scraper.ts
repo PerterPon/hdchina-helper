@@ -42,10 +42,10 @@ async function start(): Promise<void> {
     const startDate: Date = new Date();
     await init();
 
-    // await storeSiteData();
+    await storeSiteData();
     const userInfo: TPTUserInfo = config.userInfo;
     if (false === userInfo.siteDataOnly) {
-      // await main();
+      await main();
       await startDownloader();
     }
 

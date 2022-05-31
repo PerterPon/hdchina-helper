@@ -404,7 +404,7 @@ export async function getItemByTransIdAndServerId(transId: number, serverId: num
     torrents.publish_date as publish_date,
     torrents.title as title,
     downloader.server_id as server_id,
-    downloader.trans_hash as trans_hash
+    downloader.torrent_hash as trans_hash
   FROM
     downloader
   LEFT JOIN
@@ -442,7 +442,7 @@ export async function getItemBySiteIds(uid: string, site: string, siteIds: strin
     torrents.publish_date as publish_date,
     torrents.title as title,
     downloader.server_id as server_id,
-    downloader.trans_hash as trans_hash,
+    downloader.torrent_hash as trans_hash,
     downloader.trans_id as trans_id
   FROM
     torrents
