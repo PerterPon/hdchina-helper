@@ -431,6 +431,9 @@ export async function getItemByTransIdAndServerId(transId: number, serverId: num
 }
 
 export async function getItemBySiteIds(uid: string, site: string, siteIds: string[]): Promise<TItem[]> {
+  if (false === _.isArray(siteIds) || 0 === siteIds.length) {
+    return [];
+  }
   log.log(`[Mysql] getItemBySiteIds, uid: [${uid}], site: [${site}], siteIds: [${siteIds}]`);
   const [res]: any = await pool.query(`
   SELECT
