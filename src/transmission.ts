@@ -6,6 +6,7 @@ import * as config from './config';
 import * as log from './log';
 import * as filesize from 'filesize';
 import * as mysql from './mysql';
+import * as path from 'path';
 
 import { ETransmissionStatus, TPTServer, TTransmission } from './types';
 
@@ -156,12 +157,13 @@ export async function removeItem(id: number, serverId: number): Promise<void> {
   log.log(`[Transmission] remove item: [${id}] with result: [${JSON.stringify(result)}]`);
 }
 
-export async function addUrl(url: string, serverId: number): Promise<{transId: string; hash: string; serverId: number;}> {
+export async function addUrl(url: string, serverId: number, siteId: string): Promise<{transId: string; hash: string; serverId: number;}> {
   const server = getServer(serverId);
   const serverConfig = getServerConfig(serverId);
   log.log(`[Transmission] add url: [${url}], server id: [${serverId}], download dir: [${serverConfig.fileDownloadPath}]`);
+  const targetFolder = path.join(serverConfig.fileDownloadPath, siteId);
   const res = await server.addUrl(url, {
-    'download-dir': serverConfig.fileDownloadPath
+    'download-dir': targetFolder
   });
   log.log(`[Transmission] add url with result: [${JSON.stringify(res)}]`);
   const { id, hashString } = res;

@@ -194,7 +194,7 @@ async function addItemToTransmission(items: TItem[]): Promise<{transId: string; 
     const torrentUrl: string = `http://${cdnHost}/hdchina/${uid}/${site}_${id}.torrent`;
     const serverId: number = canAddServerIds.shift();
     log.log(`add file to transmission: [${title}], server id: [${serverId}]`);
-    const res = await doAddToTransmission(torrentUrl, serverId);
+    const res = await doAddToTransmission(torrentUrl, serverId, id);
     successCount++;
     resInfo.push(res);
     canAddServerIds.push(serverId);
@@ -217,11 +217,11 @@ async function addItemToTransmission(items: TItem[]): Promise<{transId: string; 
   return resInfo;
 }
 
-async function doAddToTransmission(torrentUrl: string, serverId: number): Promise<{transId: string; hash: string; serverId: number}> {
+async function doAddToTransmission(torrentUrl: string, serverId: number, siteId: string): Promise<{transId: string; hash: string; serverId: number}> {
   log.log(`doAddToTransmission torrent url: [${torrentUrl}], server id: [${serverId}]`);
   let res: {transId: string; hash: string; serverId: number; } = null;
   try {
-    res = await transmission.addUrl(torrentUrl, serverId);
+    res = await transmission.addUrl(torrentUrl, serverId, siteId);
   } catch(e) {
     if ('invalid or corrupt torrent file' === e.message) {
       res = {
