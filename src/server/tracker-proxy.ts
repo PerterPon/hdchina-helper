@@ -31,7 +31,12 @@ const app = http.createServer(async (req, res) => {
   if ( '/announce.php' ===  urlItem.pathname) {
     urlItem.query.uploaded = increaseUpload(urlItem.query.uploaded as string);
   }
-  const proxyedUrl = url.format(urlItem);
+  const proxyedUrl = url.format({
+    protocol: 'https',
+    hostname: TARGET_HOST,
+    pathname: urlItem.pathname,
+    query: urlItem.query,
+  });
   console.log(`request with: [${proxyedUrl}], headers: [${JSON.stringify(headers)}]`);
 
   const resData = await axios({
@@ -59,7 +64,7 @@ const app = http.createServer(async (req, res) => {
 
 function increaseUpload(originUpload: string): string {
   const numUploaded: number = Number(originUpload);
-  console.log(`increase upload, origin: [${originUpload}], increase: [${numUploaded * 1.11}]`);
+  console.log(`[!!!]increase upload, origin: [${originUpload}], increase: [${numUploaded * 1.11}]`);
   if (isNaN(numUploaded)) {
     return originUpload;
   }
