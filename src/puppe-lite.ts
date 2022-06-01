@@ -74,7 +74,7 @@ export async function filterVIPItem(url: string): Promise<TItem[]> {
     const publishDate: Date = await currentSite.publishDate($item);
     const isSticky: boolean = await currentSite.isSticky($item);
 
-    log.log(`[Puppeteer] scraping item: [${title}], size: [${filesize(size)}], publish date: [${publishDate}]`);
+    log.log(`[Puppe-lite] scraping item: [${title}], size: [${filesize(size)}], publish date: [${publishDate}]`);
     if (true === isSticky) {
       stickyItems.push({
         id, title, size, publishDate,
@@ -125,9 +125,9 @@ export async function filterFreeItem(url: string): Promise<TItem[]> {
       const freeTarget2up = page(siteAnchor.freeItem2upTag);
       freeTarget = freeTarget.concat(freeTarget2up);
     } catch (e) {}
-    log.log(`[Puppeteer] free target count: [${freeTarget.length}]`);
+    log.log(`[Puppe-lite] free target count: [${freeTarget.length}]`);
   } catch (e) {
-    log.log(`[Puppeteer] failed to launch page with error: [${e.message}], wait for retry`);
+    log.log(`[Puppe-lite] failed to launch page with error: [${e.message}], wait for retry`);
   }
 
   // the first one is title
@@ -145,11 +145,11 @@ export async function filterFreeItem(url: string): Promise<TItem[]> {
     const size: number = await currentSite.getSize($item);
     const publishDate: Date = await currentSite.publishDate($item);
     const downloaded: boolean = await currentSite.isDownloaded($item);
-    log.log(`[Puppeteer] scraping item: [${title}] downloaded: [${downloaded}], size: [${filesize(size)}], publish date: [${publishDate}]`);
+    log.log(`[Puppe-lite] scraping item: [${title}] downloaded: [${downloaded}], size: [${filesize(size)}], publish date: [${publishDate}]`);
 
     let freeTime: Date = null;
     if( 0 === freeItem.length ) {
-      log.log(`[PUPPETEER] free Item === null: [${0 === freeItem.length}] downloaded: [${downloaded}]`);
+      log.log(`[Puppe-lite] free Item === null: [${0 === freeItem.length}] downloaded: [${downloaded}]`);
       isFree = false;
     } else {
       isFree = true;

@@ -90,7 +90,7 @@ export async function close(): Promise<void> {
 }
 
 export async function setCookie(currentPage: puppeteer.Page): Promise<void> {
-  log.log(`[PUPPETEER] setCookie`);
+  log.log(`[Puppeteer] setCookie`);
 
   const configInfo = config.getConfig();
   const userInfo: TPTUserInfo = await getPTUserInfo(config.nickname, config.site);
@@ -111,7 +111,7 @@ export async function setCookie(currentPage: puppeteer.Page): Promise<void> {
 }
 
 export async function setCookieAndStorage(currentPage: puppeteer.Page): Promise<void> {
-  log.log(`[PUPPETEER] setCookieAndStorage`);
+  log.log(`[Puppeteer] setCookieAndStorage`);
   const configInfo = config.getConfig();
   const { cookie } = configInfo.puppeteer;
   const userDataDir: string = await getUserDataDir();
@@ -119,7 +119,7 @@ export async function setCookieAndStorage(currentPage: puppeteer.Page): Promise<
   const storageFile: string = path.join(userDataDir, storageFileName);
   if (true === fs.existsSync(cookieFile)) {
     const cookiesValue: string = fs.readFileSync(cookieFile, 'utf-8');
-    log.log(`[PUPPETEER] set local cookie: [${cookiesValue}]`);
+    log.log(`[Puppeteer] set local cookie: [${cookiesValue}]`);
     try {
       const cookie = JSON.parse(cookiesValue);
       currentPage.setCookie(...cookie);
@@ -132,7 +132,7 @@ export async function setCookieAndStorage(currentPage: puppeteer.Page): Promise<
 
   if (true === fs.existsSync(storageFile)) {
     const storageValue: string = fs.readFileSync(storageFile, 'utf-8');
-    log.log(`[PUPPETEER] set storage with value: [${storageFile}]`);
+    log.log(`[Puppeteer] set storage with value: [${storageFile}]`);
     await currentPage.evaluate((storageValue) => {
       const storage = JSON.parse(storageValue);
       (window as any).localStorage = storage;
@@ -141,14 +141,14 @@ export async function setCookieAndStorage(currentPage: puppeteer.Page): Promise<
 }
 
 export async function getUserInfo(): Promise<TPageUserInfo> {
-  log.log(`[PUPPETEER] get user info`);
+  log.log(`[Puppeteer] get user info`);
   const configInfo = config.getConfig();
   const page: puppeteer.Page = await loadPage(configInfo.torrentPage[0]);
   return siteMap[config.site].getUserInfo(page);
 }
 
 export async function loadTorrentPage(torrentPageUrl: string): Promise<void> {
-  log.message(`[PUPPETEER] loadTorrentPage: [${torrentPageUrl}]`);
+  log.message(`[Puppeteer] loadTorrentPage: [${torrentPageUrl}]`);
   try {
     const configInfo = config.getConfig();
     const { cdnHost } = configInfo.aliOss;
@@ -175,7 +175,7 @@ export async function loadTorrentPage(torrentPageUrl: string): Promise<void> {
 }
 
 export async function filterVIPItem(torrentPageUrl: string): Promise<TItem[]> {
-  log.log(`[PUPPETEER] filterVIPItem with url: [${torrentPageUrl}]`);
+  log.log(`[Puppeteer] filterVIPItem with url: [${torrentPageUrl}]`);
   const freeItems: TItem[] = [];
   const configInfo = config.getConfig();
   const currentSite = siteMap[config.site];
@@ -293,7 +293,7 @@ export async function filterFreeItem(torrentPageUrl: string, retryTime: number =
     log.log(`[Puppeteer] scraping item: [${title}] downloaded: [${downloaded}], size: [${filesize(size)}], publish date: [${publishDate}]`);
 
     if( null === freeItem ) {
-      log.log(`[PUPPETEER] free Item === null: [${null === freeItem}] downloaded: [${downloaded}]`);
+      log.log(`[Puppeteer] free Item === null: [${null === freeItem}] downloaded: [${downloaded}]`);
       isFree = false;
     } else {
       isFree = true;
