@@ -28,17 +28,19 @@ const app = http.createServer(async (req, res) => {
   urlItem.protocol = 'https:';
   const headers = req.headers as any;
   headers.host = TARGET_HOST;
+  let proxyedUrl = `https://${TARGET_HOST}${req.url}`;
   if ( '/announce.php' ===  urlItem.pathname) {
     const [trash, uploadedCount] = urlItem.query.match(/uploaded=(\d+)/) || [];
     const increasedCount = increaseUpload(uploadedCount);
-    urlItem.query = urlItem.query.replace(uploadedCount, increasedCount);
+    proxyedUrl = proxyedUrl.replace(uploadedCount, increasedCount);
   }
-  const proxyedUrl = url.format({
-    protocol: 'https',
-    hostname: TARGET_HOST,
-    pathname: urlItem.pathname,
-    query: urlItem.query,
-  });
+  // const proxyedUrl = url.format({
+  //   protocol: 'https',
+  //   hostname: TARGET_HOST,
+  //   pathname: urlItem.pathname,
+  //   query: urlItem.query,
+  // });
+  // proxyedUrl
   console.log(`request with: [${proxyedUrl}], headers: [${JSON.stringify(headers)}]`);
 
   const resData = await axios({
