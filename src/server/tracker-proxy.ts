@@ -34,13 +34,6 @@ const app = http.createServer(async (req, res) => {
     const increasedCount = increaseUpload(uploadedCount);
     proxyedUrl = proxyedUrl.replace(uploadedCount, increasedCount);
   }
-  // const proxyedUrl = url.format({
-  //   protocol: 'https',
-  //   hostname: TARGET_HOST,
-  //   pathname: urlItem.pathname,
-  //   query: urlItem.query,
-  // });
-  // proxyedUrl
   console.log(`request with: [${proxyedUrl}], headers: [${JSON.stringify(headers)}]`);
 
   const resData = await axios({

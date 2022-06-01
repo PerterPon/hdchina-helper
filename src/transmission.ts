@@ -123,12 +123,15 @@ async function getServerItems(serverId: number, type: 'all'|'active', ids?: numb
   const itemMap: Map<string ,TItem> = new Map();
   for (const item of allItem) {
     const { id } = item;
-    itemMap.set(id, item);
+    itemMap.set(String(id), item);
   }
+
+  const serverInfo: TPTServer = getServerConfig(serverId);
+  const { fileDownloadPath } = serverInfo;
 
   for (const fileItem of allFileItem) {
     const { siteId, downloaded } = fileItem;
-    const item = itemMap.get(siteId);
+    const item = itemMap.get(String(siteId));
     if (undefined === item) {
       continue;
     }
@@ -138,7 +141,7 @@ async function getServerItems(serverId: number, type: 'all'|'active', ids?: numb
     downloadingItems.push({
       id: item.transId,
       name: item.title,
-      downloadDir: '',
+      downloadDir: path.join(fileDownloadPath, siteId),
       status: true === fileItem.downloaded ? 6 : 4,
       size: item.size,
       activityDate: new Date(fileItem.createTime),

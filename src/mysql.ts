@@ -398,7 +398,7 @@ export async function getItemByTransIdAndServerId(transId: number, serverId: num
   const [res]: any = await pool.query(`
   SELECT
     torrents.uid as uid,
-    torrents.site as id,
+    torrents.site_id as id,
     torrents.is_free as is_free,
     torrents.size as size,
     torrents.free_until as free_until,
@@ -416,7 +416,7 @@ export async function getItemByTransIdAndServerId(transId: number, serverId: num
     torrents.uid = downloader.uid
   WHERE
     downloader.server_id = ? AND
-    downloader.tran_id = ? AND
+    downloader.trans_id = ? AND
     torrents.uid = ? AND
     torrents.site = ?;
   `, [serverId, transId, uid, site]);
@@ -439,7 +439,7 @@ export async function getItemBySiteIds(uid: string, site: string, siteIds: strin
   const [res]: any = await pool.query(`
   SELECT
     torrents.uid as uid,
-    torrents.site as id,
+    torrents.site_id as id,
     torrents.is_free as is_free,
     torrents.size as size,
     torrents.free_until as free_until,

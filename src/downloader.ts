@@ -300,38 +300,6 @@ async function getDownloadingItems(): Promise<TItem[]> {
   return downloadingItems;
 }
 
-// /**
-//  * @deprecated
-//  *
-//  * @returns {Promise<TItem[]>}
-//  */
-// async function getDownloadingItems_old(): Promise<TItem[]> {
-//   log.log(`getDownloadingItems`);
-//   const downloadingTransItems: transmission.TTransItem[] = await transmission.getDownloadingItems();
-//   const downloadingHash: string[] = [];
-
-//   for (const item of downloadingTransItems) {
-//     const { hash, downloadDir } = item;
-//     const server: TPTServer = transmission.serverConfigMap.get(item.serverId);
-//     if (undefined == server) {
-//       log.log(`trying to get downloading item with server id: [${item.serverId}], server not found`);
-//       continue;
-//     }
-//     const { fileDownloadPath } = server;
-//     // only the specific torrent we need to remove.
-//     if (downloadDir === fileDownloadPath) {
-//       downloadingHash.push(hash);
-//     }
-//   }
-//   const downloadingItems: TItem[] = await mysql.getItemByHash(config.uid, config.site, downloadingHash);
-//   const downloadingItemNames: string[] = [];
-//   for (const downloadingItem of downloadingItems) {
-//     downloadingItemNames.push(downloadingItem.title);
-//   }
-//   log.log(`downloading item names: [${downloadingItemNames.join('\n')}]`);
-//   return downloadingItems;
-// }
-
 async function filterBeyondFreeItems(items: TItem[]): Promise<TItem[]> {
   log.log(`filterBeyondFreeItems: [${JSON.stringify(items)}]`);
   const beyondFreeItems: TItem[] = [];
@@ -380,8 +348,8 @@ async function doReduceLeftSpace(serverId: number): Promise<void> {
 
   let [{ size: freeSpace }] = await transmission.freeSpace(serverId);
   const { minSpaceLeft, fileDownloadPath, minStayFileSize } = serverInfo;
-  const activeIds: number[] = await mysql.getUserActiveTransId(config.uid, config.site, serverId);
-  const allItems: transmission.TTransItem[] = await transmission.getAllItems(serverId, activeIds);
+  // const activeIds: number[] = await mysql.getUserActiveTransId(config.uid, config.site, serverId);
+  const allItems: transmission.TTransItem[] = await transmission.getAllItems(serverId);
   log.log(`server: [${serverId}] downloading item length: [${allItems.length}]`);
   const datedItems: transmission.TTransItem[] = _.orderBy(allItems, ['activityDate']);
   let reducedTotal: number = 0;
@@ -391,10 +359,10 @@ async function doReduceLeftSpace(serverId: number): Promise<void> {
     }
     const item = datedItems.shift();
     const { id, status, downloadDir, size, name } = item;
+    console.log(downloadDir, fileDownloadPath);
     if (
       -1 === [transmission.status.DOWNLOAD, transmission.status.CHECK_WAIT, transmission.status.CHECK, transmission.status.DOWNLOAD_WAIT].indexOf(status) &&
-      size > minStayFileSize &&
-      downloadDir === fileDownloadPath
+      0 === downloadDir.indexOf(fileDownloadPath)
     ) {
       log.message(`remove item because of min left space: [${name}], size: [${filesize(size)}] trans id: [${id}] server id: [${serverId}]`);
       reducedTotal += size;
@@ -407,6 +375,8 @@ async function doReduceLeftSpace(serverId: number): Promise<void> {
   }
   if (0 < reducedTotal) {
     log.message(`server id: [${serverId}] reduce space total: [${filesize(reducedTotal)}]`);
+    let [{ size: freeSpace }] = await transmission.freeSpace(serverId);
+    log.message(`server id: [${serverId}] now space: [${filesize(freeSpace)}]`)
   }
 }
 
