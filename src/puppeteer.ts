@@ -25,6 +25,7 @@ let storageFileName: string = 'storage';
 const pageMap: Map<string, puppeteer.Page> = new Map();
 
 export async function init(): Promise<void> {
+  log.log(`[Puppeteer] init`);
   if (browser !== null) {
     return;
   }
@@ -47,7 +48,7 @@ export async function init(): Promise<void> {
 
 }
 
-export async function loadPage(url: string, force: boolean = false): Promise<puppeteer.Page> {
+async function loadPage(url: string, force: boolean = false): Promise<puppeteer.Page> {
   log.log(`[Puppeteer] loadPage url: [${url}], force: [${force}]`);
   let page: puppeteer.Page = pageMap.get(url);
   const configInfo = config.getConfig();
