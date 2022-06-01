@@ -23,13 +23,15 @@ const TARGET_HOST: string = 'tracker.m-team.cc';
 const app = http.createServer(async (req, res) => {
   console.log(`[${utils.displayTime()}] new request [${req.url}], , headers: [${JSON.stringify(req.headers)}], method: [${req.method}]`);
 
-  const urlItem = url.parse(req.url, true);
+  const urlItem = url.parse(req.url);
   urlItem.host = TARGET_HOST;
   urlItem.protocol = 'https:';
   const headers = req.headers as any;
   headers.host = TARGET_HOST;
   if ( '/announce.php' ===  urlItem.pathname) {
-    urlItem.query.uploaded = increaseUpload(urlItem.query.uploaded as string);
+    const [trash, uploadedCount] = urlItem.query.match(/uploaded=(\d+)/) || [];
+    const increasedCount = increaseUpload(uploadedCount);
+    urlItem.query = urlItem.query.replace(uploadedCount, increasedCount);
   }
   const proxyedUrl = url.format({
     protocol: 'https',
