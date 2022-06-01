@@ -9,8 +9,10 @@ export interface TPageUserInfo {
 
 import * as hdchina from './hdchina';
 import * as mteam from './mteam'
+import * as mteamLite from './mteam-lite';
 
 export const siteMap = {
   hdchina,
-  mteam
+  mteam,
+  mteamLite
 };

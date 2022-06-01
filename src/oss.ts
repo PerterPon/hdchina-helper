@@ -6,6 +6,7 @@ import * as log from './log';
 let store: OSS = null;
 
 export async function init(): Promise<void> {
+  log.log(`[OSS] init`);
   if (null !== store) {
     return null;
   }

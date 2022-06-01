@@ -11,6 +11,7 @@ import { UTF8Time } from './utils';
 export let pool: mysql.Pool = null;
 
 export async function init(): Promise<void> {
+  log.log(`[Mysql] init`);
   if (null !== pool) {
     return;
   }

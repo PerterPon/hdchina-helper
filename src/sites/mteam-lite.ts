@@ -1,5 +1,6 @@
 
 import * as moment from 'moment';
+import * as cheerio from 'cheerio';
 import * as puppeteer from 'puppeteer';
 import { TItem, TPTUserInfo } from '../types';
 import * as utils from '../utils';
@@ -9,9 +10,7 @@ import * as mysql from '../mysql';
 
 import { TPageUserInfo } from "./basic";
 
-export async function getUserInfo(torrentPage: puppeteer.Page): Promise<TPageUserInfo> {
-  let magicP: puppeteer.ElementHandle<HTMLParagraphElement> = null;
-  let ratioP: puppeteer.ElementHandle<HTMLParagraphElement> = null;
+export async function getUserInfo(torrentPage: cheerio.CheerioAPI): Promise<TPageUserInfo> {
   const userInfo: TPageUserInfo = {
     shareRatio: '0',
     uploadCount: '0',
@@ -20,8 +19,7 @@ export async function getUserInfo(torrentPage: puppeteer.Page): Promise<TPageUse
   };
 
   try {
-    magicP = await torrentPage.$('#info_block .bottom');
-    const magicPointContent: string = await magicP.evaluate((el) => el.textContent) || '';
+    const magicPointContent: string = await torrentPage('#info_block .bottom').text();
     const [trash1, magicPoint] = magicPointContent.match(/魔力值\s\[使用\]\:(.*)\s邀請/)  || ['', ''];
     const [trash2, shareRatio] = magicPointContent.match(/分享率： (\d*\.*\d*)\s/) || ['', ''];
     const [trash3, uploadCount] = magicPointContent.match(/上傳量： (\d*\.*\d*)\s/)  || ['', ''];
@@ -36,8 +34,12 @@ export async function getUserInfo(torrentPage: puppeteer.Page): Promise<TPageUse
   return userInfo;
 }
 
-export async function getFreeTime(el: puppeteer.ElementHandle): Promise<Date> {
-  const freeTimeContainer: string = await el.$eval('.pro_free', (el) => el.parentElement.textContent);
+export async function getFreeTime(el: cheerio.CheerioAPI): Promise<Date> {
+  const freeEl = el('.pro_free');
+  if (0 === freeEl.length) {
+    return null;
+  }
+  const freeTimeContainer: string = freeEl.parent().text(); // el.$eval('.pro_free', (el) => el.parentElement.textContent);
   const [pattern, day] = freeTimeContainer.match(/限時：(\d.*)日/) || [];
   let [pattern2, hour] = freeTimeContainer.match(/日(\d.*)時/) || [];
   if (undefined === hour) {
@@ -55,8 +57,13 @@ export async function getFreeTime(el: puppeteer.ElementHandle): Promise<Date> {
   return now.toDate();
 }
 
-export async function getFreeTime2up(el: puppeteer.ElementHandle): Promise<Date> {
-  const freeTimeContainer: string = await el.$eval('.pro_free2up', (el) => el.parentElement.textContent);
+export async function getFreeTime2up(el: cheerio.CheerioAPI): Promise<Date> {
+  const freeEl = el('.pro_free2up');
+  if (0 === freeEl.length) {
+    return null;
+  }
+
+  const freeTimeContainer: string = freeEl.parent().text();
   const [pattern, day] = freeTimeContainer.match(/限時：(\d.*)日/) || [];
   let [pattern2, hour] = freeTimeContainer.match(/日(\d.*)時/) || [];
   if (undefined === hour) {
@@ -74,24 +81,27 @@ export async function getFreeTime2up(el: puppeteer.ElementHandle): Promise<Date>
   return now.toDate();
 }
 
-export async function getSiteId(el: puppeteer.ElementHandle, torrentUrl): Promise<string> {
-  const idHref = await el.$eval('.download', (el) => el.parentElement.getAttribute('href'));
+export async function getSiteId(el: cheerio.CheerioAPI, torrentUrl): Promise<string> {
+  const idHref: string= el('.download').parent().attr('href');
+  // const idHref = await el.$eval('.download', (el) => el.parentElement.getAttribute('href'));
   const [trash, id] = idHref.match(/id=(\d+)&/);
   return id;
 }
 
-export async function getTitle(el: puppeteer.ElementHandle): Promise<string> {
-  const titleEl = await el.$('.embedded a b');
+export async function getTitle(el: cheerio.CheerioAPI): Promise<string> {
+  // const titleEl = await el.$('.embedded a b');
+  const titleEl = el('.embedded a b');
   if (null === titleEl) {
     return '';
   }
-  const title: any = await el.$eval('.embedded a b', (el) => el.textContent);
+  const title: any = titleEl.text(); // await el.$eval('.embedded a b', (el) => el.textContent);
   return title;
 }
 
-export async function getSize(el: puppeteer.ElementHandle): Promise<number> {
+export async function getSize(el: cheerio.CheerioAPI): Promise<number> {
   try {
-    const sizeString = await el.$eval('td:nth-child(5)', (el) => el.textContent);
+    // const sizeString = await el.$eval('td:nth-child(5)', (el) => el.textContent);
+    const sizeString = await el('td:nth-child(5)').text();
     const [ sizeNumberString ] = sizeString.match(/\d*\.*\d*/);
     const sizeNumber: number = Number(sizeNumberString)
     let size: number = 0;
@@ -124,17 +134,20 @@ export async function getDownloadHeader(): Promise<any> {
   }
 }
 
-export async function isDownloaded(el: puppeteer.ElementHandle): Promise<boolean> {
-  const peerActive = await el.$('.peer-active');
-  return null === peerActive;
+export async function isDownloaded(el: cheerio.CheerioAPI): Promise<boolean> {
+  // const peerActive = await el.$('.peer-active');
+  const peerActive = await el('.peer-active');
+  return 0 < peerActive.length;
 }
 
-export async function publishDate(el: puppeteer.ElementHandle): Promise<Date> {
-  const dateString: string = await el.$eval('td:nth-child(4) span', (el) => el.getAttribute('title'));
+export async function publishDate(el: cheerio.CheerioAPI): Promise<Date> {
+  // const dateString: string = await el.$eval('td:nth-child(4) span', (el) => el.getAttribute('title'));
+  const dateString: string = await el('td:nth-child(4) span').attr('title');
   return utils.parseCSTDate(dateString);
 }
 
-export async function isSticky(el: puppeteer.ElementHandle): Promise<boolean> {
-  const stickyFlag = await el.$('.sticky');
-  return null !== stickyFlag;
+export async function isSticky(el: cheerio.CheerioAPI): Promise<boolean> {
+  // const stickyFlag = await el.$('.sticky');
+  const stickyFlag = await el('.sticky');
+  return 0 < stickyFlag.length;
 }

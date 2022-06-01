@@ -5,7 +5,8 @@ import * as transmission from './transmission';
 import * as oss from './oss';
 import * as message from './message';
 import * as mysql from './mysql';
-import * as puppeteer from './puppeteer';
+import * as puppeteer from './puppe-lite';
+// import * as puppeteer from './puppeteer';
 import * as log from './log';
 
 import * as _ from 'lodash';
@@ -49,7 +50,6 @@ async function start(): Promise<void> {
       await startDownloader();
     }
 
-    await puppeteer.close();
     const endDate: Date = new Date();
     const diffTime: number = endDate.getTime() - startDate.getTime();
     log.message(`current task take time: [${(diffTime / 1000 / 60).toFixed(2)}m]`);
@@ -69,7 +69,8 @@ async function start(): Promise<void> {
 
 async function storeSiteData(): Promise<void> {
   log.log('storeSiteData');
-  const userInfo: TPageUserInfo = await puppeteer.getUserInfo();
+  const configInfo = config.getConfig();
+  const userInfo: TPageUserInfo = await puppeteer.getUserInfo(configInfo.torrentPage[0]);
   const { shareRatio, downloadCount, uploadCount, magicPoint } = userInfo;
 
   const latestSiteData: TSiteData = await mysql.getLatestSiteData(config.uid, config.site);
@@ -90,7 +91,6 @@ async function storeSiteData(): Promise<void> {
     totalDownloadSpeed += downloadSpeed || 0;
     log.message(`[${serverId}] [${filesize(uploadSpeed)}/s] [${filesize(downloadSpeed)}/s]`);
   }
-
 
   // 2.
   await mysql.storeSiteInfo(config.uid, config.site, {
