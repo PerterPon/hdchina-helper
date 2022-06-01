@@ -28,21 +28,14 @@ const app = http.createServer(async (req, res) => {
   urlItem.protocol = 'https:';
   const headers = req.headers as any;
   headers.host = TARGET_HOST;
-  console.log(urlItem, urlItem.pathname);
   if ( '/announce.php' ===  urlItem.pathname) {
     urlItem.query.uploaded = increaseUpload(urlItem.query.uploaded as string);
   }
-  console.log(urlItem);
-  urlItem.query.uploaded = '12300';
-  console.log(`request with: [${url.format({
-    host: urlItem.host,
-    protocol: urlItem.protocol,
-    query: urlItem.query,
-    pathname: urlItem.pathname
-  })}], headers: [${JSON.stringify(headers)}]`);
+  const proxyedUrl = url.format(urlItem);
+  console.log(`request with: [${proxyedUrl}], headers: [${JSON.stringify(headers)}]`);
 
   const resData = await axios({
-    url: url.format(urlItem),
+    url: proxyedUrl,
     headers,
     responseType: 'arraybuffer',
     httpAgent,
@@ -65,7 +58,6 @@ const app = http.createServer(async (req, res) => {
 });
 
 function increaseUpload(originUpload: string): string {
-  return '133';
   const numUploaded: number = Number(originUpload);
   console.log(`increase upload, origin: [${originUpload}], increase: [${numUploaded * 1.11}]`);
   if (isNaN(numUploaded)) {
