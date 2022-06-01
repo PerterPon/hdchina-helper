@@ -203,7 +203,7 @@ export async function freeSpace(serverId: number = -1): Promise<{serverId: numbe
     // const res = await serverClient.freeSpace(oriFileDownloadPath);
     const { site, uid } = config.userInfo;
     const res = await transLite.freeSpace(uid, site, serverId, oriFileDownloadPath);
-    log.message(`left space total: [${filesize(res['size-bytes'])}]`);
+    log.message(`server: [${serverInfo.id}], left space total: [${filesize(res['size-bytes'])}]`);
     log.log(`[Transmission] free space: [${oriFileDownloadPath}], total: [${filesize(res['size-bytes'])}]`);
     return [{
       serverId,
