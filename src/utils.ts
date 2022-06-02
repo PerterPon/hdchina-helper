@@ -8,10 +8,11 @@ import * as qs from 'qs';
 import * as config from './config';
 import * as log from './log';
 import { TPTUserInfo } from './types';
-import * as mysql from './mysql';
+import * as path from 'path';
 
 let currentCsrfToken: string = null;
 let currentPhpSessionId: string = null;
+const CRONTAB_FILE: string = `/etc/crontab`;
 
 export function sleep(time: number): Promise<void> {
   return new Promise((resolve) => {
@@ -114,6 +115,22 @@ export async function getUserCookie(uid): Promise<puppeteer.SetCookie[]> {
     });
   }
   return cookies;
+}
+
+export async function parseCrontab(): Promise<string[]> {
+  const content: string = fs.readFileSync(CRONTAB_FILE, 'utf-8');
+  return content.split('\n');
+}
+
+export async function setCrontab(crontabs: string[]): Promise<string> {
+  const content = crontabs.join('\n');
+  fs.writeFileSync(CRONTAB_FILE, content);
+  return content;
+}
+
+export async function getVersion(): Promise<string> {
+  const versionFile: string = path.join(__dirname, '../version');
+  return fs.readFileSync(versionFile, 'utf-8');
 }
 
 export const ajaxHeader = {

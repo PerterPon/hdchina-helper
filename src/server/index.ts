@@ -10,6 +10,7 @@ import * as mysql from '../mysql';
 import * as utils from '../utils';
 
 import * as rpcMethods from './rpc';
+import * as agentMethods from './agent';
 import * as url from 'url';
 import axios from 'axios';
 
@@ -29,7 +30,8 @@ async function start(): Promise<void> {
     console.log(`[${utils.displayTime()}] request: [${ctx.url}] cost time: [${costTime}ms]`);
   });
   
-  router.post('/rpc', onRpc);
+  router.post('/rpc', onMethod.bind(undefined, rpcMethods));
+  router.post('/agent', onMethod.bind(undefined, agentMethods));
   
   app.use(router.routes());
   app.use(router.allowedMethods());
@@ -46,10 +48,10 @@ async function init(): Promise<void> {
   await rpcMethods.init();
 }
 
-async function onRpc(ctx: Koa.Context): Promise<void> {
+async function onMethod(targetMethods, ctx: Koa.Context): Promise<void> {
   const { method, data } = ctx.request.body;
-  const tarMethod = rpcMethods[method];
-  console.log(method, data, tarMethod);
+  const tarMethod = targetMethods[method];
+  const version = await utils.getVersion();
   if (undefined === tarMethod) {
     ctx.body = {
       success: false,
@@ -61,8 +63,9 @@ async function onRpc(ctx: Koa.Context): Promise<void> {
     ctx.body = {
       success: true,
       message: 'ok',
+      data: resData,
+      version,
       method,
-      data: resData
     }
   }
 }

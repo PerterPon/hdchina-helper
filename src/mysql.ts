@@ -293,7 +293,7 @@ export async function getServers(uid: string, serverIds: number[]): Promise<TPTS
   `, [serverIds]);
   const servers: TPTServer[] = [];
   for (const item of res) {
-    const { id, ip, port, username, password, type, box, file_download_path, min_space_left, min_stay_file_size, proxy, mac_address, agent_port } = item;
+    const { id, ip, port, username, password, type, box, file_download_path, min_space_left, min_stay_file_size, proxy, mac_address, agent_port, nvm_addr, proj_addr } = item;
     servers.push({
       id, ip, port, username, password, type,
       box: Boolean(box),
@@ -303,7 +303,9 @@ export async function getServers(uid: string, serverIds: number[]): Promise<TPTS
       oriFileDownloadPath: file_download_path,
       macAddress: mac_address,
       proxy,
-      agentPort: agent_port
+      agentPort: agent_port,
+      nvmAddr: nvm_addr,
+      projAddr: proj_addr
     });
   }
   return servers;
@@ -319,7 +321,7 @@ export async function getAllServers(): Promise<TPTServer[]> {
   `);
   const servers: TPTServer[] = [];
   for (const item of res) {
-    const { id, ip, port, username, password, type, box, file_download_path, min_space_left, min_stay_file_size, proxy, mac_address, agent_port } = item;
+    const { id, ip, port, username, password, type, box, file_download_path, min_space_left, min_stay_file_size, proxy, mac_address, agent_port, nvm_addr, proj_addr } = item;
     servers.push({
       id, ip, port, username, password, type,
       box: Boolean(box),
@@ -330,6 +332,8 @@ export async function getAllServers(): Promise<TPTServer[]> {
       macAddress: mac_address,
       agentPort: agent_port,
       proxy,
+      nvmAddr: nvm_addr,
+      projAddr: proj_addr
     });
   }
   return servers;

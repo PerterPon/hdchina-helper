@@ -50,6 +50,8 @@ export interface TPTServer {
   downloadSpeed?: number;
   uploadSpeed?: number;
   activeNumber?: number;
+  nvmAddr: string;
+  projAddr: string;
 }
 
 export enum ETransmissionStatus {

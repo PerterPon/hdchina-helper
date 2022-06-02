@@ -5,7 +5,7 @@ import * as fs from 'fs-extra';
 import * as _ from 'lodash';
 import checkDiskSpace, { DiskSpace } from 'check-disk-space';
 
-import * as mysql from '../mysql';
+import { getCurrentServerInfo } from './basic';
 
 import { TFileItem, TPTServer } from "../types";
 import { displayTime } from '../utils';
@@ -57,21 +57,21 @@ export async function getNetSpeed(params) {
   const serverInfo = await getCurrentServerInfo();
 }
 
-async function getCurrentServerInfo(): Promise<TPTServer> {
-  const macs = await macAddress.all();
-  const servers: TPTServer[] = await mysql.getAllServers();
-  for (const interfaceName in macs) {
-    const { mac } = macs[interfaceName];
-    for (const server of servers) {
-      const { macAddress } = server;
-      if (true === _.isString(macAddress) && 0 < macAddress.length && mac === macAddress) {
-        return server;
-      }
-    }
-  }
+// async function getCurrentServerInfo(): Promise<TPTServer> {
+//   const macs = await macAddress.all();
+//   const servers: TPTServer[] = await mysql.getAllServers();
+//   for (const interfaceName in macs) {
+//     const { mac } = macs[interfaceName];
+//     for (const server of servers) {
+//       const { macAddress } = server;
+//       if (true === _.isString(macAddress) && 0 < macAddress.length && mac === macAddress) {
+//         return server;
+//       }
+//     }
+//   }
 
-  return null;
-}
+//   return null;
+// }
 
 function allFile(folder: string): TFileItem[] {
   const downloadItems: TFileItem[] = [];

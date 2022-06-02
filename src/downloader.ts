@@ -128,9 +128,6 @@ async function downloadItem(items: TItem[]): Promise<TItem[]> {
         responseType: 'stream'
       });
       await utils.writeFile(res.data, fileWriter);
-      // if (true === config.userInfo.proxy) {
-      //   await addProxyToTorrentFile(fileFullName);
-      // }
       const leftTime: number = moment(freeUntil).unix() - moment().unix();
       log.message(`download torrent: [${title}], size: [${filesize(size)}], free time: [${moment(freeUntil).diff(moment(), 'hours')} H]`);
       downloadCount++;
