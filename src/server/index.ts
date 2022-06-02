@@ -14,6 +14,8 @@ import * as agentMethods from './agent';
 import * as url from 'url';
 import axios from 'axios';
 
+const version = utils.getVersion();
+
 async function start(): Promise<void> {
   await init();
   const configInfo = config.getConfig();
@@ -51,7 +53,6 @@ async function init(): Promise<void> {
 async function onMethod(targetMethods, ctx: Koa.Context): Promise<void> {
   const { method, data } = ctx.request.body;
   const tarMethod = targetMethods[method];
-  const version = await utils.getVersion();
   if (undefined === tarMethod) {
     ctx.body = {
       success: false,

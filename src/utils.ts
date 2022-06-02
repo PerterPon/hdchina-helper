@@ -128,7 +128,7 @@ export async function setCrontab(crontabs: string[]): Promise<string> {
   return content;
 }
 
-export async function getVersion(): Promise<string> {
+export function getVersion(): string {
   const versionFile: string = path.join(__dirname, '../version');
   return fs.readFileSync(versionFile, 'utf-8');
 }
