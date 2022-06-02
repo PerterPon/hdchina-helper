@@ -2,7 +2,7 @@
 import * as mysql from '../mysql';
 import * as utils from '../utils';
 
-import { spawnSync } from 'child_process';
+import * as shellJs from 'shelljs';
 
 import { getCurrentServerInfo } from './basic';
 
@@ -56,10 +56,15 @@ export async function deleteCrontab(params): Promise<any> {
 export async function deploy(): Promise<any> {
   const serverInfo: TPTServer = await getCurrentServerInfo();
   const { projAddr } = serverInfo;
-  const command: string = `cd ${projAddr} && git pull origin master && npm run build && pm2 restart all`;
   let res = null;
   try {
-    res = spawnSync(command);
+    const command: string = `git pull origin master && npm run build && pm2 restart all`;
+    shellJs.cd(projAddr);
+    const code = shellJs.exec(command).code;
+    if (code !== 0) {
+      throw new Error(`exec failed, code: [${code}]`);
+      
+    }
   } catch (e) {
     console.log(e);
   }
