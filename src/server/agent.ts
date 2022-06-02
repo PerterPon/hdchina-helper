@@ -59,7 +59,7 @@ export async function deploy(): Promise<any> {
   const { projAddr } = serverInfo;
   let res = null;
   try {
-    const command: string = `cd ${projAddr} && git pull origin master && rm -rf ./build && ${projAddr}/node_modules/.bin/tsc && cp -r etc build && cp version build && pm2 restart all`;
+    const command: string = `cd ${projAddr} && git pull origin master && echo "git pull origin master" && rm -rf ./build && ${projAddr}/node_modules/.bin/tsc && echo "tsc" && cp -r etc build && cp version build && echo "restart" && pm2 restart all`;
     shellJs.exec(command)
     // const res = exec(command);
     // res.on('')
