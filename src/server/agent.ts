@@ -2,7 +2,7 @@
 import * as mysql from '../mysql';
 import * as utils from '../utils';
 
-import { execSync } from 'child_process';
+import { spawnSync } from 'child_process';
 
 import { getCurrentServerInfo } from './basic';
 
@@ -57,6 +57,11 @@ export async function deploy(): Promise<any> {
   const serverInfo: TPTServer = await getCurrentServerInfo();
   const { projAddr } = serverInfo;
   const command: string = `cd ${projAddr} && git pull origin master && npm run build && pm2 restart all`;
-  const res = execSync(command);
+  let res = null;
+  try {
+    res = spawnSync(command);
+  } catch (e) {
+    console.log(e);
+  }
   return res;
 }
