@@ -50,7 +50,7 @@ export interface TPTServer {
   downloadSpeed?: number;
   uploadSpeed?: number;
   activeNumber?: number;
-  nvmAddr: string;
+  nodeAddr: string;
   projAddr: string;
 }
 

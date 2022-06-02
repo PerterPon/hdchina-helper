@@ -17,7 +17,7 @@ export async function setCrontab(params): Promise<any> {
   let existsIndex: number = -1;
   const serverInfo: TPTServer = await getCurrentServerInfo();
 
-  const crontabTask: string = `*/${cycleTime} *   * * *   root    ${serverInfo.nvmAddr}/versions/node/v14.19.1/bin/node ${serverInfo.projAddr}/build/src/scraper.js --site=${site} --nickname=${userInfo.nickname}`;
+  const crontabTask: string = `*/${cycleTime} *   * * *   root    ${serverInfo.nodeAddr} ${serverInfo.projAddr}/build/src/scraper.js --site=${site} --nickname=${userInfo.nickname}`;
 
   for (let i = 0; i < crontabs.length; i++) {
     const crontab: string = crontabs[i];
