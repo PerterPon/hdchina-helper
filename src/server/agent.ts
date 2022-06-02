@@ -2,6 +2,8 @@
 import * as mysql from '../mysql';
 import * as utils from '../utils';
 
+import { execSync } from 'child_process';
+
 import { getCurrentServerInfo } from './basic';
 
 import { TPTServer, TPTUserInfo } from '../types';
@@ -49,4 +51,12 @@ export async function deleteCrontab(params): Promise<any> {
   }
   const newContent = await utils.setCrontab(crontabs);
   return newContent;
+}
+
+export async function deploy(): Promise<any> {
+  const serverInfo: TPTServer = await getCurrentServerInfo();
+  const { projAddr } = serverInfo;
+  const command: string = `cd ${projAddr} && git pull origin master && npm run build && pm2 restart all`;
+  const res = execSync(command);
+  return res;
 }
