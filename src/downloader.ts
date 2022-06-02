@@ -127,13 +127,10 @@ async function downloadItem(items: TItem[]): Promise<TItem[]> {
       const res: AxiosResponse = await axios.get(`${downloadLink}&passkey=${userInfo.passkey}`, {
         responseType: 'stream'
       });
-      // const res: AxiosResponse = await axios.get(downloadLink, {
-      //   responseType: 'stream'
-      // });
       await utils.writeFile(res.data, fileWriter);
-      if (true === config.userInfo.proxy) {
-        await addProxyToTorrentFile(fileFullName);
-      }
+      // if (true === config.userInfo.proxy) {
+      //   await addProxyToTorrentFile(fileFullName);
+      // }
       const leftTime: number = moment(freeUntil).unix() - moment().unix();
       log.message(`download torrent: [${title}], size: [${filesize(size)}], free time: [${moment(freeUntil).diff(moment(), 'hours')} H]`);
       downloadCount++;
@@ -152,23 +149,23 @@ async function downloadItem(items: TItem[]): Promise<TItem[]> {
   return downloadSuccessItems;
 }
 
-async function addProxyToTorrentFile(torrentFile: string): Promise<void> {
-  log.log(`addProxyToTorrentFile torrentFile:[${torrentFile}]`);
-  const torrentContent: Buffer = fs.readFileSync(torrentFile);
-  const parsedTorrent: parseTorrent.Instance = parseTorrent(torrentContent) as parseTorrent.Instance;
+async function addProxyToTorrentFile(torrentFile: Buffer, proxyAddr: string): Promise<Buffer> {
+  log.log(`addProxyToTorrentFile torrentFile:[${torrentFile.length}], proxyAddr: [${proxyAddr}]`);
+  const parsedTorrent: parseTorrent.Instance = parseTorrent(torrentFile) as parseTorrent.Instance;
   const announceUrl = parsedTorrent.announce[0];
+  const proxyItem = urlLib.parse(proxyAddr, true);
   const announceUrlItem = urlLib.parse(announceUrl, true);
   const proxyUrlItem = {
-    hostname: 'hk.perterpon.com',
-    port: '4230',
+    hostname: proxyItem.hostname,
+    port: proxyItem.port,
+    protocol: proxyItem.protocol,
     query: announceUrlItem.query,
-    protocol: 'http',
     pathname: announceUrlItem.pathname
   };
   const proxyUrl: string = urlLib.format(proxyUrlItem);
   parsedTorrent.announce = [ proxyUrl ];
   const proxyContent: Buffer = parseTorrent.toTorrentFile(parsedTorrent);
-  fs.writeFileSync(torrentFile, proxyContent);
+  return proxyContent;
 }
 
 async function uploadItem(items: TItem[]): Promise<void> {
@@ -194,10 +191,10 @@ async function addItemToTransmission(items: TItem[]): Promise<{transId: string; 
   const serverAddNumMap: Map<number, number> = new Map();
   for (const item of items) {
     const { site, uid, id, title } = item;
-    const torrentUrl: string = `http://${cdnHost}/hdchina/${uid}/${site}_${id}.torrent`;
+    // const torrentUrl: string = `http://${cdnHost}/hdchina/${uid}/${site}_${id}.torrent`;
     const serverId: number = canAddServerIds.shift();
     log.log(`add file to transmission: [${title}], server id: [${serverId}]`);
-    const res = await doAddToTransmission(torrentUrl, serverId, id);
+    const res = await doAddToTransmission(serverId, id);
     successCount++;
     resInfo.push(res);
     canAddServerIds.push(serverId);
@@ -220,11 +217,18 @@ async function addItemToTransmission(items: TItem[]): Promise<{transId: string; 
   return resInfo;
 }
 
-async function doAddToTransmission(torrentUrl: string, serverId: number, siteId: string): Promise<{transId: string; hash: string; serverId: number}> {
-  log.log(`doAddToTransmission torrent url: [${torrentUrl}], server id: [${serverId}], siteId: [${siteId}]`);
+async function doAddToTransmission(serverId: number, siteId: string): Promise<{transId: string; hash: string; serverId: number}> {
+  log.log(`doAddToTransmission server id: [${serverId}], siteId: [${siteId}]`);
   let res: {transId: string; hash: string; serverId: number; } = null;
+  const userInfo: TPTUserInfo = config.userInfo;
+  const fileFullName: string = path.join(tempFolder, `${config.site}_${siteId}_${config.uid}.torrent`);
+  let fileContent: Buffer = fs.readFileSync(fileFullName);
+  if (true === userInfo.proxy) {
+    fileContent = await addProxyToTorrentFile(fileContent, userInfo.proxyAddr);
+  }
   try {
-    res = await transmission.addUrl(torrentUrl, serverId, siteId);
+    const torrentBase64: string = fileContent.toString('base64');
+    res = await transmission.addBase64(torrentBase64, serverId, siteId);
   } catch(e) {
     if ('invalid or corrupt torrent file' === e.message) {
       res = {

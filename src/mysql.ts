@@ -224,7 +224,7 @@ export async function getUserInfoByUid(uid: string, site: string): Promise<TPTUs
   if (0 === res.length) {
     return null;
   }
-  const { cookie, vip, uploadCount, nickname, paid, bind_server, cycle_time, rss_passkey, user_data_dir, site_data_only, vip_normal_item_count, proxy } = res[0];
+  const { cookie, vip, uploadCount, nickname, paid, bind_server, cycle_time, rss_passkey, user_data_dir, site_data_only, vip_normal_item_count, proxy, proxy_addr } = res[0];
   const servers: string[] = bind_server.split(',');
   const numServers: number[] = [];
   for (let i = 0; i < servers.length; i++) {
@@ -240,7 +240,8 @@ export async function getUserInfoByUid(uid: string, site: string): Promise<TPTUs
     userDataDir: user_data_dir,
     siteDataOnly: Boolean(site_data_only),
     vipNormalItemCount: vip_normal_item_count,
-    proxy: Boolean(proxy)
+    proxy: Boolean(proxy),
+    proxyAddr: proxy_addr
   };
   return userInfo;
 }
@@ -258,7 +259,7 @@ export async function getUserInfo(nickname: string, site: string): Promise<TPTUs
   if (0 === res.length) {
     return null;
   }
-  const { cookie, uid, vip, bind_server, uploadCount, paid, cycle_time, rss_passkey, user_data_dir, site_data_only, vip_normal_item_count, proxy } = res[0];
+  const { cookie, uid, vip, bind_server, uploadCount, paid, cycle_time, rss_passkey, user_data_dir, site_data_only, vip_normal_item_count, proxy, proxy_addr } = res[0];
   const servers: string[] = bind_server.split(',');
   const numServers: number[] = [];
   for (let i = 0; i < servers.length; i++) {
@@ -274,7 +275,8 @@ export async function getUserInfo(nickname: string, site: string): Promise<TPTUs
     userDataDir: user_data_dir,
     siteDataOnly: Boolean(site_data_only),
     vipNormalItemCount: vip_normal_item_count,
-    proxy: Boolean(proxy)
+    proxy: Boolean(proxy),
+    proxyAddr: proxy_addr
   };
   return userInfo;
 }

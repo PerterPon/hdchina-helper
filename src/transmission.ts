@@ -181,6 +181,24 @@ export async function addUrl(url: string, serverId: number, fileId: string): Pro
   };
 }
 
+export async function addBase64(base64Content: string, serverId: number, fileId: string): Promise<{transId: string; hash: string; serverId: number;}> {
+  const server = getServer(serverId);
+  const serverConfig = getServerConfig(serverId);
+  log.log(`[Transmission] add base64content: [${base64Content.length}], server id: [${serverId}], download dir: [${serverConfig.fileDownloadPath}]`);
+  const curFileDownloadPath: string = path.join(serverConfig.fileDownloadPath, fileId);
+  const res = await server.addBase64(base64Content, {
+    'download-dir': curFileDownloadPath
+  });
+  log.log(`[Transmission] add url with result: [${JSON.stringify(res)}]`);
+  const { id, hashString } = res;
+  return {
+    transId: id,
+    hash: hashString,
+    serverId
+  };
+}
+
+
 export async function freeSpace(serverId: number = -1): Promise<{serverId: number; size: number;}[]> {
   if (-1 !== serverId) {
     return getFreeSpace(serverId);

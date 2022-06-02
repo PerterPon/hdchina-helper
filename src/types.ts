@@ -29,6 +29,7 @@ export interface TPTUserInfo {
   siteDataOnly: boolean;
   vipNormalItemCount: number;
   proxy: boolean;
+  proxyAddr: string;
 }
 
 export interface TPTServer {
@@ -66,6 +67,7 @@ export interface TTransmission {
   get(...params: any[]): Promise<any>;
   active(...params: any[]): Promise<any>;
   addUrl(...params: any[]): Promise<any>;
+  addBase64(...params: any[]): Promise<any>;
   sessionStats(...params: any[]): Promise<any>;
   freeSpace(...params: any[]): Promise<any>;
   remove(...params: any[]): Promise<any>;
