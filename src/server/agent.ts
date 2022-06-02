@@ -3,7 +3,7 @@ import * as mysql from '../mysql';
 import * as utils from '../utils';
 
 import * as shellJs from 'shelljs';
-// import {} from 'child_process';
+import { exec } from 'child_process';
 
 import { getCurrentServerInfo } from './basic';
 
@@ -60,17 +60,10 @@ export async function deploy(): Promise<any> {
   let res = null;
   try {
     const command: string = `cd ${projAddr} && git pull origin master && echo "git pull origin master" && rm -rf ./build && ${projAddr}/node_modules/.bin/tsc && echo "tsc" && cp -r etc build && cp version build && echo "restart" && pm2 restart all`;
-    shellJs.exec(command)
-    // const res = exec(command);
-    // res.on('')
-    // shellJs.cd(projAddr);
-    // const code = shellJs.exec(command).code;
-    // if (code !== 0) {
-    //   throw new Error(`exec failed, code: [${code}]`);
-    // }
+    exec(command)
   } catch (e) {
     console.log(e);
     res = e;
   }
-  return res;
+  return 'beginning';
 }
