@@ -58,12 +58,11 @@ export async function deploy(): Promise<any> {
   const { projAddr } = serverInfo;
   let res = null;
   try {
-    const command: string = `git pull origin master && npm run build && pm2 restart all`;
-    shellJs.cd(projAddr);
+    const command: string = `cd ${projAddr} && git pull origin master && npm run build && pm2 restart all`;
+    // shellJs.cd(projAddr);
     const code = shellJs.exec(command).code;
     if (code !== 0) {
       throw new Error(`exec failed, code: [${code}]`);
-      
     }
   } catch (e) {
     console.log(e);
