@@ -59,7 +59,7 @@ export async function deploy(): Promise<any> {
   const { projAddr } = serverInfo;
   let res = null;
   try {
-    const command: string = `cd ${projAddr} && git pull origin master && rm -rf ./build && ./node_module/.bin/tsc && cp -r etc build && cp version build && pm2 restart all`;
+    const command: string = `cd ${projAddr} && git pull origin master && rm -rf ./build && ${projAddr}/node_modules/.bin/tsc && cp -r etc build && cp version build && pm2 restart all`;
     execSync(command);
     // shellJs.cd(projAddr);
     // const code = shellJs.exec(command).code;
@@ -68,6 +68,7 @@ export async function deploy(): Promise<any> {
     // }
   } catch (e) {
     console.log(e);
+    res = e;
   }
   return res;
 }
