@@ -38,10 +38,10 @@ let tempFolder: string = null;
 
 async function start(): Promise<void> {
   const version = utils.getVersion();
-  log.message(`[${utils.displayTime()}] version: [${version}] nickname: [${config.nickname}] site: [${config.site}], uid: [${config.uid}]`);
   try {
     const startDate: Date = new Date();
     await init();
+    log.message(`[${utils.displayTime()}] version: [${version}] nickname: [${config.nickname}] site: [${config.site}], uid: [${config.uid}]`);
 
     await storeSiteData();
     const userInfo: TPTUserInfo = config.userInfo;

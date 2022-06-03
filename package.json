@@ -62,6 +62,7 @@
 		"dev": "make dev",
 		"start": "make start",
 		"build": "rm -rf ./build && tsc && cp -r etc build && cp version build",
-		"pub": "node add-version && git add version && git commit version -m 'add version' && git push origin master"
+		"pub": "node add-version && git add version && git commit version -m 'add version' && git push origin master",
+		"deploy": "node build/deploy-all"
 	}
 }
