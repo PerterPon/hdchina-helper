@@ -1,6 +1,6 @@
 
 import * as cheerio from 'cheerio';
-import axios from 'axios';
+import axios, { AxiosResponseHeaders } from 'axios';
 import * as filesize from 'filesize';
 import * as _ from 'lodash';
 
@@ -14,6 +14,7 @@ import { siteMap, TPageUserInfo, getCurrentSite } from './sites/basic';
 import { TItem, TPTUserInfo } from './types';
 
 const pageMap: Map<string, cheerio.CheerioAPI> = new Map();
+const pageResHeaders: Map<string, AxiosResponseHeaders> = new Map();
 
 let currentSite = null
 
@@ -41,6 +42,7 @@ export async function loadPage(url: string): Promise<cheerio.CheerioAPI> {
 
     page = cheerio.load(pageContent);
     pageMap.set(url, page);
+    pageResHeaders.set(url, pageRes.headers);
   }
   return page;
 }
@@ -187,4 +189,22 @@ export async function filterFreeItem(url: string): Promise<TItem[]> {
     });
   }
   return freeItems;
+}
+
+export async function getCsrfToken(): Promise<string> {
+  log.log(`[Puppe-lite] getCsrfToken`);
+  const configInfo = config.getConfig();
+  const pageInfo = await loadPage(configInfo.torrentPage[0]);
+  const html: string = pageInfo.html();
+  return utils.fetchCsrfTokenFromHtml(html);
+}
+
+export async function getPHPSessionId(): Promise<string> {
+  log.log(`[Puppe-lite] getPHPSessionId`);
+  const configInfo = config.getConfig();
+  await loadPage(configInfo.torrentPage[0]);
+  const headers = pageResHeaders.get(configInfo.torrentPage[0]);
+  const phpSessionIdCookie: string = (headers['set-cookie'] || [])[0] || '';
+  const [phpSessionId] = phpSessionIdCookie.split(';');
+  return phpSessionId;
 }

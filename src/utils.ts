@@ -59,6 +59,11 @@ export async function fetchCsrfTokenAndPHPSessionId(): Promise<{csrfToken: strin
   };
 }
 
+export function fetchCsrfTokenFromHtml(html: string): string {
+  const [_, csrfToken] = html.match(/name="x-csrf"\scontent="(.*)"/);
+  return csrfToken;
+}
+
 export function UTF8Time(): Date {
   return moment().tz('Asia/Shanghai').toDate();
 }
@@ -144,7 +149,7 @@ export const ajaxHeader = {
   "sec-fetch-mode": "cors",
   "sec-fetch-site": "same-origin",
   "x-requested-with": "XMLHttpRequest",
-  "Referer": "https://hdchina.org/torrents.php?rsscart=1&allsec=1&incldead=0",
+  "Referer": "https://hdchina.org/torrents.php",
   "Referrer-Policy": "strict-origin-when-cross-origin"
 };
 

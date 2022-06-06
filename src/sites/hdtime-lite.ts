@@ -43,7 +43,7 @@ export async function getFreeTime(el: cheerio.CheerioAPI): Promise<Date> {
 
   const freeTimeContainer: string = freeEl.attr('onmouseover');
   const [timeString] = freeTimeContainer.match(/\d\d\d\d-\d\d-\d\d\s\d\d:\d\d:\d\d/);
-  return new Date(timeString);
+  return utils.parseCSTDate(timeString);
 }
 
 export async function getFreeTime2up(el: cheerio.CheerioAPI): Promise<Date> {
@@ -54,7 +54,7 @@ export async function getFreeTime2up(el: cheerio.CheerioAPI): Promise<Date> {
 
   const freeTimeContainer: string = freeEl.attr('onmouseover');
   const [timeString] = freeTimeContainer.match(/\d\d\d\d-\d\d-\d\d\s\d\d:\d\d:\d\d/);
-  return new Date(timeString);
+  return utils.parseCSTDate(timeString);
 }
 
 export async function getSiteId(el: cheerio.CheerioAPI, torrentUrl): Promise<string> {

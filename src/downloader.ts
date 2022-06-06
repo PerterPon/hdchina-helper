@@ -364,10 +364,14 @@ async function doReduceLeftSpace(serverId: number): Promise<void> {
       log.message(`remove item because of min left space: [${name}], size: [${filesize(size)}] trans id: [${id}] server id: [${itemServerId}]`);
       reducedTotal += size;
       const { uid, site } = config.userInfo;
-      const itemInfo: TItem = await mysql.getItemByTransIdAndServerId(id, itemServerId, uid, site);
-      await transmission.removeItem(id, itemInfo.id, itemServerId);
-      await mysql.deleteDownloaderItem(config.uid, config.site, itemServerId, id);
-      freeSpace += size;
+      try {
+        const itemInfo: TItem = await mysql.getItemByTransIdAndServerId(id, itemServerId, uid, site);
+        await transmission.removeItem(id, itemInfo.id, itemServerId);
+        await mysql.deleteDownloaderItem(config.uid, config.site, itemServerId, id);
+        freeSpace += size;
+      } catch (e) {
+        log.log(e, e.message);
+      }
     }
   }
   if (0 < reducedTotal) {
