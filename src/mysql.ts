@@ -141,6 +141,7 @@ export async function getTransIdByItem(uid: string, items: TItem[]): Promise<num
       transIds.push(res[0].trans_id);
     } catch (e) {
       log.log(e.message);
+      log.log(JSON.stringify(item));
       log.log(e.stack);
     }
   }

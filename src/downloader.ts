@@ -317,8 +317,12 @@ async function removeItemFromTransmission(items: TItem[]): Promise<void> {
     const transId: number = transIds[i];
     const item: TItem = items[i];
     log.log(`removing torrent: [${item.title}], server: [${item.serverId}] because of out of date`);
-    await transmission.removeItem(Number(transId), item.id, Number(item.serverId));
-    await mysql.deleteDownloaderItem(config.uid, config.site, item.serverId, transId);
+    try {
+      await transmission.removeItem(Number(transId), item.id, Number(item.serverId));
+      await mysql.deleteDownloaderItem(config.uid, config.site, item.serverId, transId);
+    } catch (e) {
+      log.log(e.message, e.stack);
+    }
   }
   if (0 < items.length) {
     log.message(`remove torrent count: [${items.length}] because of out of date`);

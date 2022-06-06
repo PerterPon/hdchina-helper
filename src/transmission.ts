@@ -158,10 +158,11 @@ async function getServerItems(serverId: number, type: 'all'|'active', ids?: numb
 
 export async function removeItem(id: number, siteId: string, serverId: number): Promise<void> {
   log.log(`[Transmission] remove item: [${id}] serverId: [${serverId}]`);
-  const server = getServer(serverId);
-
+  
   const { uid, site } = config.userInfo;
   await transLite.removeItem(uid, site, serverId, siteId);
+
+  const server = getServer(serverId);
   const result = await server.remove(id, true);
   log.log(`[Transmission] remove item: [${id}] with result: [${JSON.stringify(result)}]`);
 }
