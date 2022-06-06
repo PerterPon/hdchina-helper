@@ -49,7 +49,7 @@ async function start(): Promise<void> {
     const userInfo: TPTUserInfo = config.userInfo;
     if (false === userInfo.siteDataOnly) {
       await main();
-      // await startDownloader();
+      await startDownloader();
     }
 
     const endDate: Date = new Date();
