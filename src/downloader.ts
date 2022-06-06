@@ -306,7 +306,7 @@ async function removeItems(items: TItem[], reason: string): Promise<void> {
   for (const item of items) {
     const { transId, id, serverId } = item;
     try {
-      log.message(`removing [${reason}] item: [${item.title}] size: [${filesize(item.size)}]`);
+      log.message(`removing [${reason}] item: [${item.title}] size: [${filesize(item.size)}], free until: [${item.freeUntil}]`);
       await transmission.removeItem(transId, id, serverId);
       await mysql.deleteDownloaderItem(config.uid, config.site, item.serverId, transId);
       successCount++;
