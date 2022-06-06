@@ -22,6 +22,17 @@ export async function init(): Promise<void> {
     acquireTimeout: 20000,
     connectTimeout: 20000
   });
+  const _query = pool.query.bind(pool);
+  pool.query = async function (sql, where) {
+    try {
+      const res = await _query(sql, where);
+      return res;
+    } catch (e) {
+      const finalSql = mysql.format(sql, where);
+      log.log(`[Mysql] [Error] query failed with sql: [${finalSql}]`);
+      throw e;
+    }
+  } as any;
 }
 
 export async function storeItem(uid: string, site: string, items: TItem[]): Promise<void> {
@@ -240,41 +251,6 @@ export async function storeSiteInfo(
   `, [UTF8Time(), UTF8Time(), site, uid, shareRatio || 0, downloadCount || 0, uploadCount || 0, magicPoint || 0, uploadSpeed || 0, downloadSpeed]);
 }
 
-export async function getUserInfoByUid1(uid: string, site: string): Promise<TPTUserInfo> {
-  const [res]: any = await pool.query(`
-  SELECT
-    *
-  FROM
-    users
-  WHERE
-    uid = ? AND
-    site = ?;
-  `, [uid, site]);
-  if (0 === res.length) {
-    return null;
-  }
-  const { cookie, vip, uploadCount, nickname, paid, bind_server, cycle_time, rss_passkey, user_data_dir, site_data_only, vip_normal_item_count, proxy, proxy_addr } = res[0];
-  const servers: string[] = bind_server.split(',');
-  const numServers: number[] = [];
-  for (let i = 0; i < servers.length; i++) {
-    const server: string = servers[i];
-    numServers.push(Number(server));
-  }
-  const userInfo: TPTUserInfo = { 
-    cookie, site, uid, uploadCount, paid, nickname,
-    cycleTime: cycle_time,
-    vip: Boolean(vip),
-    serverIds: numServers,
-    passkey: rss_passkey,
-    userDataDir: user_data_dir,
-    siteDataOnly: Boolean(site_data_only),
-    vipNormalItemCount: vip_normal_item_count,
-    proxy: Boolean(proxy),
-    proxyAddr: proxy_addr
-  };
-  return userInfo;
-}
-
 export async function getUserInfoByQuery(query: any): Promise<TPTUserInfo> {
   let sql = `
   SELECT 
@@ -303,41 +279,6 @@ export async function getUserInfoByQuery(query: any): Promise<TPTUserInfo> {
     numServers.push(Number(server));
   }
   const userInfo: TPTUserInfo = { 
-    cookie, site, uid, uploadCount, paid, nickname,
-    cycleTime: cycle_time,
-    vip: Boolean(vip),
-    serverIds: numServers,
-    passkey: rss_passkey,
-    userDataDir: user_data_dir,
-    siteDataOnly: Boolean(site_data_only),
-    vipNormalItemCount: vip_normal_item_count,
-    proxy: Boolean(proxy),
-    proxyAddr: proxy_addr
-  };
-  return userInfo;
-}
-
-export async function getUserInfo1(nickname: string, site: string): Promise<TPTUserInfo> {
-  const [res]: any = await pool.query(`
-  SELECT 
-    *
-  FROM
-    users
-  WHERE
-    nickname = ? AND
-    site = ?;
-  `, [nickname, site]);
-  if (0 === res.length) {
-    return null;
-  }
-  const { cookie, uid, vip, bind_server, uploadCount, paid, cycle_time, rss_passkey, user_data_dir, site_data_only, vip_normal_item_count, proxy, proxy_addr } = res[0];
-  const servers: string[] = bind_server.split(',');
-  const numServers: number[] = [];
-  for (let i = 0; i < servers.length; i++) {
-    const server: string = servers[i];
-    numServers.push(Number(server));
-  }
-  const userInfo: TPTUserInfo = {
     cookie, site, uid, uploadCount, paid, nickname,
     cycleTime: cycle_time,
     vip: Boolean(vip),
