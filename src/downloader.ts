@@ -155,11 +155,12 @@ async function addProxyToTorrentFile(torrentFile: Buffer, proxyAddr: string): Pr
   const announceUrl = parsedTorrent.announce[0];
   const proxyItem = urlLib.parse(proxyAddr, true);
   const announceUrlItem = urlLib.parse(announceUrl, true);
+  announceUrlItem.query.__uid = config.uid;
   const proxyUrlItem = {
     hostname: proxyItem.hostname,
     port: proxyItem.port,
     protocol: proxyItem.protocol,
-    query: `${announceUrlItem.query}&__uid=${config.uid}`,
+    query: announceUrlItem.query,
     pathname: announceUrlItem.pathname
   };
   const proxyUrl: string = urlLib.format(proxyUrlItem);
@@ -282,30 +283,17 @@ async function getDownloadingItems(): Promise<TItem[]> {
   const downloadingItems: TItem[] = [];
   for (const server of transmission.servers) {
     const { id } = server;
-    const itemsIds: number[] = await mysql.getUserActiveTransId(config.uid, config.site, id);
-    const transItems: transmission.TTransItem[] = await transmission.filterDownloadingItems(id, itemsIds);
-
-    const downloadingHash: string[] = [];
-    for (const item of transItems) {
-      const { hash, downloadDir } = item;
-      const server: TPTServer = transmission.serverConfigMap.get(item.serverId);
-      if (undefined == server) {
-        log.log(`trying to get downloading item with server id: [${item.serverId}], server not found`);
-        continue;
-      }
-      const { fileDownloadPath } = server;
-      // only the specific torrent we need to remove.
-      if (downloadDir === fileDownloadPath) {
-        downloadingHash.push(hash);
+    const serverItems: transmission.TTransItem[] = await transmission.getAllItems(id);
+    const siteIds: string[] = [];
+    for (const item of serverItems) {
+      const { siteId, isFinished } = item;
+      if (true === isFinished) {
+        siteIds.push(siteId);
       }
     }
-    const items: TItem[] = await mysql.getItemByHash(config.uid, config.site, downloadingHash);
-    const downloadingItemNames: string[] = [];
-    for (const downloadingItem of items) {
-      downloadingItemNames.push(downloadingItem.title);
-    }
-    log.log(`server: [${id}], downloading item names: [${downloadingItemNames.join('\n')}]`);
-    downloadingItems.push(...items);
+    const siteItems: TItem[] = await mysql.getItemBySiteIds(config.uid, config.site, siteIds);
+    downloadingItems.push(...siteItems);
+    log.message(`server: [${id}] downloading count: [${siteItems.length}]`);
   }
   return downloadingItems;
 }
@@ -369,7 +357,6 @@ async function doReduceLeftSpace(serverId: number): Promise<void> {
     }
     const item = datedItems.shift();
     const { id, status, downloadDir, size, name, serverId: itemServerId } = item;
-    console.log(downloadDir, fileDownloadPath);
     if (
       -1 === [transmission.status.DOWNLOAD, transmission.status.CHECK_WAIT, transmission.status.CHECK, transmission.status.DOWNLOAD_WAIT].indexOf(status) &&
       0 === downloadDir.indexOf(fileDownloadPath)

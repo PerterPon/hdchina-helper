@@ -21,6 +21,7 @@ export interface TTransItem {
   activityDate: Date;
   isFinished: boolean;
   serverId: number;
+  siteId: string;
 }
 
 export let servers: TPTServer[] = [];
@@ -147,7 +148,8 @@ async function getServerItems(serverId: number, type: 'all'|'active', ids?: numb
       activityDate: new Date(fileItem.createTime),
       isFinished: fileItem.downloaded,
       serverId: item.serverId,
-      hash: item.torrentUrl
+      hash: item.torrentUrl,
+      siteId
     });
   }
 

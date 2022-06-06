@@ -285,7 +285,6 @@ export async function getUserInfoByQuery(query: any): Promise<TPTUserInfo> {
     proxy: Boolean(proxy),
     proxyAddr: proxy_addr
   };
-  console.log(userInfo);
   return userInfo;
 }
 
