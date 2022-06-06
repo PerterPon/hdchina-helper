@@ -63,19 +63,19 @@ const app = http.createServer(async (req, res) => {
 
 async function getHostByUrl(reqUrl): Promise<string> {
   const urlItem = url.parse(reqUrl, true);
-  const { passkey, uid, authkey } = urlItem.query;
+  const { passkey, uid, authkey, __uid } = urlItem.query;
   const userQuery = {} as any;
-  if (passkey) {
+  if (__uid) {
+    userQuery.uid = __uid;
+  } else if (passkey) {
     userQuery.rss_passkey = passkey;
-  }
-  if (uid) {
+  } else if (uid) {
     userQuery.uid = uid;
-  }
-  if (authkey) {
+  } else if (authkey) {
     userQuery.authkey = authkey;
   }
+
   const userInfo: TPTUserInfo = await mysql.getUserInfoByQuery(userQuery);
-  console.log(userInfo);
   const { site } = userInfo;
   return siteTrackerMap[site];
 }

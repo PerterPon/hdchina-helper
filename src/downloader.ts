@@ -159,7 +159,7 @@ async function addProxyToTorrentFile(torrentFile: Buffer, proxyAddr: string): Pr
     hostname: proxyItem.hostname,
     port: proxyItem.port,
     protocol: proxyItem.protocol,
-    query: announceUrlItem.query,
+    query: `${announceUrlItem.query}&__uid=${config.uid}`,
     pathname: announceUrlItem.pathname
   };
   const proxyUrl: string = urlLib.format(proxyUrlItem);
