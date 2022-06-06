@@ -10,7 +10,7 @@ import * as mysql from './mysql';
 
 import * as utils from './utils';
 
-import { siteMap, TPageUserInfo } from './sites/basic';
+import { siteMap, TPageUserInfo, getCurrentSite } from './sites/basic';
 import { TItem, TPTUserInfo } from './types';
 
 const pageMap: Map<string, cheerio.CheerioAPI> = new Map();
@@ -19,14 +19,17 @@ let currentSite = null
 
 export async function init(): Promise<void> {
   log.log(`[Puppe-lite] init`);
-  currentSite = siteMap[`${config.site}Lite`];
+  currentSite = getCurrentSite();
 }
 
 export async function loadPage(url: string): Promise<cheerio.CheerioAPI> {
   log.log(`[Puppe-lite] loadPage, url: [${url}]`);
   let page: cheerio.CheerioAPI = pageMap.get(url);
   if (undefined === page) {
-    const userInfo: TPTUserInfo = await mysql.getUserInfo(config.nickname, config.site);
+    const userInfo: TPTUserInfo = await mysql.getUserInfoByQuery({
+      nickname: config.nickname,
+      site: config.site
+    });
     const { cookie } = userInfo;
     const pageRes = await axios.get(url, {
       headers: {
@@ -35,6 +38,7 @@ export async function loadPage(url: string): Promise<cheerio.CheerioAPI> {
       }
     });
     const pageContent: string = pageRes.data;
+
     page = cheerio.load(pageContent);
     pageMap.set(url, page);
   }

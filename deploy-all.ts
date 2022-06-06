@@ -21,6 +21,7 @@ async function start(): Promise<void> {
   }
 
   console.log('all deploy done');
+  process.exit(0);
 }
 
 start();

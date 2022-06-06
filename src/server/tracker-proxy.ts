@@ -6,29 +6,31 @@ import * as stream from 'stream';
 import * as http from 'http';
 // import * as request from 'request';
 import * as https from 'https';
+import * as config from '../config';
+import * as mysql from '../mysql';
+import { TPTUserInfo } from 'src/types';
 
 const httpAgent = new http.Agent({ keepAlive: true });
 const httpsAgent = new https.Agent({ keepAlive: true });
 
-const instance = axios.create({
-  httpAgent,  // httpAgent: httpAgent -> for non es6 syntax
-  httpsAgent,
-});
+const siteTrackerMap = {
+  'hdtime': 'tracker.hdtime.org',
+  'mteam': 'tracker.m-team.cc',
+  'hdchina': 'tracker.hdchina.org'
+};
 
-const agent = new http.Agent({
-  keepAlive: true
-});
-
-const TARGET_HOST: string = 'tracker.m-team.cc';
+// const TARGET_HOST: string = 'tracker.m-team.cc';
 const app = http.createServer(async (req, res) => {
   console.log(`[${utils.displayTime()}] new request [${req.url}], , headers: [${JSON.stringify(req.headers)}], method: [${req.method}]`);
 
+  const host: string = await getHostByUrl(req.url);
+
   const urlItem = url.parse(req.url);
-  urlItem.host = TARGET_HOST;
+  urlItem.host = host;
   urlItem.protocol = 'https:';
   const headers = req.headers as any;
-  headers.host = TARGET_HOST;
-  let proxyedUrl = `https://${TARGET_HOST}${req.url}`;
+  headers.host = host;
+  let proxyedUrl = `https://${host}${req.url}`;
   if ( '/announce.php' ===  urlItem.pathname) {
     const [trash, uploadedCount] = urlItem.query.match(/uploaded=(\d+)/) || [];
     const increasedCount = increaseUpload(uploadedCount);
@@ -59,6 +61,25 @@ const app = http.createServer(async (req, res) => {
   res.end(resData.data);
 });
 
+async function getHostByUrl(reqUrl): Promise<string> {
+  const urlItem = url.parse(reqUrl, true);
+  const { passkey, uid, authkey } = urlItem.query;
+  const userQuery = {} as any;
+  if (passkey) {
+    userQuery.rss_passkey = passkey;
+  }
+  if (uid) {
+    userQuery.uid = uid;
+  }
+  if (authkey) {
+    userQuery.authkey = authkey;
+  }
+  const userInfo: TPTUserInfo = await mysql.getUserInfoByQuery(userQuery);
+  console.log(userInfo);
+  const { site } = userInfo;
+  return siteTrackerMap[site];
+}
+
 function increaseUpload(originUpload: string): string {
   const numUploaded: number = Number(originUpload);
   console.log(`[!!!]increase upload, origin: [${originUpload}], increase: [${numUploaded * 1.11}]`);
@@ -69,6 +90,8 @@ function increaseUpload(originUpload: string): string {
   return String(numUploaded * 1.11);
 }
 
-app.listen(4230, () => {
-  console.log(`listing port: [${4239}]`);
+app.listen(4230, async () => {
+  console.log(`tracker listing port: [${4239}]`);
+  await config.init();
+  await mysql.init();
 });

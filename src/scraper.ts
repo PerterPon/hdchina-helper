@@ -73,9 +73,9 @@ async function storeSiteData(): Promise<void> {
   const userInfo: TPageUserInfo = await puppeteer.getUserInfo(configInfo.torrentPage[0]);
   const { shareRatio, downloadCount, uploadCount, magicPoint } = userInfo;
 
-  const latestSiteData: TSiteData = await mysql.getLatestSiteData(config.uid, config.site);
-  const increaseUpload: string = (Number(uploadCount) - latestSiteData.uploadCount).toFixed(3);
-  const increaseDownload: string = (Number(downloadCount) - latestSiteData.downloadCount).toFixed(3);
+  const latestSiteData: TSiteData = await mysql.getLatestSiteData(config.uid, config.site) || {} as any;
+  const increaseUpload: string = (Number(uploadCount) - latestSiteData.uploadCount || 0).toFixed(3);
+  const increaseDownload: string = (Number(downloadCount) - latestSiteData.downloadCount || 0).toFixed(3);
   log.message(`increase upload: [${increaseUpload}], download: [${increaseDownload}]`);
   log.message(`share ratio: [${shareRatio || ''}]`);
   log.message(`upload count: [${uploadCount || ''}]`);
@@ -131,7 +131,10 @@ async function init(): Promise<void> {
   await config.init();
   await initTempFolder();
   await mysql.init();
-  const ptUserInfo: TPTUserInfo = await mysql.getUserInfo(config.nickname, config.site);
+  const ptUserInfo: TPTUserInfo = await mysql.getUserInfoByQuery({
+    nickname: config.nickname,
+    site: config.site
+  });
   config.setUid(ptUserInfo.uid);
   config.setVip(ptUserInfo.vip);
   config.setUserInfo(ptUserInfo);

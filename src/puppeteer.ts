@@ -17,7 +17,7 @@ import * as filesize from 'filesize';
 import { TPageUserInfo } from './sites/basic';
 
 import { siteMap } from './sites/basic';
-import { getUserInfo as getPTUserInfo } from './mysql';
+import { getUserInfoByQuery } from './mysql';
 
 let browser: puppeteer.Browser = null;
 let cookieFileName: string = 'cookie';
@@ -93,7 +93,10 @@ export async function setCookie(currentPage: puppeteer.Page): Promise<void> {
   log.log(`[Puppeteer] setCookie`);
 
   const configInfo = config.getConfig();
-  const userInfo: TPTUserInfo = await getPTUserInfo(config.nickname, config.site);
+  const userInfo: TPTUserInfo = await getUserInfoByQuery({
+    nickname: config.nickname,
+    site: config.site
+  });
   const { cookie } = userInfo;
   const cookieItems: string[] = cookie.split(';');
   const cookies: puppeteer.SetCookie[] = [];

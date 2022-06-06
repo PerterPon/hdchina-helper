@@ -211,9 +211,9 @@ export async function storeSiteInfo(
   `, [UTF8Time(), UTF8Time(), site, uid, shareRatio || 0, downloadCount || 0, uploadCount || 0, magicPoint || 0, uploadSpeed || 0, downloadSpeed]);
 }
 
-export async function getUserInfoByUid(uid: string, site: string): Promise<TPTUserInfo> {
+export async function getUserInfoByUid1(uid: string, site: string): Promise<TPTUserInfo> {
   const [res]: any = await pool.query(`
-  SELECT 
+  SELECT
     *
   FROM
     users
@@ -246,7 +246,50 @@ export async function getUserInfoByUid(uid: string, site: string): Promise<TPTUs
   return userInfo;
 }
 
-export async function getUserInfo(nickname: string, site: string): Promise<TPTUserInfo> {
+export async function getUserInfoByQuery(query: any): Promise<TPTUserInfo> {
+  let sql = `
+  SELECT 
+    *
+  FROM
+    users
+  WHERE
+    1 = 1
+  `;
+
+  const where = [];
+  for (const key in query) {
+    sql += `AND ${key} = ?`;
+    where.push(query[key]);
+  }
+
+  const [res]: any = await pool.query(sql, where);
+  if (0 === res.length) {
+    return null;
+  }
+  const { cookie, vip, site, uid, uploadCount, nickname, paid, bind_server, cycle_time, rss_passkey, user_data_dir, site_data_only, vip_normal_item_count, proxy, proxy_addr } = res[0];
+  const servers: string[] = bind_server.split(',');
+  const numServers: number[] = [];
+  for (let i = 0; i < servers.length; i++) {
+    const server: string = servers[i];
+    numServers.push(Number(server));
+  }
+  const userInfo: TPTUserInfo = { 
+    cookie, site, uid, uploadCount, paid, nickname,
+    cycleTime: cycle_time,
+    vip: Boolean(vip),
+    serverIds: numServers,
+    passkey: rss_passkey,
+    userDataDir: user_data_dir,
+    siteDataOnly: Boolean(site_data_only),
+    vipNormalItemCount: vip_normal_item_count,
+    proxy: Boolean(proxy),
+    proxyAddr: proxy_addr
+  };
+  console.log(userInfo);
+  return userInfo;
+}
+
+export async function getUserInfo1(nickname: string, site: string): Promise<TPTUserInfo> {
   const [res]: any = await pool.query(`
   SELECT 
     *
@@ -388,7 +431,7 @@ export async function getLatestSiteData(uid: string, site: string): Promise<TSit
   ORDER BY gmt_create DESC
   LIMIT 1;
   `, [uid, site]);
-  const { share_ratio, upload_count, magic_point, download_count, upload_speed, download_speed } = res[0];
+  const { share_ratio, upload_count, magic_point, download_count, upload_speed, download_speed } = res[0] || {};
   return {
     shareRatio: share_ratio,
     uploadCount: upload_count,
@@ -483,3 +526,5 @@ export async function getItemBySiteIds(uid: string, site: string, siteIds: strin
   }
   return items;
 }
+
+

@@ -11,7 +11,7 @@ import { TPTServer, TPTUserInfo } from '../types';
 
 export async function setCrontab(params): Promise<any> {
   const { uid, site } = params;
-  const userInfo: TPTUserInfo = await mysql.getUserInfoByUid(uid, site);
+  const userInfo: TPTUserInfo = await mysql.getUserInfoByQuery({uid, site});
   const { cycleTime, nickname, site: userSite } = userInfo;
   const crontabs: string[] = await utils.parseCrontab();
   let existsIndex: number = -1;
@@ -38,7 +38,7 @@ export async function setCrontab(params): Promise<any> {
 
 export async function deleteCrontab(params): Promise<any> {
   const { uid, site } = params;
-  const userInfo: TPTUserInfo = await mysql.getUserInfoByUid(uid, site);
+  const userInfo: TPTUserInfo = await mysql.getUserInfoByQuery({uid, site});
   const { nickname, site: userSite } = userInfo;
   const crontabs: string[] = await utils.parseCrontab();
   let existsIndex: number = -1;

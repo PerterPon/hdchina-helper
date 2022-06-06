@@ -17,7 +17,7 @@ import * as moment from 'moment';
 import * as mysql from './mysql';
 import { mkdirpSync } from 'fs-extra';
 import * as log from './log';
-import { siteMap } from './sites/basic';
+import { siteMap, getCurrentSite } from './sites/basic';
 import * as puppeteer from './puppeteer';
 
 import { TItem, TPTServer, TPTUserInfo } from './types';
@@ -54,7 +54,7 @@ export async function main(): Promise<void> {
   // 7.
   await uploadItem(downloadSuccessItem);
 
-  let trans: { transId: string; hash: string; serverId: number }[] = [];
+  let trans = {};
   try {
     trans = await addItemToTransmission(downloadSuccessItem);
   } catch (e) {
@@ -63,7 +63,7 @@ export async function main(): Promise<void> {
   }
 
   // 8.
-  await storeDownloadAction(trans, canDownloadItem);
+  await storeDownloadAction(trans, downloadSuccessItem);
   await utils.sleep(5 * 1000);
   // 9. 
   const downloadingItems: TItem[] = await getDownloadingItems();
@@ -80,7 +80,10 @@ export async function main(): Promise<void> {
 async function init(): Promise<void> {
   await config.init();
   await mysql.init();
-  const ptUserInfo: TPTUserInfo = await mysql.getUserInfo(config.nickname, config.site);
+  const ptUserInfo: TPTUserInfo = await mysql.getUserInfoByQuery({
+    nickname: config.nickname,
+    site: config.site
+  });
   await transmission.init(ptUserInfo.uid);
   await oss.init();
   await message.init();
@@ -98,8 +101,8 @@ async function initTempFolder(): Promise<void> {
 async function downloadItem(items: TItem[]): Promise<TItem[]> {
   log.log(`downloadItem: [${JSON.stringify(items)}]`);
   if (items.length > 10) {
-    log.message(`target download items: [${items.length}], reduce to [${10}]`);
-    items = items.splice(0, 10);
+    log.message(`target download items: [${items.length}], reduce to [${5}]`);
+    items = items.splice(0, 5);
   }
   let downloadCount: number = 0;
   let existsTorrentCount: number = 0;
@@ -119,7 +122,7 @@ async function downloadItem(items: TItem[]): Promise<TItem[]> {
 
     try {
       // not exist, download
-      const downloadLink = await siteMap[config.site].getDownloadUrl(item);
+      const downloadLink = await getCurrentSite().getDownloadUrl(item);
       log.log(`downloading file: [${downloadLink}]`);
 
       const fileWriter = fs.createWriteStream(fileFullName);
@@ -175,9 +178,9 @@ async function uploadItem(items: TItem[]): Promise<void> {
   }
 }
 
-async function addItemToTransmission(items: TItem[]): Promise<{transId: string; hash: string; serverId: number; }[]> {
+async function addItemToTransmission(items: TItem[]): Promise<{[key: string]: {transId: string; hash: string; serverId: number; }}> {
   log.log(`addItemToTransmission: [${JSON.stringify(items)}]`);
-  const resInfo: {transId: string; hash: string; serverId: number}[] = [];
+  const resInfo = {};
   const configInfo = config.getConfig();
   const { cdnHost } = configInfo.aliOss;
   let errorCount: number = 0;
@@ -187,20 +190,24 @@ async function addItemToTransmission(items: TItem[]): Promise<{transId: string; 
   canAddServerIds = _.shuffle(canAddServerIds);
   const serverAddNumMap: Map<number, number> = new Map();
   for (const item of items) {
-    const { site, uid, id, title } = item;
-    // const torrentUrl: string = `http://${cdnHost}/hdchina/${uid}/${site}_${id}.torrent`;
-    const serverId: number = canAddServerIds.shift();
-    log.log(`add file to transmission: [${title}], server id: [${serverId}]`);
-    const res = await doAddToTransmission(serverId, id);
-    successCount++;
-    resInfo.push(res);
-    canAddServerIds.push(serverId);
-    let addedNumber: number = serverAddNumMap.get(serverId);
-    if (undefined === addedNumber) {
-      addedNumber = 0;
+    try {
+      const { site, uid, id, title } = item;
+      // const torrentUrl: string = `http://${cdnHost}/hdchina/${uid}/${site}_${id}.torrent`;
+      const curServerId: number = canAddServerIds.shift();
+      log.log(`add file to transmission: [${title}], server id: [${curServerId}]`);
+      const res = await doAddToTransmission(curServerId, id);
+      successCount++;
+      canAddServerIds.push(curServerId);
+      let addedNumber: number = serverAddNumMap.get(curServerId);
+      if (undefined === addedNumber) {
+        addedNumber = 0;
+      }
+      addedNumber++;
+      serverAddNumMap.set(curServerId, addedNumber);
+      resInfo[id] = res;
+    } catch (e) {
+      log.log(e.message, e.stack);
     }
-    addedNumber++;
-    serverAddNumMap.set(serverId, addedNumber);
   }
   if (0 < successCount) {
     log.message(`add transmission success count: [${successCount}]`);
@@ -222,6 +229,7 @@ async function doAddToTransmission(serverId: number, siteId: string): Promise<{t
   let fileContent: Buffer = fs.readFileSync(fileFullName);
   if (true === userInfo.proxy) {
     fileContent = await addProxyToTorrentFile(fileContent, userInfo.proxyAddr);
+    fs.writeFileSync(fileFullName, fileContent);
   }
   try {
     const torrentBase64: string = fileContent.toString('base64');
@@ -248,23 +256,24 @@ async function doAddToTransmission(serverId: number, siteId: string): Promise<{t
   return res;
 }
 
-async function storeDownloadAction(transIds: {transId: string; hash: string; serverId: number}[], items: TItem[]): Promise<void> {
+async function storeDownloadAction(transIds: {[key: string]: {transId: string; hash: string; serverId: number}}, items: TItem[]): Promise<void> {
   log.log(`updateTransId2Item transIds: [${JSON.stringify(transIds)}], items: [${JSON.stringify(items)}]`);
   const configInfo = config.getConfig();
 
-  for (let i = 0; i < transIds.length; i++) {
-    const { transId, hash, serverId } = transIds[i];
+  for (const item of items) {
+    const { id } = item;
+    if (undefined === transIds[id]) {
+      continue;
+    }
+    const { transId, hash, serverId } = transIds[id];
     if ('-1' === transId) {
       continue;
     }
-    const item: TItem = items[i];
-    if (undefined === item) {
-      continue;
-    }
-    const { site, id, uid } = item;
+    const { site, uid } = item;
     await mysql.updateTorrentHashBySiteAndId(config.uid, site, id, hash);
     await mysql.storeDownloadAction(site, id, uid, transId, hash, serverId);
   }
+
 }
 
 async function getDownloadingItems(): Promise<TItem[]> {
