@@ -34,6 +34,7 @@ export async function setCrontab(params): Promise<any> {
 
   if (-1 === existsIndex) {
     crontabs.push(crontabTask);
+    crontabs.push('\n');
   } else {
     crontabs[existsIndex] = crontabTask;
   }
