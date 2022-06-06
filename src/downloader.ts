@@ -263,12 +263,12 @@ async function storeDownloadAction(items: TItem[]): Promise<void> {
     }
     const { site, uid } = item;
     await mysql.updateTorrent({
+      torrent_hash: transHash
+    }, {
       uid: config.uid,
       site: config.site,
       site_id: id
-    }, {
-      torrent_hash: transHash
-    });
+    }, );
     await mysql.storeDownloadAction(site, id, uid, transId, transHash, serverId);
   }
 
