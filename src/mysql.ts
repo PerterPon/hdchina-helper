@@ -127,20 +127,20 @@ export async function updateTorrent(params: any, where: any): Promise<void> {
   let sql = `
   UPDATE
     torrents
-  SET
+  SET 
   `;
   let first: boolean = true;
   for (const key in params) {
     if (false === first) {
-      sql += ', ';
+      sql += ' , ';
     }
     first = false;
-    sql += `${key}=?`;
+    sql += ` ${key}=? `;
     whereParam.push(params[key]);
   }
-  sql += 'WHERE 1 = 1';
+  sql += ' WHERE 1 = 1 ';
   for (const key in where) {
-    sql += `AND ${key}=?`;
+    sql += ` AND ${key}=? `;
     whereParam.push(where[key]);
   }
   await pool.query(sql, whereParam);
