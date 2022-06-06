@@ -9,6 +9,11 @@ import { getCurrentServerInfo } from './basic';
 
 import { TPTServer, TPTUserInfo } from '../types';
 
+export async function getCrontab(): Promise<any>{
+  const crontabs: string[] = await utils.parseCrontab();
+  return crontabs.join('\n');
+}
+
 export async function setCrontab(params): Promise<any> {
   const { uid, site } = params;
   const userInfo: TPTUserInfo = await mysql.getUserInfoByQuery({uid, site});
