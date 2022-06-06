@@ -188,7 +188,7 @@ async function addItemToTransmission(items: TItem[]): Promise<TItem[]> {
     try {
       const { id, title } = item;
       const curServerId: number = canAddServerIds.shift();
-      log.log(`add file to transmission: [${title}], server id: [${curServerId}]`);
+      log.log(`add file to transmission: [${title}], size: [${filesize(item.size)}] server id: [${curServerId}]`);
       const { transId, hash } = await doAddToTransmission(curServerId, id);
       item.transHash = hash;
       item.transId = Number(transId);
@@ -306,6 +306,7 @@ async function removeItems(items: TItem[], reason: string): Promise<void> {
   for (const item of items) {
     const { transId, id, serverId } = item;
     try {
+      log.message(`removing [${reason}] item: [${item.title}] size: [${filesize(item.size)}]`);
       await transmission.removeItem(transId, id, serverId);
       await mysql.deleteDownloaderItem(config.uid, config.site, item.serverId, transId);
       successCount++;
