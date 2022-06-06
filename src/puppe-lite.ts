@@ -68,7 +68,6 @@ export async function filterVIPItem(url: string): Promise<TItem[]> {
   for(const item of torrentItems) {
     const $item = cheerio.load(item);
     let freeTime: Date = utils.parseCSTDate('2030-01-01');
-    console.log(await currentSite.getFreeTime($item));
 
     const torrentAnchor: cheerio.Cheerio<any> = $item(siteAnchor.torrentUrlAnchor);
     let torrentUrl: string = torrentAnchor.parent().attr('href');

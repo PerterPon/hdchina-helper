@@ -11,7 +11,7 @@ import * as transLite from './trans-lite';
 
 import { ETransmissionStatus, TFileItem, TItem, TPTServer, TTransmission } from './types';
 
-export interface TTransItem {
+export interface TTransItem1 {
   id: number;
   downloadDir: string;
   name: string;
@@ -74,28 +74,34 @@ async function initServer(): Promise<void> {
   log.message(`downloading server: [${downloadingServer}]`);
 }
 
-export async function filterDownloadingItems(serverId: number, ids: number[]): Promise<TTransItem[]> {
-  log.log(`[Transmission] filterDownloadingItems serverId: [${serverId}], ids: [${ids}]`);
-  const items: TTransItem[] = await getAllItems(serverId, ids);
-  const downloadingItems: TTransItem[] = [];
-  for (const item of items) {
-    const { status } = item;
-    if (-1 < [ETransmissionStatus.SEED_WAIT, ETransmissionStatus.SEED].indexOf(status)) {
-      continue;
-    }
-    downloadingItems.push(item);
+export async function getDownloadingItems(serverId: number = -1): Promise<TItem[]> {
+  log.log(`[Transmission] getDownloadingItems, serverId: [${serverId}]`);
+
+  if (-1 !== serverId) {
+    return getServerItems(serverId, 'active');
   }
+
+  const downloadingItems: TItem[] = [];
+  const mapArr = Array.from(serverMap);
+  if (-1 === serverId) {
+    for (const itemArr of mapArr) {
+      const currentServerId: number = itemArr[0];
+      const items = await getServerItems(currentServerId, 'active');
+      downloadingItems.push(...items);
+    }
+  }
+
   return downloadingItems;
 }
 
-export async function getAllItems(serverId: number = -1, ids: number[] = []): Promise<TTransItem[]> {
+export async function getAllItems(serverId: number = -1, ids: number[] = []): Promise<TItem[]> {
   log.log(`[Transmission] getAllItems, serverId: [${serverId}] ids: [${ids}]`);
 
   if (-1 !== serverId) {
     return getServerItems(serverId, 'all', ids);
   }
 
-  const downloadingItems: TTransItem[] = [];
+  const downloadingItems: TItem[] = [];
   const mapArr = Array.from(serverMap);
   if (-1 === serverId) {
     for (const itemArr of mapArr) {
@@ -108,9 +114,9 @@ export async function getAllItems(serverId: number = -1, ids: number[] = []): Pr
   return downloadingItems;
 }
 
-async function getServerItems(serverId: number, type: 'all'|'active', ids?: number[]): Promise<TTransItem[]> {
+async function getServerItems(serverId: number, type: 'all'|'active', ids?: number[]): Promise<TItem[]> {
   log.log(`[Transmission] getServerItems serverId: [${serverId}], type: [${type}], ids: [${ids}]`);
-  const downloadingItems: TTransItem[] = [];
+  const targetItem: TItem[] = [];
   // const server = getServer(serverId);
   let data = {
     torrents: []
@@ -118,46 +124,32 @@ async function getServerItems(serverId: number, type: 'all'|'active', ids?: numb
 
   const { uid, site } = config.userInfo;
   const allFileItem: TFileItem[] = await transLite.get(uid, site, serverId);
+  const fileItemMap = {};
+  for (const item of allFileItem) {
+    fileItemMap[item.siteId] = item;
+  }
+
   const siteIds: string[] = _.map(allFileItem, 'siteId');
-
+  
   const allItem: TItem[] = await mysql.getItemBySiteIds(uid, site, siteIds);
-  const itemMap: Map<string ,TItem> = new Map();
   for (const item of allItem) {
-    const { id } = item;
-    itemMap.set(String(id), item);
-  }
-
-  const serverInfo: TPTServer = getServerConfig(serverId);
-  const { fileDownloadPath } = serverInfo;
-
-  for (const fileItem of allFileItem) {
-    const { siteId, downloaded } = fileItem;
-    const item = itemMap.get(String(siteId));
-    if (undefined === item) {
+    const fileItem = fileItemMap[item.id];
+    if (undefined === fileItem) {
       continue;
     }
-    if ('active' === type && true === downloaded) {
-      continue;
+    const { downloaded, activityDate } = fileItem;
+    item.finished = downloaded;
+    item.activeDate = activityDate;
+    if ('all' === type || (false === downloaded && 'active' === type)) {
+      targetItem.push(item);
     }
-    downloadingItems.push({
-      id: item.transId,
-      name: item.title,
-      downloadDir: path.join(fileDownloadPath, siteId),
-      status: true === fileItem.downloaded ? 6 : 4,
-      size: item.size,
-      activityDate: new Date(fileItem.createTime),
-      isFinished: fileItem.downloaded,
-      serverId: item.serverId,
-      hash: item.torrentUrl,
-      siteId
-    });
   }
 
-  return downloadingItems;
+  return targetItem;
 }
 
 export async function removeItem(id: number, siteId: string, serverId: number): Promise<void> {
-  log.log(`[Transmission] remove item: [${id}] serverId: [${serverId}]`);
+  log.log(`[Transmission] remove item: [${id}], siteId: [${siteId}], serverId: [${serverId}]`);
   
   const { uid, site } = config.userInfo;
   await transLite.removeItem(uid, site, serverId, siteId);
@@ -240,7 +232,7 @@ export async function sessionStates(serverId: number = -1): Promise<{
   downloadSpeed: number,
   serverId: number
 }[]> {
-  log.log(`[Puppeteer] sessionStates serverId: [${serverId}]`);
+  log.log(`[Transmission] sessionStates serverId: [${serverId}]`);
   if (-1 !== serverId) {
     const server = getServer(serverId);
     const res = await server.sessionStats();

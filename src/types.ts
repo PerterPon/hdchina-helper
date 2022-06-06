@@ -12,6 +12,8 @@ export interface TItem {
   transHash?: string;
   serverId: number;
   transId?: number;
+  finished?: boolean;
+  activeDate?: Date;
 }
 
 export interface TPTUserInfo {

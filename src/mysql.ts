@@ -95,7 +95,7 @@ export async function getFreeItems(uid: string, site: string): Promise<TItem[]> 
   return freeItems;
 }
 
-export async function storeDownloadAction(site: string, siteId: string, uid: string, transId: string, torrentHash: string, serverId: number): Promise<void> {
+export async function storeDownloadAction(site: string, siteId: string, uid: string, transId: number, torrentHash: string, serverId: number): Promise<void> {
   log.log(`[Mysql] storeDownloadAction site: [${site}], site id: [${siteId}], uid: [${uid}], trans id: [${transId}], torrent hash: [${torrentHash}] server id: [${serverId}]`);
   await pool.query(`
   INSERT INTO downloader(gmt_create, gmt_modify, uid, trans_id, torrent_hash, site, site_id, server_id)
@@ -103,19 +103,47 @@ export async function storeDownloadAction(site: string, siteId: string, uid: str
   `, [UTF8Time(), UTF8Time(), uid, transId, torrentHash, site, siteId, serverId]);
 }
 
-export async function updateTorrentHashBySiteAndId(uid: string, site: string ,siteId: string, torrentHash: string): Promise<void> {
-  log.log(`[Mysql] updateTorrentHashBySiteAndId, site: [${site}], site id: [${siteId}], torrent hash: [${torrentHash}]`);
-  await pool.query(`
+export async function updateTorrent(params: any, where: any): Promise<void> {
+  log.log(`[Mysql] updateTorrent, params: [${JSON.stringify(params)}], where: [${JSON.stringify(where)}]`);
+  const paramKeys: string[] = Object.keys(params);
+  const whereKeys: string[] = Object.keys(where);
+  if (0 === paramKeys.length || 0 === whereKeys.length) {
+    log.log(`[WARN] [Mysql] trying to update torrent but params invalid!`);
+    return;
+  }
+
+  const whereParam = [];
+  let sql = `
   UPDATE
     torrents
   SET
-    torrent_hash = ?
-  WHERE
-    site = ? AND
-    site_id = ? AND
-    uid = ?;
-  `, [torrentHash, site, siteId, uid]);
+    1 = 1
+  `;
+  for (const key in params) {
+    sql += `, ${key}=?`;
+    whereParam.push(params[key]);
+  }
+  sql += 'WHERE 1 = 1';
+  for (const key in where) {
+    sql += `AND ${key}=?`;
+    whereParam.push(where[key]);
+  }
+  await pool.query(sql, whereParam);
 }
+
+// export async function updateTorrentHashBySiteAndId(uid: string, site: string ,siteId: string, torrentHash: string): Promise<void> {
+//   log.log(`[Mysql] updateTorrentHashBySiteAndId, site: [${site}], site id: [${siteId}], torrent hash: [${torrentHash}]`);
+//   await pool.query(`
+//   UPDATE
+//     torrents
+//   SET
+//     torrent_hash = ?
+//   WHERE
+//     site = ? AND
+//     site_id = ? AND
+//     uid = ?;
+//   `, [torrentHash, site, siteId, uid]);
+// }
 
 export async function getTransIdByItem(uid: string, items: TItem[]): Promise<number[]> {
   log.log(`[Mysql] getTransIdByItem: [${JSON.stringify(items)}]`);

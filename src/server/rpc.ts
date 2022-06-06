@@ -106,8 +106,7 @@ function searchFolderForParted(folder: string): boolean {
         return result;
       }
     } else {
-      if (true === /\.parted$/.test(file.name)) {
-        console.log(file.name);
+      if (true === /\.part$/.test(file.name)) {
         return true
       }
     }
