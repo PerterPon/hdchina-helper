@@ -93,3 +93,8 @@ export interface TFileItem {
   createTime: number;
   createDate?: Date;
 }
+
+export interface TNetUsage {
+  receive: number;
+  send: number;
+}

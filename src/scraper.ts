@@ -76,12 +76,15 @@ async function storeSiteData(): Promise<void> {
   const { shareRatio, downloadCount, uploadCount, magicPoint } = userInfo;
 
   const latestSiteData: TSiteData = await mysql.getLatestSiteData(config.uid, config.site) || {} as any;
+  const firstSiteData: TSiteData = await mysql.getLatestSiteData(config.uid, config.site) || {} as any;
   const increaseUpload: string = (Number(uploadCount) - latestSiteData.uploadCount || 0).toFixed(3);
   const increaseDownload: string = (Number(downloadCount) - latestSiteData.downloadCount || 0).toFixed(3);
-  log.message(`increase upload: [${increaseUpload}], download: [${increaseDownload}]`);
+  const userInfoData: TPTUserInfo = config.userInfo;
+  log.message(`increase up: [${increaseUpload}], down: [${increaseDownload}]`);
+  log.message(`total up: [${Number(uploadCount) - firstSiteData.uploadCount}], down: [${Number(downloadCount) - firstSiteData.downloadCount}], all: [${userInfoData.uploadCount}]`);
   log.message(`share ratio: [${shareRatio || ''}]`);
-  log.message(`upload count: [${uploadCount || ''}]`);
-  log.message(`download count: [${downloadCount || ''}]`);
+  log.message(`up count: [${uploadCount || ''}]`);
+  log.message(`down count: [${downloadCount || ''}]`);
   log.message(`magic point: [${magicPoint || ''}]`)
 
   const statesRes = await transmission.sessionStates();

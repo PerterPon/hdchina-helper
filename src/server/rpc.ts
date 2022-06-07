@@ -7,11 +7,11 @@ import checkDiskSpace, { DiskSpace } from 'check-disk-space';
 
 import { getCurrentServerInfo } from './basic';
 
-import { TFileItem, TPTServer } from "../types";
-import { displayTime } from '../utils';
+import { TFileItem, TNetUsage, TPTServer } from "../types";
+import { displayTime, parseProcNet, sleep } from '../utils';
 import { Dirent } from 'fs';
 
-// let serverInfo: TPTServer = null;
+const SPEED_MONITOR_INTERVAL = 5;
 
 export async function init(): Promise<void> {
   // serverInfo = await getCurrentServerInfo();
@@ -54,24 +54,41 @@ export async function freeSpace(params) {
 }
 
 export async function getNetSpeed(params) {
-  const serverInfo = await getCurrentServerInfo();
+  if (2 > receiveArr.length) {
+    return {
+      uploadSpeed: 0,
+      downloadSpeed: 0
+    }
+  }
+  const firstReceive: number = receiveArr[0];
+  const latestReceive: number = receiveArr[receiveArr.length - 1];
+
+  const firstSend: number = sendArr[0];
+  const latestSend: number = sendArr[sendArr.length - 1];
+
+  const downloadSpeed: number = ( latestReceive - firstReceive ) / ( receiveArr.length * SPEED_MONITOR_INTERVAL );
+  const uploadSpeed: number = ( latestSend - firstSend ) / ( sendArr.length * SPEED_MONITOR_INTERVAL );
+  return { downloadSpeed, uploadSpeed };
 }
 
-// async function getCurrentServerInfo(): Promise<TPTServer> {
-//   const macs = await macAddress.all();
-//   const servers: TPTServer[] = await mysql.getAllServers();
-//   for (const interfaceName in macs) {
-//     const { mac } = macs[interfaceName];
-//     for (const server of servers) {
-//       const { macAddress } = server;
-//       if (true === _.isString(macAddress) && 0 < macAddress.length && mac === macAddress) {
-//         return server;
-//       }
-//     }
-//   }
+const receiveArr: number[] = []
+const sendArr: number[] = [];
 
-//   return null;
-// }
+export async function startWatchNetSpeed(): Promise<void> {
+  while (true) {
+    await sleep(SPEED_MONITOR_INTERVAL * 1000);
+    const netInfo: TNetUsage = parseProcNet();
+    receiveArr.push(netInfo.receive);
+    if (receiveArr.length > 100) {
+      receiveArr.unshift();
+    }
+
+    sendArr.push(netInfo.send);
+    if (sendArr.length > 100) {
+      sendArr.unshift();
+    }
+  }
+}
 
 function allFile(folder: string): TFileItem[] {
   const downloadItems: TFileItem[] = [];

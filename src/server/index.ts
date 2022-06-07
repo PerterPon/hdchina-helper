@@ -18,6 +18,8 @@ const version = utils.getVersion();
 
 async function start(): Promise<void> {
   await init();
+  rpcMethods.startWatchNetSpeed();
+
   const configInfo = config.getConfig();
   const { port } = configInfo.server;
   

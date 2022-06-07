@@ -54,7 +54,7 @@ export async function storeItem(uid: string, site: string, items: TItem[]): Prom
 };
 
 export async function getFreeItems(uid: string, site: string): Promise<TItem[]> {
-  log.log(`[Mysql] get free item`);
+  log.log(`[Mysql] get free item, uid: [${uid}], site: [${site}]`);
   const [data]: any = await pool.query(`
     SELECT *
     FROM (
@@ -402,6 +402,30 @@ export async function getLatestSiteData(uid: string, site: string): Promise<TSit
     uid = ? AND
     site = ?
   ORDER BY gmt_create DESC
+  LIMIT 1;
+  `, [uid, site]);
+  const { share_ratio, upload_count, magic_point, download_count, upload_speed, download_speed } = res[0] || {};
+  return {
+    shareRatio: share_ratio,
+    uploadCount: upload_count,
+    downloadCount: download_count,
+    magicPoint: magic_point,
+    uploadSpeed: upload_speed,
+    downloadSpeed: download_speed
+  };
+}
+
+export async function getFirstSiteData(uid: string, site: string): Promise<TSiteData> {
+  log.log(`[Mysql] getLatestSiteData`);
+  const [res]: any = await pool.query(`
+  SELECT
+    *
+  FROM
+    site_data
+  WHERE
+    uid = ? AND
+    site = ?
+  ORDER BY gmt_create
   LIMIT 1;
   `, [uid, site]);
   const { share_ratio, upload_count, magic_point, download_count, upload_speed, download_speed } = res[0] || {};

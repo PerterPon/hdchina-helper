@@ -2,7 +2,6 @@
 import * as mysql from '../mysql';
 import * as utils from '../utils';
 
-import * as shellJs from 'shelljs';
 import { exec } from 'child_process';
 
 import { getCurrentServerInfo } from './basic';

@@ -7,7 +7,7 @@ import * as qs from 'qs';
 
 import * as config from './config';
 import * as log from './log';
-import { TPTUserInfo } from './types';
+import { TNetUsage, TPTUserInfo } from './types';
 import * as path from 'path';
 
 let currentCsrfToken: string = null;
@@ -136,6 +136,35 @@ export async function setCrontab(crontabs: string[]): Promise<string> {
 export function getVersion(): string {
   const versionFile: string = path.join(__dirname, '../version');
   return fs.readFileSync(versionFile, 'utf-8');
+}
+
+export function parseProcNet(): TNetUsage {
+  const result: {[name: string]: TNetUsage} = {};
+  if (false === fs.existsSync('/proc/net/dev')) {
+    return {
+      receive: 0,
+      send: 0
+    };
+  }
+  const content: string = fs.readFileSync('/proc/net/dev', 'utf-8');
+  const items = content.split('\n');
+  let maxReceive = 0;
+  let maxSend = 0;
+  for (const item of items) {
+    const [ name, valueItem ] = item.split(':');
+    const res = valueItem.match(/\s*(\d+)\s*(\d+)\s*(\d+)\s*(\d+)\s*(\d+)\s*(\d+)\s*(\d+)\s*(\d+)\s*(\d+)\s*(\d+)\s*(\d+)\s*(\d+)\s*(\d+)\s*(\d+)\s*(\d+)\s*(\d+)/);
+    const receive = Number(res[1]);
+    const send = Number(res[9]);
+    if (receive > maxReceive) {
+      maxReceive = receive;
+      maxSend = send;
+    }
+  }
+
+  return {
+    receive: maxReceive,
+    send: maxSend
+  }
 }
 
 export const ajaxHeader = {
