@@ -152,6 +152,10 @@ export function parseProcNet(): TNetUsage {
   let maxSend = 0;
   for (const item of items) {
     const [ name, valueItem ] = item.split(':');
+    if (undefined === valueItem) {
+      continue;
+    }
+
     const res = valueItem.match(/\s*(\d+)\s*(\d+)\s*(\d+)\s*(\d+)\s*(\d+)\s*(\d+)\s*(\d+)\s*(\d+)\s*(\d+)\s*(\d+)\s*(\d+)\s*(\d+)\s*(\d+)\s*(\d+)\s*(\d+)\s*(\d+)/);
     const receive = Number(res[1]);
     const send = Number(res[9]);
