@@ -32,6 +32,7 @@ export interface TPTUserInfo {
   vipNormalItemCount: number;
   proxy: boolean;
   proxyAddr: string;
+  increaseRate: number;
 }
 
 export interface TPTServer {

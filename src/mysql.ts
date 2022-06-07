@@ -146,20 +146,6 @@ export async function updateTorrent(params: any, where: any): Promise<void> {
   await pool.query(sql, whereParam);
 }
 
-// export async function updateTorrentHashBySiteAndId(uid: string, site: string ,siteId: string, torrentHash: string): Promise<void> {
-//   log.log(`[Mysql] updateTorrentHashBySiteAndId, site: [${site}], site id: [${siteId}], torrent hash: [${torrentHash}]`);
-//   await pool.query(`
-//   UPDATE
-//     torrents
-//   SET
-//     torrent_hash = ?
-//   WHERE
-//     site = ? AND
-//     site_id = ? AND
-//     uid = ?;
-//   `, [torrentHash, site, siteId, uid]);
-// }
-
 export async function getTransIdByItem(uid: string, items: TItem[]): Promise<number[]> {
   log.log(`[Mysql] getTransIdByItem: [${JSON.stringify(items)}]`);
   if (0 === items.length) {
@@ -275,7 +261,7 @@ export async function getUserInfoByQuery(query: any): Promise<TPTUserInfo> {
   if (0 === res.length) {
     return null;
   }
-  const { cookie, vip, site, uid, upload_count, nickname, paid, bind_server, cycle_time, rss_passkey, user_data_dir, site_data_only, vip_normal_item_count, proxy, proxy_addr } = res[0];
+  const { cookie, vip, site, uid, upload_count, nickname, increase_rate, paid, bind_server, cycle_time, rss_passkey, user_data_dir, site_data_only, vip_normal_item_count, proxy, proxy_addr } = res[0];
   const servers: string[] = bind_server.split(',');
   const numServers: number[] = [];
   for (let i = 0; i < servers.length; i++) {
@@ -293,7 +279,8 @@ export async function getUserInfoByQuery(query: any): Promise<TPTUserInfo> {
     siteDataOnly: Boolean(site_data_only),
     vipNormalItemCount: vip_normal_item_count,
     proxy: Boolean(proxy),
-    proxyAddr: proxy_addr
+    proxyAddr: proxy_addr,
+    increaseRate: increase_rate
   };
   return userInfo;
 }

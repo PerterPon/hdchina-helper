@@ -19,11 +19,11 @@ const siteTrackerMap = {
   'hdchina': 'tracker.hdchina.org'
 };
 
-// const TARGET_HOST: string = 'tracker.m-team.cc';
 const app = http.createServer(async (req, res) => {
   console.log(`[${utils.displayTime()}] new request [${req.url}], , headers: [${JSON.stringify(req.headers)}], method: [${req.method}]`);
 
-  const host: string = await getHostByUrl(req.url);
+  const userInfo: TPTUserInfo = await getUserInfo(req.url);
+  const host: string = await getHostByUrl(userInfo);
 
   const urlItem = url.parse(req.url);
   urlItem.host = host;
@@ -33,7 +33,7 @@ const app = http.createServer(async (req, res) => {
   let proxyedUrl = `https://${host}${req.url}`;
   if ( '/announce.php' ===  urlItem.pathname) {
     const [trash, uploadedCount] = urlItem.query.match(/uploaded=(\d+)/) || [];
-    const increasedCount = increaseUpload(uploadedCount);
+    const increasedCount = increaseUpload(uploadedCount, userInfo.increaseRate);
     proxyedUrl = proxyedUrl.replace(uploadedCount, increasedCount);
   }
   console.log(`request with: [${proxyedUrl}], headers: [${JSON.stringify(headers)}]`);
@@ -61,7 +61,12 @@ const app = http.createServer(async (req, res) => {
   res.end(resData.data);
 });
 
-async function getHostByUrl(reqUrl): Promise<string> {
+async function getHostByUrl(userInfo: TPTUserInfo): Promise<string> {
+  const { site } = userInfo;
+  return siteTrackerMap[site];
+}
+
+async function getUserInfo(reqUrl): Promise<TPTUserInfo> {
   const urlItem = url.parse(reqUrl, true);
   const { passkey, uid, authkey, __uid } = urlItem.query;
   const userQuery = {} as any;
@@ -76,18 +81,18 @@ async function getHostByUrl(reqUrl): Promise<string> {
   }
 
   const userInfo: TPTUserInfo = await mysql.getUserInfoByQuery(userQuery);
-  const { site } = userInfo;
-  return siteTrackerMap[site];
+  return userInfo;
 }
 
-function increaseUpload(originUpload: string): string {
+function increaseUpload(originUpload: string, increaseRate: number = 1): string {
   const numUploaded: number = Number(originUpload);
-  console.log(`[!!!]increase upload, origin: [${originUpload}], increase: [${numUploaded * 1.11}]`);
+  const increasedCount: number = Math.round(numUploaded * increaseRate);
+  console.log(`[!!!]increase upload, origin: [${originUpload}], increase: [${increasedCount}], increase rate: [${increaseRate}]`);
   if (isNaN(numUploaded)) {
     return originUpload;
   }
 
-  return String(numUploaded * 1.11);
+  return String(increasedCount);
 }
 
 app.listen(4230, async () => {
