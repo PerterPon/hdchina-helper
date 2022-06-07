@@ -2,6 +2,7 @@
 import axios from 'axios';
 import { DiskSpace } from 'check-disk-space';
 import * as url from 'url';
+import * as _ from 'lodash';
 import * as log from './log';
 import * as transmission from './transmission';
 import { TFileItem, TNetUsage, TPTServer } from './types';
@@ -17,24 +18,33 @@ export async function get(uid: string, site: string, serverId: number): Promise<
 export async function active(uid: string, site: string, serverId: number): Promise<TFileItem[]> {
   log.log(`[TransLite] active uid: [${uid}], site: [${site}] serverId: [${serverId}]`);
   const activeItem: TFileItem[] = [];
-  const res: TFileItem[] = await doRequest(serverId, 'allFileItem', {
-    uid, site
-  });
-  for (const item of res) {
-    if (false === item.downloaded) {
-      activeItem.push(item);
+  try {
+    const res: TFileItem[] = await doRequest(serverId, 'allFileItem', {
+      uid, site
+    });
+    for (const item of res) {
+      if (false === item.downloaded) {
+        activeItem.push(item);
+      }
     }
+  } catch (e) {
+    log.message(`[ERROR] [TransLite] active : [${uid}], site: [${site}], serverId: [${serverId}], message: [${e.message}]`);
   }
   return activeItem;
 }
 
 export async function freeSpace(uid: string, site: string, serverId: number, folder: string): Promise<{"size-bytes": number}> {
   log.log(`[TransLite] freeSpace uid: [${uid}], site: [${site}] serverId: [${serverId}], folder: [${folder}]`);
-  const res: DiskSpace = await doRequest(serverId, 'freeSpace', {
-    uid, site, folder
-  });
+  let res: DiskSpace = null;
+  try {
+    res= await doRequest(serverId, 'freeSpace', {
+      uid, site, folder
+    });
+  } catch (e) {
+    log.message(`[ERROR] [TransLite] freeSpace : [${uid}], site: [${site}], serverId: [${serverId}], message: [${e.message}]`);
+  }
   return {
-    "size-bytes": res.free
+    "size-bytes": _.get(res, 'free', -1)
   }
 }
 
@@ -47,7 +57,15 @@ export async function removeItem(uid: string, site: string, serverId: number, si
 
 export async function netSpeed(serverId: number): Promise<{downloadSpeed: number; uploadSpeed: number}> {
   log.log(`[TransLite] netSpeed, serverId: [${serverId}]`);
-  const res = await doRequest(serverId, 'getNetSpeed', {});
+  let res = {
+    downloadSpeed: 0,
+    uploadSpeed: 0
+  };
+  try {
+    res = await doRequest(serverId, 'getNetSpeed', {});
+  } catch (e) {
+    log.message(`[ERROR] [TransLite] netSpeed, serverId: [${serverId}], message: [${e.message}]`);
+  }
   return res;
 }
 
