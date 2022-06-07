@@ -30,7 +30,7 @@ export async function getUserInfo(torrentPage: cheerio.CheerioAPI): Promise<TPag
     userInfo.uploadCount = uploadCount;
     userInfo.downloadCount = downloadCount;
   } catch (e) {
-    log.log(`[SITE] [HDTIME] get user info: [${e.message}], [${e.stack}]`);
+    log.log(`[SITE] [hdchina] get user info: [${e.message}], [${e.stack}]`);
   }
   return userInfo;
 }

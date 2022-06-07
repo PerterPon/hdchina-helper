@@ -82,7 +82,18 @@ export async function isDownloaded(el: puppeteer.ElementHandle): Promise<boolean
   return null !== progress;
 }
 
+export async function publishDate(el: puppeteer.ElementHandle): Promise<Date> {
+  try {
+    const dateString: string = await el.$eval('td:nth-child(4) span', (el) => el.getAttribute('title'));
+    return utils.parseCSTDate(dateString);
+  } catch (e) {
+    return null;
+  }
+}
+
 export async function isSticky(el: puppeteer.ElementHandle): Promise<boolean> {
   const stickyFlag = await el.$('.sticky');
   return null !== stickyFlag;
 }
+
+

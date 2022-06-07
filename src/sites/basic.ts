@@ -15,7 +15,7 @@ import * as hdchinaLite from './hdchina-lite';
 import * as config from '../config';
 
 export const siteMap = {
-  hdchina: hdchinaLite,
+  hdchina: hdchina,
   mteam: mteamLite,
   hdtime: hdtimeLite
 };

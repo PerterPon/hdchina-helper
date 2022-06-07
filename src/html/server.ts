@@ -1,7 +1,8 @@
 
+import * as path from 'path';
 import * as Koa from 'koa';
 import * as Router from 'koa-router';
-import * as Static from 'koa-static';
+const Static = require('koa-static');
 import * as bodyParser from 'koa-bodyparser';
 
 import * as log from '../log';
@@ -9,20 +10,20 @@ import * as config from '../config';
 import * as mysql from '../mysql';
 import * as utils from '../utils';
 
-import * as rpcMethods from './rpc';
-import * as agentMethods from './agent';
+import * as apis from './api';
 
 const version = utils.getVersion();
 
 async function start(): Promise<void> {
   await init();
-  rpcMethods.startWatchNetSpeed();
 
   const configInfo = config.getConfig();
-  const { port } = configInfo.server;
+  const { htmlPort } = configInfo.server;
 
   const app = new Koa();
   const router = new Router();
+  const staticMiddleware = Static(path.join(__dirname, 'static'));
+  app.use(staticMiddleware);
   app.use(bodyParser());
   app.use(async (ctx, next) => {
     const startTime: Date = new Date();
@@ -32,22 +33,20 @@ async function start(): Promise<void> {
     console.log(`[${utils.displayTime()}] request: [${ctx.url}] cost time: [${costTime}ms]`);
   });
   
-  router.post('/rpc', onMethod.bind(undefined, rpcMethods));
-  router.post('/agent', onMethod.bind(undefined, agentMethods));
+  router.post('/api', onMethod.bind(undefined, apis));
   
   app.use(router.routes());
   app.use(router.allowedMethods());
   
-  app.listen(port, async () => {
-    await rpcMethods.init();
-    console.log(`listing port: [${port}]`);
+  app.listen(htmlPort, async () => {
+    console.log(`listing port: [${htmlPort}]`);
   });
 }
 
 async function init(): Promise<void> {
   await config.init();
   await mysql.init();
-  await rpcMethods.init();
+  await apis.init();
 }
 
 async function onMethod(targetMethods, ctx: Koa.Context): Promise<void> {
