@@ -8,7 +8,8 @@ import * as log from './log';
 import * as filesize from 'filesize';
 import * as mysql from './mysql';
 import * as transLite from './trans-lite';
-import pTimeout from 'p-timeout';
+
+import * as utils from './utils';
 
 import { ETransmissionStatus, TFileItem, TItem, TNetUsage, TPTServer, TTransmission } from './types';
 
@@ -157,7 +158,7 @@ export async function removeItem(id: number, siteId: string, serverId: number): 
 
   const server = getServer(serverId);
   const removeFunc = server.remove(id, true);
-  const result = await pTimeout(
+  const result = await utils.timeout(
     removeFunc,
     60 * 1000,
     `[Transmission] removeItem timeout! id: [${id}], siteId: [${siteId}], serverId: [${serverId}]`
@@ -190,7 +191,7 @@ export async function addBase64(base64Content: string, serverId: number, fileId:
   const addFunc = server.addBase64(base64Content, {
     'download-dir': curFileDownloadPath
   });
-  const res = await pTimeout(
+  const res = await utils.timeout(
     addFunc,
     60 * 1000,
     `[Transmission] addBase64 timeout! content: [${base64Content.length}], serverId: [${serverId}], fileId: [${fileId}]`

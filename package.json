@@ -10,20 +10,18 @@
 		"@types/node": "*",
 		"@types/promise": "*",
 		"@types/qs": "^6.9.7",
-		"istanbul": "^0.4.5",
-		"mocha": "5.2.0"
-	},
-	"type": "module",
-	"dependencies": {
 		"@types/koa": "^2.13.4",
 		"@types/koa-bodyparser": "^4.3.7",
 		"@types/koa-router": "^7.4.4",
 		"@types/koa-static": "^4.0.2",
-		"@types/p-timeout": "^1.2.2",
 		"@types/parse-torrent": "^5.8.4",
 		"@types/puppeteer": "^5.4.6",
 		"@types/rimraf": "^3.0.2",
 		"@types/shelljs": "^0.8.11",
+		"istanbul": "^0.4.5",
+		"mocha": "5.2.0"
+	},
+	"dependencies": {
 		"ali-oss": "^6.17.1",
 		"axios": "^0.26.1",
 		"chalk": "~2.4.1",
@@ -46,7 +44,6 @@
 		"moment-timezone": "^0.5.34",
 		"mysql2": "^2.3.3",
 		"node-fetch": "^3.2.4",
-		"p-timeout": "^5.1.0",
 		"parse-torrent": "^9.1.5",
 		"pm2": "^2.10.4",
 		"puppeteer": "*",

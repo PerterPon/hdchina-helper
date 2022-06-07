@@ -171,6 +171,21 @@ export function parseProcNet(): TNetUsage {
   }
 }
 
+export async function timeout<T>(input: Promise<T>, time: number, errorMessage: string): Promise<T> {
+  let done: boolean = false;
+  return new Promise(async (resolve, reject) => {
+    setTimeout(() => {
+      if (true === done) {
+        return;
+      }
+      reject(new Error(errorMessage));
+    }, time);
+    const res: T = await input;
+    done = true;
+    resolve(res);
+  });
+}
+
 export const ajaxHeader = {
   "accept": "*/*",
   "accept-language": "zh-CN,zh;q=0.9,en;q=0.8,ja;q=0.7,zh-TW;q=0.6",
