@@ -68,7 +68,10 @@ export async function getNetSpeed(params) {
 
   const downloadSpeed: number = ( latestReceive - firstReceive ) / ( receiveArr.length * SPEED_MONITOR_INTERVAL );
   const uploadSpeed: number = ( latestSend - firstSend ) / ( sendArr.length * SPEED_MONITOR_INTERVAL );
-  return { downloadSpeed, uploadSpeed };
+  return { 
+    downloadSpeed: Math.round(downloadSpeed),
+    uploadSpeed: Math.round(uploadSpeed)
+  };
 }
 
 const receiveArr: number[] = []
