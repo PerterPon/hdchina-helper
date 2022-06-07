@@ -63,7 +63,7 @@ async function start(): Promise<void> {
     log.log(e.stack);
     log.message('[ERROR!]');
 
-    await message.sendMessage();
+    await message.sendErrorMessage();
     await utils.sleep(2 * 1000);
     process.exit(1);
   }

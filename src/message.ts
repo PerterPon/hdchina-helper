@@ -20,13 +20,24 @@ export async function sendMessage(): Promise<void> {
   const logUrl: string = `http://${cdnHost}/hdchina/log/${logFileName}`;
 
   log.message(`[Util] detail log: [ ${logUrl} ]`);
-  await doSendMessage(log.messages.join('\n'));
+  const { webhook } = configInfo.lark;
+  await doSendMessage(webhook, log.messages.join('\n'));
 }
 
-async function doSendMessage(message: string): Promise<void> {
-  log.log(`[MESSAGE] send message`);
+export async function sendErrorMessage(): Promise<void> {
+  const logFileName: string = `${utils.displayTime()}.log`
+  await oss.uploadTorrent(`log/${logFileName}`, Buffer.from(log.logs.join('\n')));
   const configInfo = config.getConfig();
-  const { webhook } = configInfo.lark;
+  const { cdnHost } = configInfo.aliOss;
+  const logUrl: string = `http://${cdnHost}/hdchina/log/${logFileName}`;
+  const { errorWebhook } = configInfo.lark;
+
+  log.message(`[Util] detail log: [ ${logUrl} ]`);
+  await doSendMessage(errorWebhook, log.messages.join('\n'));
+}
+
+async function doSendMessage(webhook: string, message: string): Promise<void> {
+  log.log(`[MESSAGE] send message`);
   await axios({
     url: webhook,
     method: 'POST',
