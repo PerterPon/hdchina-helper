@@ -8,6 +8,7 @@ import * as log from './log';
 import * as filesize from 'filesize';
 import * as mysql from './mysql';
 import * as transLite from './trans-lite';
+import pTimeout from 'p-timeout';
 
 import { ETransmissionStatus, TFileItem, TItem, TNetUsage, TPTServer, TTransmission } from './types';
 
@@ -155,7 +156,12 @@ export async function removeItem(id: number, siteId: string, serverId: number): 
   await transLite.removeItem(uid, site, serverId, siteId);
 
   const server = getServer(serverId);
-  const result = await server.remove(id, true);
+  const removeFunc = server.remove(id, true);
+  const result = await pTimeout(
+    removeFunc,
+    60 * 1000,
+    `[Transmission] removeItem timeout! id: [${id}], siteId: [${siteId}], serverId: [${serverId}]`
+  );
   log.log(`[Transmission] remove item: [${id}] with result: [${JSON.stringify(result)}]`);
 }
 
@@ -181,9 +187,14 @@ export async function addBase64(base64Content: string, serverId: number, fileId:
   const serverConfig = getServerConfig(serverId);
   log.log(`[Transmission] add base64content: [${base64Content.length}], server id: [${serverId}], download dir: [${serverConfig.fileDownloadPath}]`);
   const curFileDownloadPath: string = path.join(serverConfig.fileDownloadPath, fileId);
-  const res = await server.addBase64(base64Content, {
+  const addFunc = server.addBase64(base64Content, {
     'download-dir': curFileDownloadPath
   });
+  const res = await pTimeout(
+    addFunc,
+    60 * 1000,
+    `[Transmission] addBase64 timeout! content: [${base64Content.length}], serverId: [${serverId}], fileId: [${fileId}]`
+  );
   log.log(`[Transmission] add url with result: [${JSON.stringify(res)}]`);
   const { id, hashString } = res;
   return {

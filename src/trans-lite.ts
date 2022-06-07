@@ -50,9 +50,13 @@ export async function freeSpace(uid: string, site: string, serverId: number, fol
 
 export async function removeItem(uid: string, site: string, serverId: number, siteId: string): Promise<void> {
   log.log(`[TransLite] removeItem uid: [${uid}], site: [${site}] serverId: [${serverId}]`);
-  await doRequest(serverId, 'remove', {
-    uid, site, siteId
-  });
+  try {
+    await doRequest(serverId, 'remove', {
+      uid, site, siteId
+    });
+  } catch (e) {
+    log.message(`[ERROR] [TransLite] removeItem, uid: [${uid}], site: [${site}], serverId: [${serverId}], message: [${e.message}]`);
+  }
 }
 
 export async function netSpeed(serverId: number): Promise<{downloadSpeed: number; uploadSpeed: number}> {
