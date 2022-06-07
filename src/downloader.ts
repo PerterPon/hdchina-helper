@@ -292,7 +292,7 @@ async function filterBeyondFreeItems(items: TItem[]): Promise<TItem[]> {
   const beyondFreeItems: TItem[] = [];
   for (const item of items) {
     const { freeUntil, free } = item;
-    if (false === free || null === freeUntil || moment(freeUntil) < moment()) {
+    if (false === free || null === freeUntil || moment(freeUntil) < moment().add('minutes', 5)) {
       beyondFreeItems.push(item);
     }
   }
