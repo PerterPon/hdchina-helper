@@ -81,7 +81,7 @@ async function storeSiteData(): Promise<void> {
   const increaseDownload: string = (Number(downloadCount) - latestSiteData.downloadCount || 0).toFixed(3);
   const userInfoData: TPTUserInfo = config.userInfo;
   log.message(`increase up: [${increaseUpload}], down: [${increaseDownload}]`);
-  log.message(`total up: [${Number(uploadCount) - firstSiteData.uploadCount}], down: [${Number(downloadCount) - firstSiteData.downloadCount}], all: [${userInfoData.uploadCount}]`);
+  log.message(`total up: [${(Number(uploadCount) - firstSiteData.uploadCount).toFixed(3)}], down: [${(Number(downloadCount) - firstSiteData.downloadCount).toFixed(3)}], all: [${userInfoData.uploadCount}]`);
   log.message(`share ratio: [${shareRatio || ''}]`);
   log.message(`up count: [${uploadCount || ''}]`);
   log.message(`down count: [${downloadCount || ''}]`);

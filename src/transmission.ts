@@ -9,7 +9,7 @@ import * as filesize from 'filesize';
 import * as mysql from './mysql';
 import * as transLite from './trans-lite';
 
-import { ETransmissionStatus, TFileItem, TItem, TPTServer, TTransmission } from './types';
+import { ETransmissionStatus, TFileItem, TItem, TNetUsage, TPTServer, TTransmission } from './types';
 
 export interface TTransItem1 {
   id: number;
@@ -234,12 +234,11 @@ export async function sessionStates(serverId: number = -1): Promise<{
 }[]> {
   log.log(`[Transmission] sessionStates serverId: [${serverId}]`);
   if (-1 !== serverId) {
-    const server = getServer(serverId);
-    const res = await server.sessionStats();
+    const netSpeed = await transLite.netSpeed(serverId);
     return [{
       serverId,
-      uploadSpeed: res.uploadSpeed,
-      downloadSpeed: res.downloadSpeed
+      uploadSpeed: netSpeed.uploadSpeed,
+      downloadSpeed: netSpeed.downloadSpeed
     }]
   }
 
@@ -251,11 +250,11 @@ export async function sessionStates(serverId: number = -1): Promise<{
   const mapArr = Array.from(serverMap);
   for (const itemArr of mapArr) {
     const [currentServerId, server] = itemArr;
-    const res = await server.sessionStats();
+    const netSpeed = await transLite.netSpeed(currentServerId);
     resFreeSpaceInfo.push({
       serverId: currentServerId,
-      uploadSpeed: res.uploadSpeed,
-      downloadSpeed: res.downloadSpeed
+      uploadSpeed: netSpeed.uploadSpeed,
+      downloadSpeed: netSpeed.downloadSpeed
     });
   }
   return resFreeSpaceInfo;

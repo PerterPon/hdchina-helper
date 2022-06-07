@@ -275,7 +275,7 @@ export async function getUserInfoByQuery(query: any): Promise<TPTUserInfo> {
   if (0 === res.length) {
     return null;
   }
-  const { cookie, vip, site, uid, uploadCount, nickname, paid, bind_server, cycle_time, rss_passkey, user_data_dir, site_data_only, vip_normal_item_count, proxy, proxy_addr } = res[0];
+  const { cookie, vip, site, uid, upload_count, nickname, paid, bind_server, cycle_time, rss_passkey, user_data_dir, site_data_only, vip_normal_item_count, proxy, proxy_addr } = res[0];
   const servers: string[] = bind_server.split(',');
   const numServers: number[] = [];
   for (let i = 0; i < servers.length; i++) {
@@ -283,7 +283,8 @@ export async function getUserInfoByQuery(query: any): Promise<TPTUserInfo> {
     numServers.push(Number(server));
   }
   const userInfo: TPTUserInfo = { 
-    cookie, site, uid, uploadCount, paid, nickname,
+    cookie, site, uid, paid, nickname,
+    uploadCount: upload_count,
     cycleTime: cycle_time,
     vip: Boolean(vip),
     serverIds: numServers,

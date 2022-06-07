@@ -4,7 +4,7 @@ import { DiskSpace } from 'check-disk-space';
 import * as url from 'url';
 import * as log from './log';
 import * as transmission from './transmission';
-import { TFileItem, TPTServer } from './types';
+import { TFileItem, TNetUsage, TPTServer } from './types';
 
 export async function get(uid: string, site: string, serverId: number): Promise<TFileItem[]> {
   log.log(`[TransLite] get uid: [${uid}], site: [${site}] serverId: [${serverId}]`);
@@ -43,6 +43,12 @@ export async function removeItem(uid: string, site: string, serverId: number, si
   await doRequest(serverId, 'remove', {
     uid, site, siteId
   });
+}
+
+export async function netSpeed(serverId: number): Promise<{downloadSpeed: number; uploadSpeed: number}> {
+  log.log(`[TransLite] netSpeed, serverId: [${serverId}]`);
+  const res = await doRequest(serverId, 'getNetSpeed', {});
+  return res;
 }
 
 async function doRequest(serverId: number, method: string, params): Promise<any> {
