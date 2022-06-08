@@ -146,6 +146,38 @@ export async function updateTorrent(params: any, where: any): Promise<void> {
   await pool.query(sql, whereParam);
 }
 
+export async function updateDownloader(params: any, where: any): Promise<void> {
+  log.log(`[Mysql] updateDownloader, params: [${JSON.stringify(params)}], where: [${JSON.stringify(where)}]`);
+  const paramKeys: string[] = Object.keys(params);
+  const whereKeys: string[] = Object.keys(where);
+  if (0 === paramKeys.length || 0 === whereKeys.length) {
+    log.log(`[WARN] [Mysql] trying to update torrent but params invalid!`);
+    return;
+  }
+
+  const whereParam = [];
+  let sql = `
+  UPDATE
+    downloader
+  SET
+  `;
+  let first: boolean = true;
+  for (const key in params) {
+    if (false === first) {
+      sql += ' , ';
+    }
+    first = false;
+    sql += ` ${key}=? `;
+    whereParam.push(params[key]);
+  }
+  sql += ' WHERE 1 = 1 ';
+  for (const key in where) {
+    sql += ` AND ${key}=? `;
+    whereParam.push(where[key]);
+  }
+  await pool.query(sql, whereParam);
+}
+
 export async function getTransIdByItem(uid: string, items: TItem[]): Promise<number[]> {
   log.log(`[Mysql] getTransIdByItem: [${JSON.stringify(items)}]`);
   if (0 === items.length) {

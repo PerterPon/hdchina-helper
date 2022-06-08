@@ -7,6 +7,7 @@ import * as http from 'http';
 // import * as request from 'request';
 import * as https from 'https';
 import * as config from '../config';
+import * as _ from 'lodash';
 import * as mysql from '../mysql';
 import { TPTUserInfo } from 'src/types';
 
@@ -33,8 +34,11 @@ const app = http.createServer(async (req, res) => {
   let proxyedUrl = `https://${host}${req.url}`;
   if ( -1 < urlItem.pathname.indexOf('announce')) {
     const [trash, uploadedCount] = urlItem.query.match(/uploaded=(\d+)/) || [];
+    const [trash1, downloadedCount] = urlItem.query.match(/downloaded=(\d+)/) || [];
     const increasedCount = increaseUpload(uploadedCount, userInfo.increaseRate);
     proxyedUrl = proxyedUrl.replace(uploadedCount, increasedCount);
+    // NOTE: do not block main stream.
+    storeUploadInfo(req.url, uploadedCount, increasedCount, downloadedCount);
   }
   console.log(`request with: [${proxyedUrl}], headers: [${JSON.stringify(headers)}]`);
 
@@ -93,6 +97,22 @@ function increaseUpload(originUpload: string, increaseRate: number = 1): string 
   }
 
   return String(increasedCount);
+}
+
+async function storeUploadInfo(urlString: string, uploadedCount: string, increasedCount: string, downloadedCount: string): Promise<void> {
+  const urlItem = url.parse(urlString, true);
+  const { __uid, __id } = urlItem.query;
+  if (false === _.isString(__uid) || false === _.isString(__id)) {
+    return;
+  }
+  await mysql.updateDownloader({
+    upload: uploadedCount,
+    increased_upload: increasedCount,
+    download: downloadedCount
+  }, {
+    site_id: __id,
+    uid: __uid
+  });
 }
 
 app.listen(4230, async () => {
