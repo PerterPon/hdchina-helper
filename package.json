@@ -22,6 +22,7 @@
 		"mocha": "5.2.0"
 	},
 	"dependencies": {
+		"@electorrent/node-qbittorrent": "^1.1.2",
 		"ali-oss": "^6.17.1",
 		"axios": "^0.26.1",
 		"chalk": "~2.4.1",

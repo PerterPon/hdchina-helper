@@ -80,8 +80,9 @@ export interface TTransmission {
 }
 
 export interface TQbitTorrent {
-  removeTorrent(...params: any[]): Promise<any>
-  addTorrent(...params: any[]): Promise<any>
+  login(...params: any[]): Promise<any>
+  deleteAndRemove(...params: any[]): Promise<any>
+  addTorrentFileContent(...params: any[]): Promise<any>
 }
 
 export interface TSiteData {

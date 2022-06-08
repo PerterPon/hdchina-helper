@@ -1,6 +1,5 @@
 
 const Transmission = require('transmission');
-const qb = require('./qbittorrent');
 import * as _ from 'lodash';
 import * as path from 'path';
 import { promisify } from 'util';
@@ -9,6 +8,7 @@ import * as log from './log';
 import * as filesize from 'filesize';
 import * as mysql from './mysql';
 import * as transLite from './trans-lite';
+const Qbittorrent = require('@electorrent/node-qbittorrent');
 
 import * as utils from './utils';
 
@@ -71,11 +71,17 @@ async function initServer(): Promise<void> {
         }
       }
     } else {
-      const Qbittorrent = qb.QBittorrent;
+      const Qbittorrent = QBittorrent;
       transmissionClient = new Qbittorrent({
-        baseUrl: `http://${ip}:${port}`,
-        username, password
+        host: ip,
+        port,
+        user: username,
+        pass: password
       });
+      transmissionClient.login = promisify(transmissionClient.login);
+      transmissionClient.addTorrentFileContent = promisify(transmissionClient.addTorrentFileContent);
+      transmissionClient.deleteAndRemove = promisify(transmissionClient.deleteAndRemove);
+      await transmissionClient.login();
     }
 
     serverMap.set(id, transmissionClient);
@@ -184,7 +190,7 @@ export async function removeItem(id: string, siteId: string, serverId: number): 
   // try to remove from qbittorrent
   try {
     const server = getServer(serverId) as TQbitTorrent;
-    const removeFunc = server.removeTorrent(id, true);
+    const removeFunc = server.deleteAndRemove(id);
     result = await utils.timeout(
       removeFunc,
       60 * 1000,
@@ -235,7 +241,7 @@ async function addFileToTransmission(content: Buffer, serverInfo: TPTServer, sav
 async function addFileToQbittorrent(content: Buffer, serverInfo: TPTServer, savePath: string, torrentHash: string): Promise<{transId: string; hash: string; serverId: number;}> {
   log.log(`[Transmission] addFileToQbittorrent, content: [${content.length}], serverInfo: [${serverInfo.id}], savePath: [${savePath}]`);
   const server = getServer(serverInfo.id) as TQbitTorrent;
-  const addFunc = server.addTorrent(content, {
+  const addFunc = server.addTorrentFileContent(content, torrentHash, {
     savepath: savePath
   });
   const res = await utils.timeout(
