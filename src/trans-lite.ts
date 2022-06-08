@@ -9,9 +9,14 @@ import { TFileItem, TNetUsage, TPTServer } from './types';
 
 export async function get(uid: string, site: string, serverId: number): Promise<TFileItem[]> {
   log.log(`[TransLite] get uid: [${uid}], site: [${site}] serverId: [${serverId}]`);
-  const res: TFileItem[] = await doRequest(serverId, 'allFileItem', {
-    uid, site
-  });
+  let res: TFileItem[] = [];
+  try {
+    res = await doRequest(serverId, 'allFileItem', {
+      uid, site
+    });
+  } catch (e) {
+    log.message(`[ERROR] [TransLite] get uid: [${uid}], site: [${site}], serverId: [${serverId}] with error: [${e.message}]`);
+  }
   return res;
 }
 
