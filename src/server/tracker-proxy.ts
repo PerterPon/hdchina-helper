@@ -31,7 +31,7 @@ const app = http.createServer(async (req, res) => {
   const headers = req.headers as any;
   headers.host = host;
   let proxyedUrl = `https://${host}${req.url}`;
-  if ( '/announce.php' ===  urlItem.pathname) {
+  if ( -1 < urlItem.pathname.indexOf('announce')) {
     const [trash, uploadedCount] = urlItem.query.match(/uploaded=(\d+)/) || [];
     const increasedCount = increaseUpload(uploadedCount, userInfo.increaseRate);
     proxyedUrl = proxyedUrl.replace(uploadedCount, increasedCount);
