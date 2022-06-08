@@ -124,7 +124,17 @@ async function downloadItem(items: TItem[]): Promise<TItem[]> {
         responseType: 'stream'
       });
       await utils.writeFile(res.data, fileWriter);
-      const leftTime: number = moment(freeUntil).unix() - moment().unix();
+      const torrentContent: Buffer = fs.readFileSync(fileFullName);
+      const torrentDetailInfo = parseTorrent(torrentContent);
+      const { infoHash } = torrentDetailInfo;
+      await mysql.updateTorrent({
+        torrent_hash: infoHash
+      }, {
+        site_id: id,
+        uid: config.uid,
+        site: config.site
+      });
+
       log.message(`download torrent: [${title}], size: [${filesize(size)}], free time: [${moment(freeUntil).diff(moment(), 'hours')} H]`);
       downloadCount++;
       downloadSuccessItems.push(item);
@@ -187,12 +197,12 @@ async function addItemToTransmission(items: TItem[]): Promise<TItem[]> {
   const serverAddNumMap: Map<number, number> = new Map();
   for (const item of items) {
     try {
-      const { id, title } = item;
+      const { id, title, transHash } = item;
       const curServerId: number = canAddServerIds.shift();
       log.log(`add file to transmission: [${title}], size: [${filesize(item.size)}] server id: [${curServerId}]`);
-      const { transId, hash } = await doAddToTransmission(curServerId, id);
+      const { transId, hash } = await doAddToTransmission(curServerId, id, transHash);
       item.transHash = hash;
-      item.transId = Number(transId);
+      item.transId = transId;
       item.serverId = curServerId;
       successCount++;
       canAddServerIds.push(curServerId);
@@ -219,7 +229,7 @@ async function addItemToTransmission(items: TItem[]): Promise<TItem[]> {
   return successItems;
 }
 
-async function doAddToTransmission(serverId: number, siteId: string): Promise<{transId: string; hash: string; serverId: number}> {
+async function doAddToTransmission(serverId: number, siteId: string, torrentHash: string): Promise<{transId: string; hash: string; serverId: number}> {
   log.log(`doAddToTransmission server id: [${serverId}], siteId: [${siteId}]`);
   let res: {transId: string; hash: string; serverId: number; } = null;
   const userInfo: TPTUserInfo = config.userInfo;
@@ -230,8 +240,8 @@ async function doAddToTransmission(serverId: number, siteId: string): Promise<{t
     fs.writeFileSync(fileFullName, fileContent);
   }
   try {
-    const torrentBase64: string = fileContent.toString('base64');
-    res = await transmission.addBase64(torrentBase64, serverId, siteId);
+    // const torrentBase64: string = fileContent.toString('base64');
+    res = await transmission.addTorrent(fileContent, serverId, siteId, torrentHash);
   } catch(e) {
     if ('invalid or corrupt torrent file' === e.message) {
       res = {
@@ -259,7 +269,7 @@ async function storeDownloadAction(items: TItem[]): Promise<void> {
 
   for (const item of items) {
     const { id, transId, transHash, serverId } = item;
-    if (-1 === transId) {
+    if ('-1' === transId) {
       continue;
     }
     const { site, uid } = item;
@@ -307,7 +317,7 @@ async function removeItems(items: TItem[], reason: string): Promise<void> {
   for (const item of items) {
     const { transId, id, serverId } = item;
     try {
-      log.message(`removing [${reason}] item: [${item.title}] size: [${filesize(item.size)}], free until: [${item.freeUntil}]`);
+      log.message(`removing [${reason}] item: [${item.title}] trans id: [${transId}] size: [${filesize(item.size)}], free until: [${item.freeUntil}]`);
       await transmission.removeItem(transId, id, serverId);
       await mysql.deleteDownloaderItem(config.uid, config.site, item.serverId, transId);
       successCount++;

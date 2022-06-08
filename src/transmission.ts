@@ -1,5 +1,6 @@
 
 const Transmission = require('transmission');
+const qb = require('./qbittorrent');
 import * as _ from 'lodash';
 import * as path from 'path';
 import { promisify } from 'util';
@@ -11,7 +12,7 @@ import * as transLite from './trans-lite';
 
 import * as utils from './utils';
 
-import { ETransmissionStatus, TFileItem, TItem, TNetUsage, TPTServer, TTransmission } from './types';
+import { ETransmissionStatus, TFileItem, TItem, TNetUsage, TPTServer, TQbitTorrent, TTransmission } from './types';
 
 export interface TTransItem1 {
   id: number;
@@ -28,7 +29,7 @@ export interface TTransItem1 {
 
 export let servers: TPTServer[] = [];
 export const serverConfigMap: Map<number, TPTServer> = new Map();
-const serverMap: Map<number, TTransmission> = new Map();
+const serverMap: Map<number, TTransmission | TQbitTorrent> = new Map();
 
 export async function init(uid: string): Promise<void> {
   if (servers.length > 0) {
@@ -53,24 +54,33 @@ async function initServer(): Promise<void> {
   log.log(`[Transmission] initServer`);
   let downloadingServer: string[] = [];
   for (const server of servers) {
-    const { id, ip, port, username, password, box } = server;
-
-    const transmissionClient = new Transmission({
-      host: ip,
-      ssl: false,
-      port, username, password
-    });
-    Object.assign(status, transmissionClient.status);
-    for (const fnName in transmissionClient) {
-      const fn = transmissionClient[fnName];
-      if (true === _.isFunction(fn)) {
-        transmissionClient[fnName] = promisify(fn);
+    const { id, ip, port, username, password, box, type } = server;
+    
+    let transmissionClient = null;
+    if ('transmission' === type) {
+      transmissionClient = new Transmission({
+        host: ip,
+        ssl: false,
+        port, username, password
+      });
+      Object.assign(status, transmissionClient.status);
+      for (const fnName in transmissionClient) {
+        const fn = transmissionClient[fnName];
+        if (true === _.isFunction(fn)) {
+          transmissionClient[fnName] = promisify(fn);
+        }
       }
+    } else {
+      const Qbittorrent = qb.QBittorrent;
+      transmissionClient = new Qbittorrent({
+        baseUrl: `http://${ip}:${port}`,
+        username, password
+      });
     }
 
     serverMap.set(id, transmissionClient);
     downloadingServer.push(server.ip);
-    log.log(`[Transmission] init server: [${id}]`);
+    log.log(`[Transmission] init server success! : [${id}], type: [${type}]`);
   }
 
   log.message(`downloading server: [${downloadingServer}]`);
@@ -150,61 +160,96 @@ async function getServerItems(serverId: number, type: 'all'|'active', ids?: numb
   return targetItem;
 }
 
-export async function removeItem(id: number, siteId: string, serverId: number): Promise<void> {
+export async function removeItem(id: string, siteId: string, serverId: number): Promise<void> {
   log.log(`[Transmission] remove item: [${id}], siteId: [${siteId}], serverId: [${serverId}]`);
-  
+
   const { uid, site } = config.userInfo;
   await transLite.removeItem(uid, site, serverId, siteId);
 
-  const server = getServer(serverId);
-  const removeFunc = server.remove(id, true);
-  const result = await utils.timeout(
-    removeFunc,
-    60 * 1000,
-    `[Transmission] removeItem timeout! id: [${id}], siteId: [${siteId}], serverId: [${serverId}]`
-  );
+  let result = null;
+
+  // try to remove from transmission
+  try {
+    const server = getServer(serverId) as TTransmission;
+    const removeFunc = server.remove(id, true);
+    result = await utils.timeout(
+      removeFunc,
+      60 * 1000,
+      `[Transmission] removeItem timeout! id: [${id}], siteId: [${siteId}], serverId: [${serverId}]`
+    );
+  } catch (e) {
+
+  }
+
+  // try to remove from qbittorrent
+  try {
+    const server = getServer(serverId) as TQbitTorrent;
+    const removeFunc = server.removeTorrent(id, true);
+    result = await utils.timeout(
+      removeFunc,
+      60 * 1000,
+      `[Transmission] removeItem timeout! id: [${id}], siteId: [${siteId}], serverId: [${serverId}]`
+    );
+  } catch (e) {
+
+  }
+
   log.log(`[Transmission] remove item: [${id}] with result: [${JSON.stringify(result)}]`);
 }
 
-export async function addUrl(url: string, serverId: number, fileId: string): Promise<{transId: string; hash: string; serverId: number;}> {
-  const server = getServer(serverId);
+export async function addTorrent(content: Buffer, serverId: number, fileId: string, torrentHash: string): Promise<{transId: string; hash: string; serverId: number;}> {
   const serverConfig = getServerConfig(serverId);
-  log.log(`[Transmission] add url: [${url}], server id: [${serverId}], download dir: [${serverConfig.fileDownloadPath}]`);
+  log.log(`[Transmission] add base64content: [${content.length}], server id: [${serverId}], download dir: [${serverConfig.fileDownloadPath}]`);
+
   const curFileDownloadPath: string = path.join(serverConfig.fileDownloadPath, fileId);
-  const res = await server.addUrl(url, {
-    'download-dir': curFileDownloadPath
-  });
-  log.log(`[Transmission] add url with result: [${JSON.stringify(res)}]`);
-  const { id, hashString } = res;
-  return {
-    transId: id,
-    hash: hashString,
-    serverId
-  };
+  if ('transmission' === serverConfig.type) {
+    return await addFileToTransmission(content, serverConfig, curFileDownloadPath, torrentHash);
+  } else if ('qbittorrent' === serverConfig.type) {
+    return await addFileToQbittorrent(content, serverConfig, curFileDownloadPath, torrentHash);
+  }
+  return null;
 }
 
-export async function addBase64(base64Content: string, serverId: number, fileId: string): Promise<{transId: string; hash: string; serverId: number;}> {
-  const server = getServer(serverId);
-  const serverConfig = getServerConfig(serverId);
-  log.log(`[Transmission] add base64content: [${base64Content.length}], server id: [${serverId}], download dir: [${serverConfig.fileDownloadPath}]`);
-  const curFileDownloadPath: string = path.join(serverConfig.fileDownloadPath, fileId);
+async function addFileToTransmission(content: Buffer, serverInfo: TPTServer, savePath: string, torrentHash: string): Promise<{transId: string; hash: string; serverId: number;}> {
+  log.log(`[Transmission] addFileToTransmission, content: [${content.length}], serverInfo: [${serverInfo.id}], savePath: [${savePath}]`);
+
+  const base64Content: string = content.toString('base64');
+  const server = getServer(serverInfo.id) as TTransmission;
   const addFunc = server.addBase64(base64Content, {
-    'download-dir': curFileDownloadPath
+    'download-dir': savePath
   });
   const res = await utils.timeout(
     addFunc,
     60 * 1000,
-    `[Transmission] addBase64 timeout! content: [${base64Content.length}], serverId: [${serverId}], fileId: [${fileId}]`
+    `[Transmission] addBase64 timeout! content: [${base64Content.length}], serverId: [${serverInfo.id}], savePath: [${savePath}]`
   );
   log.log(`[Transmission] add url with result: [${JSON.stringify(res)}]`);
   const { id, hashString } = res;
   return {
     transId: id,
     hash: hashString,
-    serverId
+    serverId: serverInfo.id
   };
 }
 
+async function addFileToQbittorrent(content: Buffer, serverInfo: TPTServer, savePath: string, torrentHash: string): Promise<{transId: string; hash: string; serverId: number;}> {
+  log.log(`[Transmission] addFileToQbittorrent, content: [${content.length}], serverInfo: [${serverInfo.id}], savePath: [${savePath}]`);
+  const server = getServer(serverInfo.id) as TQbitTorrent;
+  const addFunc = server.addTorrent(content, {
+    savepath: savePath
+  });
+  const res = await utils.timeout(
+    addFunc,
+    60 * 1000,
+    `[Transmission] addFileToQbittorrent timeout! content: [${content.length}], serverId: [${serverInfo.id}], savePath: [${savePath}]`
+  );
+  log.log(`[Transmission] add url with result: [${JSON.stringify(res)}]`);
+  return {
+    transId: torrentHash,
+    hash: torrentHash,
+    serverId: serverInfo.id
+  };
+}
 
 export async function freeSpace(serverId: number = -1): Promise<{serverId: number; size: number;}[]> {
   if (-1 !== serverId) {
@@ -224,8 +269,6 @@ export async function freeSpace(serverId: number = -1): Promise<{serverId: numbe
     const { oriFileDownloadPath } = serverInfo;
     log.log(`[Transmission] getFreeSpace server id: [${serverId}], fileDownloadPath: [${oriFileDownloadPath}]`);
 
-    // const serverClient = getServer(serverId);
-    // const res = await serverClient.freeSpace(oriFileDownloadPath);
     const { site, uid } = config.userInfo;
     const res = await transLite.freeSpace(uid, site, serverId, oriFileDownloadPath);
     log.message(`server: [${serverInfo.id}], left space total: [${filesize(res['size-bytes'])}]`);
@@ -289,7 +332,7 @@ export async function canAddServers(vip: boolean): Promise<number[]> {
   return canAddServerIds;
 }
 
-export function getServer(serverId: number): TTransmission {
+export function getServer(serverId: number): TTransmission | TQbitTorrent {
   log.log(`[Puppeteer] getServer serverId: [${serverId}]`);
   const server = serverMap.get(serverId);
   if (undefined === server) {

@@ -11,7 +11,7 @@ export interface TItem {
   torrentUrl: string;
   transHash?: string;
   serverId: number;
-  transId?: number;
+  transId?: string;
   finished?: boolean;
   activeDate?: Date;
 }
@@ -41,7 +41,7 @@ export interface TPTServer {
   port: number;
   username: string;
   password: string;
-  type: string;
+  type: 'transmission' | 'qbittorrent';
   box: boolean;
   oriFileDownloadPath: string;
   fileDownloadPath: string;
@@ -77,6 +77,11 @@ export interface TTransmission {
   freeSpace(...params: any[]): Promise<any>;
   remove(...params: any[]): Promise<any>;
   status: ETransmissionStatus;
+}
+
+export interface TQbitTorrent {
+  removeTorrent(...params: any[]): Promise<any>
+  addTorrent(...params: any[]): Promise<any>
 }
 
 export interface TSiteData {

@@ -8,3 +8,4 @@ test-*
 *.torrent
 package-lock.json
 test-*
+.DS_store

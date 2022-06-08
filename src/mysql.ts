@@ -67,6 +67,7 @@ export async function getFreeItems(uid: string, site: string): Promise<TItem[]> 
         torrents.free_until AS free_until,
         torrents.title AS title,
         torrents.torrent_url AS torrent_url,
+        torrents.torrent_hash AS torrent_hash,
         torrents.publish_date as publish_date,
         downloader.id AS downloader_id,
         downloader.server_id AS server_id
@@ -90,13 +91,14 @@ export async function getFreeItems(uid: string, site: string): Promise<TItem[]> 
   log.log(`[Mysql] get free item: [${JSON.stringify(data)}]`);
   const freeItems: TItem[] = [];
   for (const item of data) {
-    const { server_id, site_id, uid, site, size, title, is_free, free_until, torrent_url, publish_date } = item;
+    const { server_id, site_id, uid, torrent_hash, site, size, title, is_free, free_until, torrent_url, publish_date } = item;
     freeItems.push({
       id: site_id,
       site,
       uid,
       freeUntil: free_until,
       size, title,
+      transHash: torrent_hash,
       torrentUrl: torrent_url,
       serverId: server_id,
       publishDate: publish_date,
@@ -106,7 +108,7 @@ export async function getFreeItems(uid: string, site: string): Promise<TItem[]> 
   return freeItems;
 }
 
-export async function storeDownloadAction(site: string, siteId: string, uid: string, transId: number, torrentHash: string, serverId: number): Promise<void> {
+export async function storeDownloadAction(site: string, siteId: string, uid: string, transId: string, torrentHash: string, serverId: number): Promise<void> {
   log.log(`[Mysql] storeDownloadAction site: [${site}], site id: [${siteId}], uid: [${uid}], trans id: [${transId}], torrent hash: [${torrentHash}] server id: [${serverId}]`);
   await pool.query(`
   INSERT INTO downloader(gmt_create, gmt_modify, uid, trans_id, torrent_hash, site, site_id, server_id)
@@ -396,7 +398,7 @@ export async function getUserActiveTransId(uid: string, site: string, serverId: 
   return activeIds;
 }
 
-export async function deleteDownloaderItem(uid: string, site: string, serverId: number, transId: number): Promise<void> {
+export async function deleteDownloaderItem(uid: string, site: string, serverId: number, transId: string): Promise<void> {
   log.log(`[Mysql] deleteDownloaderItem uid: [${uid}], site: [${site}] serverId: [${serverId}] transId: [${transId}]`);
   await pool.query(`
   UPDATE
