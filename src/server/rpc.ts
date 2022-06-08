@@ -129,7 +129,7 @@ function searchFolderForParted(folder: string): boolean {
         return result;
       }
     } else {
-      if (true === /\.part$/.test(file.name)) {
+      if (true === /\.!qB$/.test(file.name)) {
         return true
       }
     }
