@@ -71,7 +71,6 @@ async function initServer(): Promise<void> {
         }
       }
     } else {
-      const Qbittorrent = QBittorrent;
       transmissionClient = new Qbittorrent({
         host: ip,
         port,
