@@ -39,8 +39,11 @@ export async function getFreeTime(el: puppeteer.ElementHandle): Promise<Date> {
   return utils.parseCSTDate(timeString);
 }
 
-export async function getFreeTime2up(el: puppeteer.ElementHandle): Promise<string> {
-  return await el.$eval('.pro_free2up', (el) => el.getAttribute('onmouseover'));
+export async function getFreeTime2up(el: puppeteer.ElementHandle): Promise<Date> {
+  const freeTimeContainer: string =  await el.$eval('.pro_free2up', (el) => el.getAttribute('onmouseover'));
+  const [timeString] = freeTimeContainer.match(/\d\d\d\d-\d\d-\d\d\s\d\d:\d\d:\d\d/);
+  return utils.parseCSTDate(timeString);
+  // return await el.$eval('.pro_free2up', (el) => el.getAttribute('onmouseover'));
 }
 
 export async function getSiteId(el: puppeteer.ElementHandle): Promise<string> {
