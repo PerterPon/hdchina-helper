@@ -55,37 +55,41 @@ async function initServer(): Promise<void> {
   let downloadingServer: string[] = [];
   for (const server of servers) {
     const { id, ip, port, username, password, box, type } = server;
-    
-    let transmissionClient = null;
-    if ('transmission' === type) {
-      transmissionClient = new Transmission({
-        host: ip,
-        ssl: false,
-        port, username, password
-      });
-      Object.assign(status, transmissionClient.status);
-      for (const fnName in transmissionClient) {
-        const fn = transmissionClient[fnName];
-        if (true === _.isFunction(fn)) {
-          transmissionClient[fnName] = promisify(fn);
+    try {
+      log.log(`[Transmission] init server: [${ip}, ${type}, ${id}]`);
+      let transmissionClient = null;
+      if ('transmission' === type) {
+        transmissionClient = new Transmission({
+          host: ip,
+          ssl: false,
+          port, username, password
+        });
+        Object.assign(status, transmissionClient.status);
+        for (const fnName in transmissionClient) {
+          const fn = transmissionClient[fnName];
+          if (true === _.isFunction(fn)) {
+            transmissionClient[fnName] = promisify(fn);
+          }
         }
+      } else {
+        transmissionClient = new Qbittorrent({
+          host: ip,
+          port,
+          user: username,
+          pass: password
+        });
+        transmissionClient.login = promisify(transmissionClient.login);
+        transmissionClient.addTorrentFileContent = promisify(transmissionClient.addTorrentFileContent);
+        transmissionClient.deleteAndRemove = promisify(transmissionClient.deleteAndRemove);
+        await transmissionClient.login();
       }
-    } else {
-      transmissionClient = new Qbittorrent({
-        host: ip,
-        port,
-        user: username,
-        pass: password
-      });
-      transmissionClient.login = promisify(transmissionClient.login);
-      transmissionClient.addTorrentFileContent = promisify(transmissionClient.addTorrentFileContent);
-      transmissionClient.deleteAndRemove = promisify(transmissionClient.deleteAndRemove);
-      await transmissionClient.login();
+  
+      serverMap.set(id, transmissionClient);
+      downloadingServer.push(server.ip);
+      log.log(`[Transmission] init server success! : [${id}], type: [${type}]`);
+    } catch (e) {
+      log.log(`[Transmission] init server failed! : [${id}], type: [${type}]`);
     }
-
-    serverMap.set(id, transmissionClient);
-    downloadingServer.push(server.ip);
-    log.log(`[Transmission] init server success! : [${id}], type: [${type}]`);
   }
 
   log.message(`downloading server: [${downloadingServer}]`);
@@ -183,7 +187,7 @@ export async function removeItem(id: string, siteId: string, serverId: number): 
       `[Transmission] removeItem timeout! id: [${id}], siteId: [${siteId}], serverId: [${serverId}]`
     );
   } catch (e) {
-
+    log.log(e.message, e.stack);
   }
 
   // try to remove from qbittorrent
@@ -196,7 +200,7 @@ export async function removeItem(id: string, siteId: string, serverId: number): 
       `[Transmission] removeItem timeout! id: [${id}], siteId: [${siteId}], serverId: [${serverId}]`
     );
   } catch (e) {
-
+    log.log(e.message, e.stack);
   }
 
   log.log(`[Transmission] remove item: [${id}] with result: [${JSON.stringify(result)}]`);

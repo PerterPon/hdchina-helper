@@ -95,6 +95,7 @@ async function doRequest(serverId: number, method: string, params): Promise<any>
     log.log(`request url [${requestUrl}], data: [${JSON.stringify(params)}]  with error: [${message}]`);
     throw new Error(message);
   }
+  log.log(`[TransList] request param: [${JSON.stringify(params)}] data: [${JSON.stringify(res.data)}]`);
   return data;
 }
 

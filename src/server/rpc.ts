@@ -3,6 +3,8 @@ const macAddress = require('macaddress');
 import * as path from 'path';
 import * as fs from 'fs-extra';
 import * as _ from 'lodash';
+import * as rimraf from 'rimraf';
+import { execSync } from 'child_process';
 import checkDiskSpace, { DiskSpace } from 'check-disk-space';
 
 import { getCurrentServerInfo } from './basic';
@@ -24,7 +26,8 @@ export async function remove(params) {
   const filePath: string = path.join(fileDownloadPath, site, uid, siteId);
   try {
     console.log(`removing file: [${filePath}]`);
-    fs.removeSync(filePath);
+    
+    execSync(`rm -rf ${filePath}`);
   } catch(e) {
     console.log(`[${displayTime()}] remove params: [${JSON.stringify(params)}]`);
     console.log(e);

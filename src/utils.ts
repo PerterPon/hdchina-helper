@@ -180,7 +180,14 @@ export async function timeout<T>(input: Promise<T>, time: number, errorMessage: 
       }
       reject(new Error(errorMessage));
     }, time);
-    const res: T = await input;
+    let res: T = null;
+    try {
+      res = await input;
+      done = true;
+    } catch (e) {
+      done = true;
+      reject(e)
+    }
     done = true;
     resolve(res);
   });
