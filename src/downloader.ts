@@ -142,13 +142,14 @@ async function downloadItem(items: TItem[]): Promise<TItem[]> {
   return downloadSuccessItems;
 }
 
-async function addProxyToTorrentFile(torrentFile: Buffer, proxyAddr: string): Promise<Buffer> {
+async function addProxyToTorrentFile(torrentFile: Buffer, proxyAddr: string, siteId: string): Promise<Buffer> {
   log.log(`addProxyToTorrentFile torrentFile:[${torrentFile.length}], proxyAddr: [${proxyAddr}]`);
   const parsedTorrent: parseTorrent.Instance = parseTorrent(torrentFile) as parseTorrent.Instance;
   const announceUrl = parsedTorrent.announce[0];
   const proxyItem = urlLib.parse(proxyAddr, true);
   const announceUrlItem = urlLib.parse(announceUrl, true);
   announceUrlItem.query.__uid = config.uid;
+  announceUrlItem.query.__id = siteId;
   const proxyUrlItem = {
     hostname: proxyItem.hostname,
     port: proxyItem.port,
@@ -225,7 +226,7 @@ async function doAddToTransmission(serverId: number, siteId: string): Promise<{t
   const fileFullName: string = path.join(tempFolder, `${config.site}_${siteId}_${config.uid}.torrent`);
   let fileContent: Buffer = fs.readFileSync(fileFullName);
   if (true === userInfo.proxy) {
-    fileContent = await addProxyToTorrentFile(fileContent, userInfo.proxyAddr);
+    fileContent = await addProxyToTorrentFile(fileContent, userInfo.proxyAddr, siteId);
     fs.writeFileSync(fileFullName, fileContent);
   }
   try {
