@@ -6,6 +6,7 @@ import * as _ from 'lodash';
 import { promisify } from 'util';
 
 import { IClient } from './basic';
+import * as config from '../config';
 
 export class QbittorrentClient implements IClient {
   client: TQbitTorrent = null;
@@ -30,14 +31,24 @@ export class QbittorrentClient implements IClient {
     this.client = client;
   }
 
-  async addTorrent(content: Buffer, savePath: string, torrentHash: string): Promise<{id: string}> {
-    const res = await this.client.addTorrentFileContent(content, torrentHash, {
-      savepath: savePath
-    });
-    return {
-      id: torrentHash
+  async addTorrent(content: Buffer, savePath: string, torrentHash: string, retryTime: number = 0): Promise<{id: string}> {
+    try {
+      const res = await this.client.addTorrentFileContent(content, torrentHash, {
+        savepath: savePath
+      });
+      return {
+        id: torrentHash
+      }
+      return res;
+    } catch(e) {
+      const configInfo = config.getConfig();
+      const { globalRetryTime } = configInfo;
+      if (retryTime >= globalRetryTime) {
+        throw e;
+      } else {
+        return await this.addTorrent(content, savePath, torrentHash, ++retryTime);
+      }
     }
-    return res;
   }
 
   async removeTorrent(id: string): Promise<void> {
