@@ -4,6 +4,7 @@ const Qbittorrent = require('@electorrent/node-qbittorrent');
 import { TPTServer, TQbitTorrent, TTransmission } from "src/types";
 import * as _ from 'lodash';
 import { promisify } from 'util';
+import * as log from '../log';
 
 import { IClient } from './basic';
 import * as config from '../config';
@@ -44,6 +45,7 @@ export class QbittorrentClient implements IClient {
       const configInfo = config.getConfig();
       const { globalRetryTime } = configInfo;
       if (retryTime >= globalRetryTime) {
+        log.log(`[Qbittorrent] add torrent error reached [${globalRetryTime}] times`);
         throw e;
       } else {
         return await this.addTorrent(content, savePath, torrentHash, ++retryTime);
