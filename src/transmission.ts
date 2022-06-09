@@ -208,7 +208,7 @@ export async function addTorrentUrl(url: string, serverId: number, fileId: strin
 
   const curFileDownloadPath: string = path.join(serverConfig.fileDownloadPath, fileId);
   try {
-    const addFunc = client.addTorrentUrl(url, curFileDownloadPath, torrentHash);
+    const addFunc = client.addTorrentUrl(url, torrentHash);
     const res = await utils.timeout(
       addFunc,
       60 * 1000,
