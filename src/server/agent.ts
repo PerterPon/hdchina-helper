@@ -4,8 +4,6 @@ import * as utils from '../utils';
 import * as path from 'path';
 import * as _ from 'lodash';
 
-const Qbittorrent = require('@electorrent/node-qbittorrent');
-
 import { exec, execFileSync } from 'child_process';
 
 import { getCurrentServerInfo } from './basic';
@@ -13,8 +11,7 @@ import { getCurrentServerInfo } from './basic';
 import { TFileItem, TItem, TPTServer, TPTUserInfo } from '../types';
 
 import { allFileItem } from './rpc';
-import { promisify } from 'util';
-import { createClientByServer, IClient } from 'src/clients/basic';
+import { createClientByServer, IClient } from '../clients/basic';
 
 export async function getCrontab(): Promise<any>{
   const crontabs: string[] = await utils.parseCrontab();
