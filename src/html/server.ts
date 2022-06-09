@@ -32,12 +32,12 @@ async function start(): Promise<void> {
     const costTime: number = Date.now() - startTime.getTime();
     console.log(`[${utils.displayTime()}] request: [${ctx.url}] cost time: [${costTime}ms]`);
   });
-  
+
   router.post('/api', onMethod.bind(undefined, apis));
-  
+
   app.use(router.routes());
   app.use(router.allowedMethods());
-  
+
   app.listen(htmlPort, async () => {
     console.log(`listing port: [${htmlPort}]`);
   });

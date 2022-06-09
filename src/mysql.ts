@@ -295,7 +295,27 @@ export async function getUserInfoByQuery(query: any): Promise<TPTUserInfo> {
   if (0 === res.length) {
     return null;
   }
-  const { cookie, vip, site, uid, upload_count, nickname, increase_rate, paid, bind_server, cycle_time, rss_passkey, user_data_dir, site_data_only, vip_normal_item_count, proxy, proxy_addr } = res[0];
+  return parseUserInfoFromItem(res[0]);
+}
+
+export async function getAllUser(): Promise<TPTUserInfo[]> {
+  log.log(`[Mysql] getAllUser`);
+  const [res]: any = await pool.query(`
+  SELECT
+    *
+  FROM
+    users
+  WHERE done = 0;
+  `);
+  const users: TPTUserInfo[] = [];
+  for (const item of res) {
+    users.push(parseUserInfoFromItem(item));
+  }
+  return users;
+}
+
+function parseUserInfoFromItem(item): TPTUserInfo {
+  const { cookie, vip, site, uid, upload_count, nickname, increase_rate, paid, bind_server, cycle_time, rss_passkey, user_data_dir, site_data_only, vip_normal_item_count, proxy, proxy_addr } = item;
   const servers: string[] = bind_server.split(',');
   const numServers: number[] = [];
   for (let i = 0; i < servers.length; i++) {
@@ -564,4 +584,58 @@ export async function addServerData(id: number, uploadSpeed: number, downloadSpe
   VALUES
     (?, ?, ?, ?, ?, ?)
   `, [UTF8Time(), UTF8Time(), uploadSpeed, downloadSpeed, id, leftSpace]);
+}
+
+export async function getServerDataByTime(time: Date, serverId?: string): Promise<any[]> {
+  const [res]: any = await pool.query(`
+  SELECT *
+  FROM
+    server_data
+  WHERE
+    gmt_create > ? ${serverId ? ' AND server_id = ?' : ''}
+  ORDER BY gmt_create
+  `, [time, serverId]);
+
+  return res;
+}
+
+export async function getDownloaderByTime(time: Date, uid?: string): Promise<any[]> {
+  const [res]: any = await pool.query(`
+  SELECT
+    *
+  FROM
+    downloader
+  WHERE
+    gmt_create > ? ${uid ? 'AND uid = ?' : ''}
+  ORDER BY gmt_create
+  `, [time, uid]);
+
+  return res;
+}
+
+export async function getSiteDataByTime(time: Date, uid?: string): Promise<any[]> {
+  const [res]: any = await pool.query(`
+  SELECT
+    *
+  FROM
+    site_data
+  WHERE
+    gmt_create > ? ${uid ? 'AND uid = ?' : ''}
+  ORDER BY gmt_create
+  `, [time, uid]);
+
+  return res;
+}
+
+export async function getUserLogByTime(time: Date, uid?: string, site?: string): Promise<any[]> {
+  const [res]: any = await pool.query(`
+  SELECT
+    *
+  FROM
+    logs
+  WHERE
+    gmt_create > ? ${uid ? ' AND uid = ?' : ''} ${site ? ' AND site = ? ' : ''}
+  ORDER BY gmt_create DESC;
+  `, [time, uid, site]);
+  return res;
 }
