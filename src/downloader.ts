@@ -211,7 +211,6 @@ async function addItemToTransmission(items: TItem[]): Promise<TItem[]> {
       item.transId = transId;
       item.serverId = curServerId;
       successCount++;
-      canAddServerIds.push(curServerId);
       let addedNumber: number = serverAddNumMap.get(curServerId);
       if (undefined === addedNumber) {
         addedNumber = 0;
