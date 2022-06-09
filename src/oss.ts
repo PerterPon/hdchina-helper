@@ -19,6 +19,10 @@ export async function init(): Promise<void> {
   
 }
 
+export async function uploadFile(ossPath: string, content: Buffer): Promise<void> {
+  const res: OSS.PutObjectResult = await store.put(ossPath, content);
+}
+
 export async function uploadTorrent(site: string, uid: string, siteId: string, filePath: string|Buffer): Promise<string> {
   log.log(`[OSS] put file, site: [${site}], uid: [${uid}], siteId:[${siteId}]`);
   const res: OSS.PutObjectResult = await store.put(`${site}/${uid}/${siteId}`, filePath);

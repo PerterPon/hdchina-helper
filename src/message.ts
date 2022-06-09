@@ -15,7 +15,7 @@ export async function init(): Promise<void> {
 
 export async function sendMessage(): Promise<void> {
   const logFileName: string = `${utils.displayTime()}.log`
-  await oss.uploadTorrent(`log/${logFileName}`, Buffer.from(log.logs.join('\n')));
+  await oss.uploadFile(`log/${logFileName}`, Buffer.from(log.logs.join('\n')));
   const configInfo = config.getConfig();
   const { cdnHost } = configInfo.aliOss;
   const logUrl: string = `http://${cdnHost}/hdchina/log/${logFileName}`;
@@ -27,7 +27,7 @@ export async function sendMessage(): Promise<void> {
 
 export async function sendErrorMessage(): Promise<void> {
   const logFileName: string = `${utils.displayTime()}.log`
-  await oss.uploadTorrent(`log/${logFileName}`, Buffer.from(log.logs.join('\n')));
+  await oss.uploadFile(`log/${logFileName}`, Buffer.from(log.logs.join('\n')));
   const configInfo = config.getConfig();
   const { cdnHost } = configInfo.aliOss;
   const logUrl: string = `http://${cdnHost}/hdchina/log/${logFileName}`;
