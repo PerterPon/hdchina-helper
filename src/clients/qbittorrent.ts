@@ -28,6 +28,7 @@ export class QbittorrentClient implements IClient {
     client.login = promisify(client.login);
     client.addTorrentFileContent = promisify(client.addTorrentFileContent);
     client.deleteAndRemove = promisify(client.deleteAndRemove);
+    client.addTorrentURL = promisify(client.addTorrentURL);
     await client.login();
     this.client = client;
   }
