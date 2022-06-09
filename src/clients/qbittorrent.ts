@@ -53,6 +53,27 @@ export class QbittorrentClient implements IClient {
     }
   }
 
+  async addTorrentUrl(url: string, savePath: string, torrentHash: string, retryTime: number = 0): Promise<{ id: string; }> {
+    try {
+      const res = await this.client.addTorrentURL(url, torrentHash, {
+        savepath: savePath
+      });
+      return {
+        id: torrentHash
+      }
+      return res;
+    } catch(e) {
+      const configInfo = config.getConfig();
+      const { globalRetryTime } = configInfo;
+      if (retryTime >= globalRetryTime) {
+        log.log(`[Qbittorrent] add torrent error reached [${globalRetryTime}] times`);
+        throw e;
+      } else {
+        return await this.addTorrentUrl(url, savePath, torrentHash, ++retryTime);
+      }
+    }
+  }
+
   async removeTorrent(id: string): Promise<void> {
     await this.client.deleteAndRemove(id);
   }

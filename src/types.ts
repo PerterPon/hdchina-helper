@@ -83,6 +83,7 @@ export interface TQbitTorrent {
   login(...params: any[]): Promise<any>
   deleteAndRemove(...params: any[]): Promise<any>
   addTorrentFileContent(...params: any[]): Promise<any>
+  addTorrentURL(...params: any[]): Promise<any>
 }
 
 export interface TSiteData {

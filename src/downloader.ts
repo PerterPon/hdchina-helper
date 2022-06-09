@@ -51,7 +51,7 @@ export async function main(): Promise<void> {
   const downloadSuccessItem: TItem[] = await downloadItem(canDownloadItem as any);
 
   // 7.
-  await uploadItem(downloadSuccessItem);
+  // await uploadItem(downloadSuccessItem);
 
   const addSuccessItem: TItem[] = await addItemToTransmission(downloadSuccessItem);
 
@@ -173,15 +173,15 @@ async function addProxyToTorrentFile(torrentFile: Buffer, proxyAddr: string, sit
   return proxyContent;
 }
 
-async function uploadItem(items: TItem[]): Promise<void> {
-  log.log(`upload items: [${JSON.stringify(items)}]`);
-  for (const item of items) {
-    const { site, id } = item;
-    const fileName: string = `${config.uid}/${site}_${id}.torrent`;
-    const filePath: string = path.join(tempFolder, `${site}_${id}_${config.uid}.torrent`);
-    await oss.uploadTorrent(fileName, filePath);
-  }
-}
+// async function uploadItem(items: TItem[]): Promise<void> {
+//   log.log(`upload items: [${JSON.stringify(items)}]`);
+//   for (const item of items) {
+//     const { site, id } = item;
+//     const fileName: string = `${config.uid}/${site}_${id}.torrent`;
+//     const filePath: string = path.join(tempFolder, `${site}_${id}_${config.uid}.torrent`);
+//     await oss.uploadTorrent(fileName, filePath);
+//   }
+// }
 
 async function addItemToTransmission(items: TItem[]): Promise<TItem[]> {
   log.log(`addItemToTransmission: [${JSON.stringify(items)}]`);
@@ -243,9 +243,9 @@ async function doAddToTransmission(serverId: number, siteId: string, torrentHash
     fileContent = await addProxyToTorrentFile(fileContent, userInfo.proxyAddr, siteId);
     fs.writeFileSync(fileFullName, fileContent);
   }
+  const fileUrl: string = await oss.uploadTorrent(config.site, config.uid, siteId, fileFullName);
   try {
-    // const torrentBase64: string = fileContent.toString('base64');
-    res = await transmission.addTorrent(fileContent, serverId, siteId, torrentHash);
+    res = await transmission.addTorrentUrl(fileUrl, serverId, siteId, torrentHash);
   } catch(e) {
     if ('invalid or corrupt torrent file' === e.message) {
       res = {

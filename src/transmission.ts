@@ -200,6 +200,37 @@ export async function addTorrent(content: Buffer, serverId: number, fileId: stri
   }
 }
 
+export async function addTorrentUrl(url: string, serverId: number, fileId: string, torrentHash: string): Promise<{transId: string; hash: string; serverId: number;}> {
+  const serverConfig = getServerConfig(serverId);
+  log.log(`[Transmission] addTorrentUrl: [${url}], server id: [${serverId}], download dir: [${serverConfig.fileDownloadPath}]`);
+
+  const client: IClient = getServer(serverId);
+
+  const curFileDownloadPath: string = path.join(serverConfig.fileDownloadPath, fileId);
+  try {
+    const addFunc = client.addTorrentUrl(url, curFileDownloadPath, torrentHash);
+    const res = await utils.timeout(
+      addFunc,
+      60 * 1000,
+      `[Transmission] add Torrent timeout! url: [${url}], serverId: [${serverId}], savePath: [${curFileDownloadPath}]`
+    );
+    log.log(`[Transmission] add url with result: [${JSON.stringify(res)}]`);
+    const { id } = res;
+    return {
+      transId: id,
+      hash: torrentHash,
+      serverId: serverId
+    };
+  } catch (e) {
+    log.log(e.message, e.stack)
+  }
+  return {
+    transId: '-1',
+    hash: torrentHash,
+    serverId
+  }
+}
+
 export async function freeSpace(serverId: number = -1): Promise<{serverId: number; size: number;}[]> {
   if (-1 !== serverId) {
     return getFreeSpace(serverId);

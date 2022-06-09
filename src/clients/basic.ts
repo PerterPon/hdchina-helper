@@ -10,6 +10,8 @@ export interface IClient {
 
   addTorrent(content: Buffer, savePath: string, torrentHash: string): Promise<{id: string}>;
 
+  addTorrentUrl(url: string, savePath: string, torrentHash: string): Promise<{id: string}>;
+
   removeTorrent(id: string): Promise<void>;
 
 }

@@ -1,5 +1,6 @@
 
 import * as OSS from 'ali-oss';
+import * as path from 'path';
 import * as config from './config';
 import * as log from './log';
 
@@ -18,10 +19,13 @@ export async function init(): Promise<void> {
   
 }
 
-export async function uploadTorrent(name: string, filePath: string|Buffer): Promise<void> {
-  log.log(`[OSS] put file: [${name}]`);
-  const res: OSS.PutObjectResult = await store.put(`hdchina/${name}`, filePath);
+export async function uploadTorrent(site: string, uid: string, siteId: string, filePath: string|Buffer): Promise<string> {
+  log.log(`[OSS] put file, site: [${site}], uid: [${uid}], siteId:[${siteId}]`);
+  const res: OSS.PutObjectResult = await store.put(`${site}/${uid}/${siteId}`, filePath);
+  const configInfo = config.getConfig();
+  const { cdnHost } = configInfo.aliOss;
   log.log(`[OSS] put file with result: [${JSON.stringify(res)}]`);
+  return path.join(cdnHost, site, uid, siteId);
 }
 
 export async function uploadScreenShot(name: string, filePath: string|Buffer): Promise<void> {
