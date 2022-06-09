@@ -546,4 +546,12 @@ export async function getItemBySiteIds(uid: string, site: string, siteIds: strin
   return items;
 }
 
-
+export async function addLog(uid: string, site: string, logLink: string, messages: string): Promise<void> {
+  log.log(`[Mysql] addLog uid: [${uid}], site: [${site}], log_link: [${logLink}], messages: [${messages.length}]`);
+  await pool.query(`
+  INSERT INTO 
+    logs(gmt_create, gmt_modify, uid, site, log_link, messages)
+  VALUES
+    (?, ?, ?, ?, ?, ?)
+  `, [UTF8Time(), UTF8Time(), uid, site, logLink, messages]);
+}
