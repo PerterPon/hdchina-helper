@@ -201,6 +201,10 @@ async function addItemToTransmission(items: TItem[]): Promise<TItem[]> {
       const curServerId: number = canAddServerIds.shift();
       log.message(`add file to transmission: [${title}], size: [${filesize(item.size)}] server id: [${curServerId}]`);
       const { transId, hash } = await doAddToTransmission(curServerId, id, transHash);
+      if('-1' === transId) {
+        continue;
+      }
+
       item.transHash = hash;
       item.transId = transId;
       item.serverId = curServerId;
