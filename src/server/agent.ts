@@ -3,8 +3,9 @@ import * as mysql from '../mysql';
 import * as utils from '../utils';
 import * as path from 'path';
 import * as _ from 'lodash';
+import * as rimraf from 'rimraf';
 
-import { exec, execFileSync } from 'child_process';
+import { exec, execFileSync, execSync } from 'child_process';
 
 import { getCurrentServerInfo } from './basic';
 
@@ -84,7 +85,7 @@ export async function deleteUser(params): Promise<string> {
   const serverInfo: TPTServer = await getCurrentServerInfo();
   const targetFolder: string = path.join(serverInfo.fileDownloadPath, site, uid);
   try {
-    execFileSync(targetFolder);
+    execSync(`rm -rf ${targetFolder}`);
   } catch (e) {
     console.log(e);
   }
