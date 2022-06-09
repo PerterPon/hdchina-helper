@@ -18,7 +18,7 @@ export async function sendMessage(): Promise<void> {
   await oss.uploadFile(`log/${logFileName}`, Buffer.from(log.logs.join('\n')));
   const configInfo = config.getConfig();
   const { cdnHost } = configInfo.aliOss;
-  const logUrl: string = `http://${cdnHost}/hdchina/log/${logFileName}`;
+  const logUrl: string = `http://${cdnHost}/log/${logFileName}`;
 
   log.message(`[Util] detail log: [ ${logUrl} ]`);
   const { webhook } = configInfo.lark;
@@ -30,7 +30,7 @@ export async function sendErrorMessage(): Promise<void> {
   await oss.uploadFile(`log/${logFileName}`, Buffer.from(log.logs.join('\n')));
   const configInfo = config.getConfig();
   const { cdnHost } = configInfo.aliOss;
-  const logUrl: string = `http://${cdnHost}/hdchina/log/${logFileName}`;
+  const logUrl: string = `http://${cdnHost}/log/${logFileName}`;
   const { errorWebhook } = configInfo.lark;
 
   log.message(`[Util] detail log: [ ${logUrl} ]`);
