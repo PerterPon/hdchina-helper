@@ -31,7 +31,7 @@ export class QbittorrentClient implements IClient {
   }
 
   async addTorrent(content: Buffer, savePath: string, torrentHash: string): Promise<{id: string}> {
-    const res = await this.client.addTorrentFileContent(content, {
+    const res = await this.client.addTorrentFileContent(content, torrentHash, {
       savepath: savePath
     });
     return {

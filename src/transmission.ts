@@ -175,7 +175,6 @@ export async function addTorrent(content: Buffer, serverId: number, fileId: stri
 
   const client: IClient = getServer(serverId);
 
-  
   const curFileDownloadPath: string = path.join(serverConfig.fileDownloadPath, fileId);
   try {
     const addFunc = client.addTorrent(content, curFileDownloadPath, torrentHash);
