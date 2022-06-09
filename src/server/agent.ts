@@ -1,12 +1,20 @@
 
 import * as mysql from '../mysql';
 import * as utils from '../utils';
+import * as path from 'path';
+import * as _ from 'lodash';
 
-import { exec } from 'child_process';
+const Qbittorrent = require('@electorrent/node-qbittorrent');
+
+import { exec, execFileSync } from 'child_process';
 
 import { getCurrentServerInfo } from './basic';
 
-import { TPTServer, TPTUserInfo } from '../types';
+import { TFileItem, TItem, TPTServer, TPTUserInfo } from '../types';
+
+import { allFileItem } from './rpc';
+import { promisify } from 'util';
+import { createClientByServer, IClient } from 'src/clients/basic';
 
 export async function getCrontab(): Promise<any>{
   const crontabs: string[] = await utils.parseCrontab();
@@ -71,4 +79,43 @@ export async function deploy(): Promise<any> {
     res = e;
   }
   return 'beginning';
+}
+
+export async function deleteUser(params): Promise<string> {
+  const { uid, site } = params;
+  const allFileItems: TFileItem[] = await allFileItem(params);
+  const serverInfo: TPTServer = await getCurrentServerInfo();
+  const targetFolder: string = path.join(serverInfo.fileDownloadPath, site, uid);
+  try {
+    execFileSync(targetFolder);
+  } catch (e) {
+    console.log(e);
+  }
+
+  try {
+    await deleteFromClient(uid, site, allFileItems, serverInfo);
+  } catch (e) {
+    console.log(e);
+  }
+  return 'done';
+}
+
+async function deleteFromClient(uid: string ,site: string, fileItems: TFileItem[], serverInfo: TPTServer): Promise<void> {
+  if (0 === fileItems.length) {
+    return;
+  }
+
+  const client: IClient = await createClientByServer(serverInfo);
+  const siteIds: string[] = _.map(fileItems, 'siteId');
+  const items: TItem[] = await mysql.getItemBySiteIds(uid, site, siteIds);
+  
+  for (const item of items) {
+    try {
+      console.log(`removing item: [${item.title}] for user: [${uid}]`);
+      await client.removeTorrent(item.transHash);
+    } catch (e) {
+      console.log(e);
+    }
+  }
+  console.log(`user: [${uid}] total remove item count: [${items.length}]`);
 }
