@@ -555,3 +555,13 @@ export async function addLog(uid: string, site: string, logLink: string, message
     (?, ?, ?, ?, ?, ?)
   `, [UTF8Time(), UTF8Time(), uid, site, logLink, messages]);
 }
+
+export async function addServerData(id: number, uploadSpeed: number, downloadSpeed: number, leftSpace: number): Promise<void> {
+  log.log(`[Mysql] addServerData id: [${id}], uploadSpeed: [${uploadSpeed}], downloadSpeed: [${downloadSpeed}], leftSpace: [${leftSpace}]`);
+  await pool.query(`
+  INSERT INTO 
+    server_data(gmt_create, gmt_modify, upload_speed, download_speed, server_id, left_space)
+  VALUES
+    (?, ?, ?, ?, ?, ?)
+  `, [UTF8Time(), UTF8Time(), uploadSpeed, downloadSpeed, id, leftSpace]);
+}

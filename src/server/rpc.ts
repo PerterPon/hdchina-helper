@@ -7,6 +7,7 @@ import * as rimraf from 'rimraf';
 import { execSync } from 'child_process';
 import checkDiskSpace, { DiskSpace } from 'check-disk-space';
 
+import * as mysql from '../mysql';
 import { getCurrentServerInfo } from './basic';
 
 import { TFileItem, TNetUsage, TPTServer } from "../types";
@@ -56,7 +57,7 @@ export async function freeSpace(params) {
   return checkRes;
 }
 
-export async function getNetSpeed(params) {
+export async function getNetSpeed() {
   if (2 > receiveArr.length) {
     return {
       uploadSpeed: 0,
@@ -81,7 +82,9 @@ const receiveArr: number[] = []
 const sendArr: number[] = [];
 
 export async function startWatchNetSpeed(): Promise<void> {
+  let i = 0;
   while (true) {
+    i++;
     await sleep(SPEED_MONITOR_INTERVAL * 1000);
     const netInfo: TNetUsage = parseProcNet();
     receiveArr.push(netInfo.receive);
@@ -93,7 +96,20 @@ export async function startWatchNetSpeed(): Promise<void> {
     if (sendArr.length > 100) {
       sendArr.unshift();
     }
+
+    // store every 5 min
+    if (0 === i % 60) {
+      storeServerData();
+    }
+
   }
+}
+
+async function storeServerData(): Promise<void> {
+  const leftSpace = await freeSpace({ site: '', uid: '' });
+  const netSpeed = await getNetSpeed();
+  const serverInfo: TPTServer = await getCurrentServerInfo();
+  await mysql.addServerData(serverInfo.id, netSpeed.uploadSpeed, netSpeed.downloadSpeed, leftSpace.free);
 }
 
 function allFile(folder: string): TFileItem[] {
