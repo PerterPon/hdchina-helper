@@ -5,7 +5,6 @@ import * as transmission from './transmission';
 import * as oss from './oss';
 import * as message from './message';
 import * as mysql from './mysql';
-import * as querystring from 'qs';
 import * as puppeteer from './puppeteer-basic';
 import * as log from './log';
 
@@ -21,7 +20,6 @@ import { TPageUserInfo } from './sites/basic';
 import { TItem, TPTUserInfo, TSiteData } from './types';
 
 import { main as startDownloader } from './downloader';
-import axios from 'axios';
 
 const program = new Command();
 
@@ -132,41 +130,6 @@ async function main(): Promise<void> {
     }
   }
 }
-
-// async function checkItemFree(items: TItem[]): Promise<TItem[]> {
-//   log.log(`checkItemFree, items: [${items.length}]`);
-//   const { downloadingItemStatus } = config.getConfig();
-//   const siteIds: string[] = _.map(items, 'id');
-//   const csrfToken: string = await puppeteer.getCsrfToken();
-//   const phpSessionId: string = await puppeteer.getPHPSessionId();
-//   const res = await axios({
-//     url: downloadingItemStatus,
-//     method: 'post',
-//     headers: {
-//       ...utils.ajaxHeader,
-//       cookie: `${config.userInfo.cookie}; ${phpSessionId}`
-//     },
-//     data: querystring.stringify({
-//       ids: siteIds,
-//       csrf: csrfToken
-//     }),
-//     responseType: 'json'
-//   });
-//   const { message } = res.data;
-//   for (const item of items) {
-//     const { id } = item;
-//     const timeout: string = _.get(message, `[${id}].timeout`);
-//     if (true === _.isString(timeout) && 0 < timeout.length) {
-//       const [ timeoutString ] = timeout.match(/\d\d\d\d-\d\d-\d\d\s\d\d:\d\d:\d\d/);
-//       const timeoutDate: Date = utils.parseCSTDate(timeoutString);
-//       item.free = true;
-//       item.freeUntil = timeoutDate;
-//     } else {
-//       item.free = false;
-//     }
-//   }
-//   return items;
-// }
 
 async function init(): Promise<void> {
   log.log(`init`);

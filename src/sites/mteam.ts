@@ -138,3 +138,13 @@ export async function isSticky(el: puppeteer.ElementHandle): Promise<boolean> {
   const stickyFlag = await el.$('.sticky');
   return null !== stickyFlag;
 }
+
+export async function checkFreeItem(el: puppeteer.ElementHandle): Promise<boolean> {
+  const { siteAnchor } = config.getConfig();
+  let freeItem = await el.$(siteAnchor.freeItem1up);
+  if (null === freeItem) {
+    freeItem = await  el.$(siteAnchor.freeItem2up);
+  }
+
+  return null !== freeItem;
+}

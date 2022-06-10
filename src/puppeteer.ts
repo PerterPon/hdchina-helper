@@ -282,12 +282,14 @@ export async function filterFreeItem(torrentPageUrl: string, retryTime: number =
   // the first one is title
   torrentItems = torrentItems.slice(1);
   for(const item of torrentItems) {
-    let freeItem = null;
-    let isFree: boolean = false;
-    freeItem = await item.$(siteAnchor.freeItem1up);
-    if (null === freeItem) {
-      freeItem = await item.$(siteAnchor.freeItem2up);
-    }
+    // let freeItem = null;
+    const isFree: boolean = await currentSite.checkFreeItem(item);
+    // freeItem = await item.$(siteAnchor.freeItem1up);
+    // if (null === freeItem) {
+    //   freeItem = await item.$(siteAnchor.freeItem2up);
+    // }
+
+    // const isFreeItem = await currentSite.checkFreeItem(item);
 
     const title: string = await currentSite.getTitle(item);
     const size: number = await currentSite.getSize(item);
@@ -295,22 +297,22 @@ export async function filterFreeItem(torrentPageUrl: string, retryTime: number =
     const downloaded: boolean = await currentSite.isDownloaded(item);
     log.log(`[Puppeteer] scraping item: [${title}] downloaded: [${downloaded}], size: [${filesize(size)}], publish date: [${publishDate}]`);
 
-    if( null === freeItem ) {
-      log.log(`[Puppeteer] free Item === null: [${null === freeItem}] downloaded: [${downloaded}]`);
-      isFree = false;
-    } else {
-      isFree = true;
-    }
+    // if( false === isFreeItem ) {
+    //   log.log(`[Puppeteer] free Item === null: [${null === freeItem}] downloaded: [${downloaded}]`);
+    //   isFree = false;
+    // } else {
+    //   isFree = true;
+    // }
 
     let freeTime: Date = null;
     try {
-      freeTime = await currentSite.getFreeTime(item);
+      freeTime = await currentSite.getFreeTime(item, isFree);
     } catch (e) {
       // log.log(e.message, e.stack);
     }
     try {
       if (null === freeTime) {
-        freeTime = await currentSite.getFreeTime2up(item);
+        freeTime = await currentSite.getFreeTime2up(item, isFree);
       }
     } catch (e) {
       // log.log(e.message, e.stack);

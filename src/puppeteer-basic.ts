@@ -10,7 +10,8 @@ import { TItem } from './types';
 const puppeMap = {
   'hdchina': puppeteer,
   'hdtime': puppeLite,
-  'mteam': puppeLite
+  'mteam': puppeLite,
+  'sjtu': puppeLite
 };
 
 export async function init(): Promise<void> {

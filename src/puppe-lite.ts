@@ -114,7 +114,7 @@ export async function filterFreeItem(url: string): Promise<TItem[]> {
   log.log(`[Puppe-lite] filterFreeItem url: [${url}]`);
   const freeItems: TItem[] = [];
   const configInfo = config.getConfig();
-  const { globalRetryTime, uid } = configInfo;
+
   const page: cheerio.CheerioAPI = await loadPage(url);
 
   const { siteAnchor } = configInfo;
@@ -139,12 +139,7 @@ export async function filterFreeItem(url: string): Promise<TItem[]> {
   torrentItems = torrentItems.slice(1);
   for(const item of torrentItems) {
     const $item = cheerio.load(item);
-    let freeItem = null;
-    let isFree: boolean = false;
-    freeItem = $item(siteAnchor.freeItem1up);
-    if (0 === freeItem.length) {
-      freeItem = $item(siteAnchor.freeItem2up);
-    }
+    const isFree: boolean = await currentSite.checkFreeItem($item);
 
     const title: string = await currentSite.getTitle($item);
     const size: number = await currentSite.getSize($item);
@@ -153,11 +148,7 @@ export async function filterFreeItem(url: string): Promise<TItem[]> {
     log.log(`[Puppe-lite] scraping item: [${title}] downloaded: [${downloaded}], size: [${filesize(size)}], publish date: [${publishDate}]`);
 
     let freeTime: Date = null;
-    if( 0 === freeItem.length ) {
-      log.log(`[Puppe-lite] free Item === null: [${0 === freeItem.length}] downloaded: [${downloaded}]`);
-      isFree = false;
-    } else {
-      isFree = true;
+    if (true === isFree) {
       try {
         freeTime = await currentSite.getFreeTime($item);
       } catch (e) {
@@ -170,6 +161,7 @@ export async function filterFreeItem(url: string): Promise<TItem[]> {
       } catch (e) {
         log.log(e.message, e.stack);
       }
+
     }
 
     const torrentAnchor: cheerio.Cheerio<any> = $item(siteAnchor.torrentUrlAnchor);

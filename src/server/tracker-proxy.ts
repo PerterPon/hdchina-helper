@@ -17,7 +17,8 @@ const httpsAgent = new https.Agent({ keepAlive: true });
 const siteTrackerMap = {
   'hdtime': 'tracker.hdtime.org',
   'mteam': 'tracker.m-team.cc',
-  'hdchina': 'tracker.hdchina.org'
+  'hdchina': 'tracker.hdchina.org',
+  'sjtu': 'tracker.sjtu.edu.cn'
 };
 
 const app = http.createServer(async (req, res) => {

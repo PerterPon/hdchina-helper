@@ -151,3 +151,13 @@ export async function isSticky(el: cheerio.CheerioAPI): Promise<boolean> {
   const stickyFlag = await el('.sticky');
   return 0 < stickyFlag.length;
 }
+
+export async function checkFreeItem(el: cheerio.CheerioAPI): Promise<boolean> {
+  const { siteAnchor } = config.getConfig();
+  let freeItem = el(siteAnchor.freeItem1up);
+  if (null === freeItem) {
+    freeItem = el(siteAnchor.freeItem2up);
+  }
+
+  return null !== freeItem;
+}

@@ -1,6 +1,7 @@
 
 import * as puppeteer from 'puppeteer';
 import { TItem } from '../types';
+import * as config from '../config';
 
 import * as utils from '../utils';
 
@@ -99,4 +100,12 @@ export async function isSticky(el: puppeteer.ElementHandle): Promise<boolean> {
   return null !== stickyFlag;
 }
 
+export async function checkFreeItem(el: puppeteer.ElementHandle): Promise<boolean> {
+  const { siteAnchor } = config.getConfig();
+  let freeItem = await el.$(siteAnchor.freeItem1up);
+  if (null === freeItem) {
+    freeItem = await  el.$(siteAnchor.freeItem2up);
+  }
 
+  return null !== freeItem;
+}
