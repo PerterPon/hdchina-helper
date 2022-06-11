@@ -24,8 +24,8 @@ export async function allUserInfo(params): Promise<any> {
   for (const user of users) {
     const firstSiteData = await mysql.getFirstSiteData(user.uid, user.site);
     const latestSiteDate = await mysql.getLatestSiteData(user.uid, user.site);
-    const uploaded: number = latestSiteDate.uploadCount - firstSiteData.uploadCount;
-    const userItem: any = Object.assign({}, user, uploaded);
+    const totalUpload: number = latestSiteDate.uploadCount - firstSiteData.uploadCount;
+    const userItem: any = Object.assign({}, user, {totalUpload});
 
     const dailyUserDownloadData = await getDailyLoadData(user.uid);
     const dailySiteData = await getDailySiteData(user.uid);
@@ -73,7 +73,7 @@ async function getDailyLoadData(uid?: string): Promise<{uploadCount: number; dow
 }
 
 async function getDailyServerData(serverId?: string): Promise<any[]> {
-  const yesterday: Date = moment(UTF8Time()).subtract('day', 1).toDate();
+  const yesterday: Date = moment(UTF8Time()).hour(5).toDate();
   const items = await mysql.getServerDataByTime(yesterday, serverId);
   return items;
 }

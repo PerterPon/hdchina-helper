@@ -20,7 +20,8 @@ export async function init(): Promise<void> {
   pool = mysql.createPool({
     host, user, password, database, waitForConnections, connectionLimit, queueLimit,
     acquireTimeout: 20000,
-    connectTimeout: 20000
+    connectTimeout: 20000,
+    timezone: '+08:00'
   });
   const _query = pool.query.bind(pool);
   pool.query = async function (sql, where) {
@@ -49,7 +50,7 @@ export async function storeItem(uid: string, site: string, items: TItem[]): Prom
       free_until = VALUES(free_until),
       is_free = VALUES(is_free),
       publish_date = VALUES(publish_date);
-    `, [UTF8Time(), UTF8Time(), uid, site, id, size, torrentUrl, Number(free), freeUntil, title, publishDate]);
+    `, ['NOW()', 'NOW()', uid, site, id, size, torrentUrl, Number(free), freeUntil, title, publishDate]);
   }
 };
 
@@ -87,7 +88,7 @@ export async function getFreeItems(uid: string, site: string): Promise<TItem[]> 
     ) AS temp
     WHERE
       downloader_id IS NULL;
-    `, [UTF8Time(), uid, site]);
+    `, ['NOW()', uid, site]);
   log.log(`[Mysql] get free item: [${JSON.stringify(data)}]`);
   const freeItems: TItem[] = [];
   for (const item of data) {
@@ -113,7 +114,7 @@ export async function storeDownloadAction(site: string, siteId: string, uid: str
   await pool.query(`
   INSERT INTO downloader(gmt_create, gmt_modify, uid, trans_id, torrent_hash, site, site_id, server_id)
   VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-  `, [UTF8Time(), UTF8Time(), uid, transId, torrentHash, site, siteId, serverId]);
+  `, ['NOW()', 'NOW()', uid, transId, torrentHash, site, siteId, serverId]);
 }
 
 export async function updateTorrent(params: any, where: any): Promise<void> {
@@ -272,7 +273,7 @@ export async function storeSiteInfo(
   INSERT INTO 
     site_data(gmt_create, gmt_modify, site, uid, share_ratio, download_count, upload_count, magic_point, upload_speed, download_speed)
   VALUE(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `, [UTF8Time(), UTF8Time(), site, uid, shareRatio || 0, downloadCount || 0, uploadCount || 0, magicPoint || 0, uploadSpeed || 0, downloadSpeed]);
+  `, ['NOW()', 'NOW()', site, uid, shareRatio || 0, downloadCount || 0, uploadCount || 0, magicPoint || 0, uploadSpeed || 0, downloadSpeed]);
 }
 
 export async function getUserInfoByQuery(query: any): Promise<TPTUserInfo> {
@@ -573,7 +574,7 @@ export async function addLog(uid: string, site: string, logLink: string, message
     logs(gmt_create, gmt_modify, uid, site, log_link, messages)
   VALUES
     (?, ?, ?, ?, ?, ?)
-  `, [UTF8Time(), UTF8Time(), uid, site, logLink, messages]);
+  `, ['NOW()', 'NOW()', uid, site, logLink, messages]);
 }
 
 export async function addServerData(id: number, uploadSpeed: number, downloadSpeed: number, leftSpace: number): Promise<void> {
@@ -583,17 +584,26 @@ export async function addServerData(id: number, uploadSpeed: number, downloadSpe
     server_data(gmt_create, gmt_modify, upload_speed, download_speed, server_id, left_space)
   VALUES
     (?, ?, ?, ?, ?, ?)
-  `, [UTF8Time(), UTF8Time(), uploadSpeed, downloadSpeed, id, leftSpace]);
+  `, ['NOW()', 'NOW()', uploadSpeed, downloadSpeed, id, leftSpace]);
 }
 
 export async function getServerDataByTime(time: Date, serverId?: string): Promise<any[]> {
   const [res]: any = await pool.query(`
-  SELECT *
+  SELECT 
+    server_data.gmt_create as gmt_create,
+    server_data.upload_speed as upload_speed,
+    server_data.download_speed as download_speed,
+    server_data.left_space as left_space,
+    servers.name as name
   FROM
     server_data
+  LEFT JOIN
+    servers
+  ON
+    server_data.server_id = servers.id
   WHERE
-    gmt_create > ? ${serverId ? ' AND server_id = ?' : ''}
-  ORDER BY gmt_create
+    server_data.gmt_create > ? ${serverId ? ' AND server_data.server_id = ?' : ''}
+  ORDER BY server_data.gmt_create;
   `, [time, serverId]);
 
   return res;
