@@ -73,7 +73,7 @@ async function getDailyLoadData(uid?: string): Promise<{uploadCount: number; dow
 }
 
 async function getDailyServerData(serverId?: string): Promise<any[]> {
-  const yesterday: Date = moment(UTF8Time()).hour(5).toDate();
+  const yesterday: Date = moment(UTF8Time()).subtract('day', 1).toDate();
   const items = await mysql.getServerDataByTime(yesterday, serverId);
   return items;
 }

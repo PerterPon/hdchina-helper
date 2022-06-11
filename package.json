@@ -65,7 +65,7 @@
 		"test-cov": "make test-cov",
 		"dev": "make dev",
 		"start": "make start",
-		"build": "rm -rf ./build && tsc && cp -r etc build && cp version build",
+		"build": "rm -rf ./build && tsc && cp -r etc build && cp version build && cp -r html build",
 		"pub": "node add-version && git add version && git commit version -m 'add version' && git push origin master",
 		"deploy": "node build/deploy-all"
 	}
