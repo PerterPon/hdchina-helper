@@ -282,27 +282,13 @@ export async function filterFreeItem(torrentPageUrl: string, retryTime: number =
   // the first one is title
   torrentItems = torrentItems.slice(1);
   for(const item of torrentItems) {
-    // let freeItem = null;
     const isFree: boolean = await currentSite.checkFreeItem(item);
-    // freeItem = await item.$(siteAnchor.freeItem1up);
-    // if (null === freeItem) {
-    //   freeItem = await item.$(siteAnchor.freeItem2up);
-    // }
-
-    // const isFreeItem = await currentSite.checkFreeItem(item);
 
     const title: string = await currentSite.getTitle(item);
     const size: number = await currentSite.getSize(item);
     const publishDate: Date = await currentSite.publishDate(item);
     const downloaded: boolean = await currentSite.isDownloaded(item);
-    log.log(`[Puppeteer] scraping item: [${title}] downloaded: [${downloaded}], size: [${filesize(size)}], publish date: [${publishDate}]`);
-
-    // if( false === isFreeItem ) {
-    //   log.log(`[Puppeteer] free Item === null: [${null === freeItem}] downloaded: [${downloaded}]`);
-    //   isFree = false;
-    // } else {
-    //   isFree = true;
-    // }
+    log.log(`[Puppeteer] scraping item: [${title}] is free: [${isFree}] downloaded: [${downloaded}], size: [${filesize(size)}], publish date: [${publishDate}]`);
 
     let freeTime: Date = null;
     try {
@@ -317,6 +303,8 @@ export async function filterFreeItem(torrentPageUrl: string, retryTime: number =
     } catch (e) {
       // log.log(e.message, e.stack);
     }
+
+    console.log(freeTime);
 
     let torrentUrl: string = await item.$eval(siteAnchor.torrentUrlAnchor, (el) => (el.parentNode as HTMLAnchorElement).getAttribute('href'))
     torrentUrl = `${configInfo.domain}/${torrentUrl}`;
