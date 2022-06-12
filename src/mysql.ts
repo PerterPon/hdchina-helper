@@ -435,7 +435,7 @@ export async function deleteDownloaderItem(uid: string, site: string, serverId: 
 }
 
 export async function getLatestSiteData(uid: string, site: string): Promise<TSiteData> {
-  log.log(`[Mysql] getLatestSiteData`);
+  log.log(`[Mysql] getLatestSiteData, uid: [${uid}], site: [${site}]`);
   const [res]: any = await pool.query(`
   SELECT
     *
@@ -459,7 +459,7 @@ export async function getLatestSiteData(uid: string, site: string): Promise<TSit
 }
 
 export async function getFirstSiteData(uid: string, site: string): Promise<TSiteData> {
-  log.log(`[Mysql] getLatestSiteData`);
+  log.log(`[Mysql] getLatestSiteData, uid: [${uid}], site: [${site}]`);
   const [res]: any = await pool.query(`
   SELECT
     *
@@ -573,8 +573,8 @@ export async function addLog(uid: string, site: string, logLink: string, message
   INSERT INTO 
     logs(gmt_create, gmt_modify, uid, site, log_link, messages)
   VALUES
-    (?, ?, ?, ?, ?, ?)
-  `, ['NOW()', 'NOW()', uid, site, logLink, messages]);
+    (NOW(), NOW(), ?, ?, ?, ?)
+  `, [uid, site, logLink, messages]);
 }
 
 export async function addServerData(id: number, uploadSpeed: number, downloadSpeed: number, leftSpace: number): Promise<void> {
@@ -583,8 +583,8 @@ export async function addServerData(id: number, uploadSpeed: number, downloadSpe
   INSERT INTO 
     server_data(gmt_create, gmt_modify, upload_speed, download_speed, server_id, left_space)
   VALUES
-    (?, ?, ?, ?, ?, ?)
-  `, ['NOW()', 'NOW()', uploadSpeed, downloadSpeed, id, leftSpace]);
+    (NOW(), NOW(), ?, ?, ?, ?)
+  `, [uploadSpeed, downloadSpeed, id, leftSpace]);
 }
 
 export async function getServerDataByTime(time: Date, serverId?: string): Promise<any[]> {
