@@ -30,6 +30,7 @@ export class QbittorrentClient implements IClient {
     client.deleteAndRemove = promisify(client.deleteAndRemove);
     client.addTorrentURL = promisify(client.addTorrentURL);
     client.addTags = promisify(client.addTags);
+    client.getTorrents = promisify(client.getTorrents);
     await client.login();
     this.client = client;
   }
@@ -75,6 +76,10 @@ export class QbittorrentClient implements IClient {
         return await this.addTorrentUrl(url, savePath, torrentHash, tag, ++retryTime);
       }
     }
+  }
+
+  async getTorrents(): Promise<any> {
+    return this.client.getTorrents();
   }
 
   async removeTorrent(id: string): Promise<void> {

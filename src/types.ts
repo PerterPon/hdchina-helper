@@ -85,6 +85,7 @@ export interface TQbitTorrent {
   addTorrentFileContent(...params: any[]): Promise<any>
   addTorrentURL(...params: any[]): Promise<any>
   addTags(...params: any[]): Promise<any>
+  getTorrents(...params: any[]): Promise<any>;
 }
 
 export interface TSiteData {

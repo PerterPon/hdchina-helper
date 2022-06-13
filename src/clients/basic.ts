@@ -14,6 +14,8 @@ export interface IClient {
 
   removeTorrent(id: string): Promise<void>;
 
+  getTorrents(): Promise<any>;
+
 }
 
 export async function createClientByServer(serverInfo: TPTServer): Promise<IClient> {

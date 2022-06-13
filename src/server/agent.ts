@@ -81,39 +81,42 @@ export async function deploy(): Promise<any> {
 
 export async function deleteUser(params): Promise<string> {
   const { uid, site } = params;
-  const allFileItems: TFileItem[] = await allFileItem(params);
   const serverInfo: TPTServer = await getCurrentServerInfo();
   const targetFolder: string = path.join(serverInfo.fileDownloadPath, site, uid);
+
+  // 1. delete from client
   try {
-    execSync(`rm -rf ${targetFolder}`);
+    await deleteFromClient(uid, site, serverInfo);
   } catch (e) {
     console.log(e);
   }
 
+  // 2. delete from disk
   try {
-    await deleteFromClient(uid, site, allFileItems, serverInfo);
+    execSync(`rm -rf ${targetFolder}`);
   } catch (e) {
     console.log(e);
   }
   return 'done';
 }
 
-async function deleteFromClient(uid: string ,site: string, fileItems: TFileItem[], serverInfo: TPTServer): Promise<void> {
-  if (0 === fileItems.length) {
-    return;
-  }
-
+async function deleteFromClient(uid: string ,site: string, serverInfo: TPTServer): Promise<void> {
   const client: IClient = await createClientByServer(serverInfo);
-  const siteIds: string[] = _.map(fileItems, 'siteId');
-  const items: TItem[] = await mysql.getItemBySiteIds(uid, site, siteIds);
-  
-  for (const item of items) {
-    try {
-      console.log(`removing item: [${item.title}] for user: [${uid}]`);
-      await client.removeTorrent(item.transHash);
-    } catch (e) {
-      console.log(e);
+  const allTorrents = await client.getTorrents();
+
+  let removedTorrents = 0;
+  for (const item of allTorrents) {
+    const { save_path, tags, hash } = item;
+    const tag = `${site}/${uid}`;
+    if ( -1 < save_path.indexOf(tag) || -1 < tags.indexOf(tag)) {
+      removedTorrents++;
+      try {
+        console.log(`removing item: [${site}/${uid}/${hash}]`);
+        await client.removeTorrent(hash);
+      } catch (e) {
+        console.log(e);
+      }
     }
   }
-  console.log(`user: [${uid}] total remove item count: [${items.length}]`);
+  console.log(`user: [${uid}] total remove item count: [${removedTorrents}]`);
 }

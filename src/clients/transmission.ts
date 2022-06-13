@@ -49,4 +49,8 @@ export class TransmissionClient implements IClient {
   async removeTorrent(id: string): Promise<void> {
     await this.client.remove(id, true);
   }
+
+  async getTorrents(): Promise<any> {
+    return [];
+  }
 }
