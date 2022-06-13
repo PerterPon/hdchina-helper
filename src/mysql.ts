@@ -308,7 +308,8 @@ export async function getAllUser(): Promise<TPTUserInfo[]> {
     *
   FROM
     users
-  WHERE done = 0;
+  ORDER BY
+    done, gmt_create;
   `);
   const users: TPTUserInfo[] = [];
   for (const item of res) {
@@ -318,7 +319,7 @@ export async function getAllUser(): Promise<TPTUserInfo[]> {
 }
 
 function parseUserInfoFromItem(item): TPTUserInfo {
-  const { cookie, vip, site, uid, upload_count, nickname, increase_rate, paid, bind_server, cycle_time, rss_passkey, user_data_dir, site_data_only, vip_normal_item_count, proxy, proxy_addr } = item;
+  const { scraper_server, done, cookie, vip, site, uid, upload_count, nickname, increase_rate, paid, bind_server, cycle_time, rss_passkey, user_data_dir, site_data_only, vip_normal_item_count, proxy, proxy_addr } = item;
   const servers: string[] = bind_server.split(',');
   const numServers: number[] = [];
   for (let i = 0; i < servers.length; i++) {
@@ -337,7 +338,9 @@ function parseUserInfoFromItem(item): TPTUserInfo {
     vipNormalItemCount: vip_normal_item_count,
     proxy: Boolean(proxy),
     proxyAddr: proxy_addr,
-    increaseRate: increase_rate
+    increaseRate: increase_rate,
+    done: Boolean(done),
+    scraperServer: scraper_server
   };
   return userInfo;
 }
@@ -372,14 +375,19 @@ export async function getServers(uid: string, serverIds: number[]): Promise<TPTS
   return servers;
 }
 
-export async function getAllServers(): Promise<TPTServer[]> {
+export async function getAllServers(serverIds?: number[]): Promise<TPTServer[]> {
   log.log(`[Mysql] getAllServers`);
   const [res]: any = await pool.query(`
   SELECT
     *
   FROM
     servers
-  `);
+  WHERE
+    1 = 1
+  ${
+    serverIds ? ' AND id IN (?)' : ''
+  }
+  `, [serverIds]);
   const servers: TPTServer[] = [];
   for (const item of res) {
     const { id, ip, port, username, password, type, box, file_download_path, min_space_left, min_stay_file_size, proxy, mac_address, agent_port, node_addr, proj_addr } = item;
@@ -650,4 +658,36 @@ export async function getUserLogByTime(time: Date, uid?: string, site?: string):
   ORDER BY gmt_create DESC;
   `, [time, uid, site]);
   return res;
+}
+
+export async function updateUser(params, where): Promise<void> {
+  log.log(`[Mysql] updateUser, params: [${JSON.stringify(params)}], where: [${JSON.stringify(where)}]`);
+  const paramKeys: string[] = Object.keys(params);
+  const whereKeys: string[] = Object.keys(where);
+  if (0 === paramKeys.length || 0 === whereKeys.length) {
+    log.log(`[WARN] [Mysql] trying to update updateUser but params invalid!`);
+    return;
+  }
+
+  const whereParam = [];
+  let sql = `
+  UPDATE
+    users
+  SET
+  `;
+  let first: boolean = true;
+  for (const key in params) {
+    if (false === first) {
+      sql += ' , ';
+    }
+    first = false;
+    sql += ` ${key}=? `;
+    whereParam.push(params[key]);
+  }
+  sql += ' WHERE 1 = 1 ';
+  for (const key in where) {
+    sql += ` AND ${key}=? `;
+    whereParam.push(where[key]);
+  }
+  await pool.query(sql, whereParam);
 }

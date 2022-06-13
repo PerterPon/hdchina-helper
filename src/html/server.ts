@@ -10,7 +10,8 @@ import * as config from '../config';
 import * as mysql from '../mysql';
 import * as utils from '../utils';
 
-import * as apis from './api';
+import * as get from './get';
+import * as post from './post';
 
 const version = utils.getVersion();
 
@@ -43,7 +44,7 @@ async function start(): Promise<void> {
     console.log(`[${utils.displayTime()}] request: [${ctx.url}] cost time: [${costTime}ms]`);
   });
 
-  router.post('/api', onMethod.bind(undefined, apis));
+  router.post('/api', onMethod.bind(undefined, Object.assign({}, get, post)));
 
   app.use(router.routes());
   app.use(router.allowedMethods());
@@ -56,7 +57,8 @@ async function start(): Promise<void> {
 async function init(): Promise<void> {
   await config.init();
   await mysql.init();
-  await apis.init();
+  await get.init();
+  await post.init();
 }
 
 async function onMethod(targetMethods, ctx: Koa.Context): Promise<void> {
@@ -69,13 +71,22 @@ async function onMethod(targetMethods, ctx: Koa.Context): Promise<void> {
     }
     ctx.status = 404;
   } else {
-    const resData = await tarMethod(data);
-    ctx.body = {
-      success: true,
-      message: 'ok',
-      data: resData,
-      version,
-      method,
+    try {
+      const resData = await tarMethod(data);
+      ctx.body = {
+        success: true,
+        message: 'ok',
+        data: resData,
+        version,
+        method,
+      }
+    } catch (e) {
+      ctx.body = {
+        success: false,
+        message: e.message,
+        version,
+        method
+      }
     }
   }
 }

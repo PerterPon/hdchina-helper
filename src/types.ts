@@ -33,6 +33,8 @@ export interface TPTUserInfo {
   proxy: boolean;
   proxyAddr: string;
   increaseRate: number;
+  done: boolean;
+  scraperServer: number;
 }
 
 export interface TPTServer {
