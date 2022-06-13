@@ -53,4 +53,11 @@ export class TransmissionClient implements IClient {
   async getTorrents(): Promise<any> {
     return [];
   }
+
+  async addTags(torrentHash: string, tag: string): Promise<void> {
+    return;
+  }
+
 }
+
+

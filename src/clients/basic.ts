@@ -16,6 +16,8 @@ export interface IClient {
 
   getTorrents(): Promise<any>;
 
+  addTags(torrentHash: string, tag: string): Promise<void>;
+
 }
 
 export async function createClientByServer(serverInfo: TPTServer): Promise<IClient> {
