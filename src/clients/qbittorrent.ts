@@ -56,6 +56,7 @@ export class QbittorrentClient implements IClient {
   }
 
   async addTorrentUrl(url: string, savePath: string, torrentHash: string, tag: string, retryTime: number = 0): Promise<{ id: string; }> {
+    log.log(`[QBittorrent] addTorrentUrl, url: [${url}] savePath: [${savePath}], torrentHash: [${torrentHash}], tag: [${tag}], retryTime: [${retryTime}]`);
     try {
       const res = await this.client.addTorrentURL(url, {
         savepath: savePath
@@ -77,10 +78,12 @@ export class QbittorrentClient implements IClient {
   }
 
   async removeTorrent(id: string): Promise<void> {
+    log.log(`[QBittorrent] removeTorrent, id: [${id}]`);
     await this.client.deleteAndRemove(id);
   }
 
   async addTags(torrentHash: string, tag: string): Promise<void> {
+    log.log(`[QBittorrent] addTags, torrentHash: [${torrentHash}], tag: [${tag}]`);
     await this.client.addTags(torrentHash, tag);
   }
 }

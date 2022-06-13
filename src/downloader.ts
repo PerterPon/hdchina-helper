@@ -127,6 +127,7 @@ async function downloadItem(items: TItem[]): Promise<TItem[]> {
       const torrentContent: Buffer = fs.readFileSync(fileFullName);
       const torrentDetailInfo = parseTorrent(torrentContent);
       const { infoHash } = torrentDetailInfo;
+      item.transHash = infoHash;
       await mysql.updateTorrent({
         torrent_hash: infoHash
       }, {
@@ -235,7 +236,7 @@ async function addItemToTransmission(items: TItem[]): Promise<TItem[]> {
 }
 
 async function doAddToTransmission(serverId: number, siteId: string, torrentHash: string): Promise<{transId: string; hash: string; serverId: number}> {
-  log.log(`doAddToTransmission server id: [${serverId}], siteId: [${siteId}]`);
+  log.log(`doAddToTransmission server id: [${serverId}], siteId: [${siteId}], torrentHash: [${torrentHash}]`);
   let res: {transId: string; hash: string; serverId: number; } = null;
   const userInfo: TPTUserInfo = config.userInfo;
   const fileFullName: string = path.join(tempFolder, `${config.site}_${siteId}_${config.uid}.torrent`);
@@ -278,13 +279,6 @@ async function storeDownloadAction(items: TItem[]): Promise<void> {
       continue;
     }
     const { site, uid } = item;
-    await mysql.updateTorrent({
-      torrent_hash: transHash
-    }, {
-      uid: config.uid,
-      site: config.site,
-      site_id: id
-    }, );
     await mysql.storeDownloadAction(site, id, uid, transId, transHash, serverId);
   }
 

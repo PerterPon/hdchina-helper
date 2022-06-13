@@ -202,7 +202,7 @@ export async function addTorrent(content: Buffer, serverId: number, fileId: stri
 
 export async function addTorrentUrl(url: string, serverId: number, fileId: string, torrentHash: string, tag: string): Promise<{transId: string; hash: string; serverId: number;}> {
   const serverConfig = getServerConfig(serverId);
-  log.log(`[Transmission] addTorrentUrl: [${url}], server id: [${serverId}], download dir: [${serverConfig.fileDownloadPath}]`);
+  log.log(`[Transmission] addTorrentUrl: [${url}], server id: [${serverId}], download dir: [${serverConfig.fileDownloadPath}], fileId: [${fileId}], torrentHash: [${torrentHash}], tag: [${tag}]`);
 
   const client: IClient = getServer(serverId);
 
