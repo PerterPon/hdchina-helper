@@ -22,7 +22,6 @@
 		"mocha": "5.2.0"
 	},
 	"dependencies": {
-		"@electorrent/node-qbittorrent": "^1.1.2",
 		"ali-oss": "^6.17.1",
 		"axios": "^0.26.1",
 		"chalk": "~2.4.1",
@@ -47,6 +46,7 @@
 		"moment-timezone": "^0.5.34",
 		"mysql2": "^2.3.3",
 		"node-fetch": "^3.2.4",
+		"node-qbittorrent": "^2.0.0",
 		"parse-torrent": "^9.1.5",
 		"pm2": "^2.10.4",
 		"puppeteer": "*",

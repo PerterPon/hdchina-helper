@@ -1,5 +1,5 @@
 
-const Qbittorrent = require('@electorrent/node-qbittorrent');
+const Qbittorrent = require('node-qbittorrent');
 
 import { TPTServer, TQbitTorrent, TTransmission } from "src/types";
 import * as _ from 'lodash';
@@ -29,6 +29,7 @@ export class QbittorrentClient implements IClient {
     client.addTorrentFileContent = promisify(client.addTorrentFileContent);
     client.deleteAndRemove = promisify(client.deleteAndRemove);
     client.addTorrentURL = promisify(client.addTorrentURL);
+    client.addTags = promisify(client.addTags);
     await client.login();
     this.client = client;
   }
@@ -54,15 +55,15 @@ export class QbittorrentClient implements IClient {
     }
   }
 
-  async addTorrentUrl(url: string, savePath: string, torrentHash: string, retryTime: number = 0): Promise<{ id: string; }> {
+  async addTorrentUrl(url: string, savePath: string, torrentHash: string, tag: string, retryTime: number = 0): Promise<{ id: string; }> {
     try {
       const res = await this.client.addTorrentURL(url, {
         savepath: savePath
       });
+      await this.addTags(torrentHash, tag);
       return {
         id: torrentHash
       }
-      return res;
     } catch(e) {
       const configInfo = config.getConfig();
       const { globalRetryTime } = configInfo;
@@ -70,12 +71,16 @@ export class QbittorrentClient implements IClient {
         log.log(`[Qbittorrent] add torrent error reached [${globalRetryTime}] times`);
         throw e;
       } else {
-        return await this.addTorrentUrl(url, savePath, torrentHash, ++retryTime);
+        return await this.addTorrentUrl(url, savePath, torrentHash, tag, ++retryTime);
       }
     }
   }
 
   async removeTorrent(id: string): Promise<void> {
     await this.client.deleteAndRemove(id);
+  }
+
+  async addTags(torrentHash: string, tag: string): Promise<void> {
+    await this.client.addTags(torrentHash, tag);
   }
 }
