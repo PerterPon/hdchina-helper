@@ -60,9 +60,9 @@ export class QbittorrentClient implements IClient {
     log.log(`[QBittorrent] addTorrentUrl, url: [${url}] savePath: [${savePath}], torrentHash: [${torrentHash}], tag: [${tag}], retryTime: [${retryTime}]`);
     try {
       const res = await this.client.addTorrentURL(url, {
-        savepath: savePath
+        savepath: savePath,
+        tags: tag
       });
-      await this.addTags(torrentHash, tag);
       return {
         id: torrentHash
       }
