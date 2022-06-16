@@ -56,6 +56,10 @@ export async function deleteUser(params): Promise<void> {
   }
 }
 
+export async function addUser(params): Promise<void> {
+  await mysql.addUser(params);
+}
+
 async function findServer(serverId: number): Promise<TPTServer> {
   const server: TPTServer[] = await mysql.getAllServers([serverId]);
   if (0 === server.length) {

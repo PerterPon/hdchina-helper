@@ -691,3 +691,12 @@ export async function updateUser(params, where): Promise<void> {
   }
   await pool.query(sql, whereParam);
 }
+
+export async function addUser(params): Promise<void> {
+  log.log(`[Mysql] addUser, params: [${JSON.stringify(params)}]`);
+  const { uid, nickname, site, cookie, uploadCount, paid, cycleTime, rssPasskey, vip, bindServer, increaseRate, tbName, proxy, proxyAddr } = params;
+  await pool.query(`
+  INSERT INTO user (gmt_create, gmt_modify, site, uid, cookie, nickname, upload_count, paid, cycle_time, rss_passkey, vip, bind_server, done, increase_rate, tb_name, proxy, proxy_addr)
+  VALUES(NOW(), NOW(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+  `, [site, uid, cookie, nickname, uploadCount, paid, cycleTime, rssPasskey, vip, bindServer, 0, increaseRate, tbName, proxy, proxyAddr]);
+}
