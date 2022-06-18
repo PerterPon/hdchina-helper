@@ -11,7 +11,8 @@ const puppeMap = {
   'hdchina': puppeteer,
   'hdtime': puppeLite,
   'mteam': puppeLite,
-  'sjtu': puppeLite
+  'sjtu': puppeLite,
+  'audiences': puppeLite
 };
 
 export async function init(): Promise<void> {
