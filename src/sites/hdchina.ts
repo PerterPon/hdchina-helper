@@ -1,6 +1,6 @@
 
 import * as puppeteer from 'puppeteer';
-import { TItem } from '../types';
+import { TItem, TPTUserInfo } from '../types';
 import * as config from '../config';
 
 import * as utils from '../utils';
@@ -71,8 +71,8 @@ export async function getSize(el: puppeteer.ElementHandle): Promise<number> {
   return size;
 }
 
-export async function getDownloadUrl(item: TItem): Promise<string> {
-  return `${item.torrentUrl}&uid=${item.uid}`;
+export async function getDownloadUrl(item: TItem, userInfo: TPTUserInfo): Promise<string> {
+  return `${item.torrentUrl}&uid=${item.uid}&passkey=${userInfo.passkey}`;
 }
 
 export async function getDownloadHeader(): Promise<any> {

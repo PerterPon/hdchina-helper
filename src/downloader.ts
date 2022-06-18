@@ -115,13 +115,14 @@ async function downloadItem(items: TItem[]): Promise<TItem[]> {
 
     try {
       // not exist, download
-      const downloadLink = await getCurrentSite().getDownloadUrl(item);
+      const downloadLink = await getCurrentSite().getDownloadUrl(item, config.userInfo);
       log.log(`downloading file: [${downloadLink}]`);
 
       const fileWriter = fs.createWriteStream(fileFullName);
-      // const downloadHeader = await siteMap[config.site].getDownloadHeader();
-      const res: AxiosResponse = await axios.get(`${downloadLink}&passkey=${userInfo.passkey}`, {
-        responseType: 'stream'
+      const downloadHeader = await siteMap[config.site].getDownloadHeader();
+      const res: AxiosResponse = await axios.get(downloadLink, {
+        responseType: 'stream',
+        headers: downloadHeader
       });
       await utils.writeFile(res.data, fileWriter);
       const torrentContent: Buffer = fs.readFileSync(fileFullName);
