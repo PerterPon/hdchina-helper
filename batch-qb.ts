@@ -9,7 +9,7 @@ async function start() {
   await config.init();
   await mysql.init();
 
-  const servers: TPTServer[] = await mysql.getAllServers();
+  const servers: TPTServer[] = (await mysql.getAllServers()).splice(1);
 
   for(const server of servers) {
     const client: IClient = await createClientByServer(server);

@@ -17,7 +17,8 @@ import * as moment from 'moment-timezone';
 
 import { TPageUserInfo } from './sites/basic';
 
-import { TItem, TPTUserInfo, TSiteData } from './types';
+import { TItem, TPTServer, TPTUserInfo, TSiteData } from './types';
+import { createClientByServer, IClient } from './clients/basic';
 
 import { main as startDownloader } from './downloader';
 
@@ -51,6 +52,11 @@ async function start(): Promise<void> {
 
     const endDate: Date = new Date();
     const diffTime: number = endDate.getTime() - startDate.getTime();
+    try {
+      await tryAddTags2QB();
+    } catch (e) {
+      log.log(e);
+    }
     log.message(`current task take time: [${(diffTime / 1000 / 60).toFixed(2)}m]`);
     await message.sendMessage();
     await utils.sleep(5 * 1000);
@@ -157,6 +163,24 @@ async function initTempFolder(): Promise<void> {
   mkdirpSync(fullTempFolder);
   tempFolder = fullTempFolder;
   config.setTempFolder(tempFolder);
+}
+
+async function tryAddTags2QB(): Promise<void> {
+  log.log(`try add tags to qb`);
+  const servers: TPTServer[] = transmission.servers;
+  for(const server of servers) {
+    const client: IClient = await createClientByServer(server);
+    const torrents = await client.getTorrents();
+    for (const torrent of torrents) {
+      const { save_path, hash } = torrent;
+      const items = save_path.split('\/');
+      items.pop();
+      const siteId = items.pop();
+      const uid = items.pop();
+      const site = items.pop();
+      await client.addTags(hash, `${site}/${uid}`);
+    }
+  }
 }
 
 start();
