@@ -32,7 +32,7 @@ export async function init(): Promise<void> {
   const userDataDir: string = await getUserDataDir();
   await mkdirp(userDataDir);
   browser = await puppeteer.launch({
-    headless: false,
+    headless: true,
     executablePath: null,
     ignoreDefaultArgs: [],
     args: [
