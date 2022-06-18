@@ -12,7 +12,8 @@ const puppeMap = {
   'hdtime': puppeLite,
   'mteam': puppeLite,
   'sjtu': puppeLite,
-  'audiences': puppeLite
+  'audiences': puppeLite,
+  'ourbits': puppeLite
 };
 
 export async function init(): Promise<void> {

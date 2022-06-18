@@ -15,13 +15,15 @@ import * as hdchinaLite from './hdchina-lite';
 import * as sjtuLite from './sjtu-lite'
 import * as config from '../config';
 import * as audiencesLite from './audiences-lite';
+import * as ourbitsLite from './ourbits-lite';
 
 export const siteMap = {
   hdchina: hdchina,
   mteam: mteamLite,
   hdtime: hdtimeLite,
   sjtu: sjtuLite,
-  audiences: audiencesLite
+  audiences: audiencesLite,
+  ourbits: ourbitsLite
 };
 
 export function getCurrentSite() {
