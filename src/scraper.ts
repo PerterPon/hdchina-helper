@@ -172,13 +172,16 @@ async function tryAddTags2QB(): Promise<void> {
     const client: IClient = await createClientByServer(server);
     const torrents = await client.getTorrents();
     for (const torrent of torrents) {
-      const { save_path, hash } = torrent;
+      const { save_path, hash, tags } = torrent;
       const items = save_path.split('\/');
       items.pop();
       const siteId = items.pop();
       const uid = items.pop();
       const site = items.pop();
-      await client.addTags(hash, `${site}/${uid}`);
+      const tag = `${site}/${uid}`;
+      if (-1 === tags.indexOf(tag)) {
+        await client.addTags(hash, `${site}/${uid}`);
+      }
     }
   }
 }
