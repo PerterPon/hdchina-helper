@@ -20,7 +20,8 @@ const siteTrackerMap = {
   'hdchina': 'tracker.hdchina.org',
   'sjtu': 'tracker.sjtu.edu.cn',
   'audiences': 't.audiences.me',
-  'ourbits': 'ourbits.club'
+  'ourbits': 'ourbits.club',
+  'pterclub': 'tracker.pterclub.com'
 };
 
 const app = http.createServer(async (req, res) => {

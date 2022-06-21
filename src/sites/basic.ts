@@ -16,6 +16,7 @@ import * as sjtuLite from './sjtu-lite'
 import * as config from '../config';
 import * as audiencesLite from './audiences-lite';
 import * as ourbitsLite from './ourbits-lite';
+import * as pterclubLite from './pterclub-lite';
 
 export const siteMap = {
   hdchina: hdchina,
@@ -23,7 +24,8 @@ export const siteMap = {
   hdtime: hdtimeLite,
   sjtu: sjtuLite,
   audiences: audiencesLite,
-  ourbits: ourbitsLite
+  ourbits: ourbitsLite,
+  pterclub: pterclubLite
 };
 
 export function getCurrentSite() {
