@@ -174,8 +174,10 @@ async function tryAddTags2QB(): Promise<void> {
     for (const torrent of torrents) {
       const { save_path, hash, tags } = torrent;
       const items = save_path.split('\/');
-      items.pop();
-      const siteId = items.pop();
+      let siteId = items.pop();
+      if (1 >= siteId.length) {
+        siteId = items.pop();
+      }
       const uid = items.pop();
       const site = items.pop();
       const tag = `${site}/${uid}`;
