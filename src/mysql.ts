@@ -56,7 +56,7 @@ export async function storeItem(uid: string, site: string, items: TItem[]): Prom
   }
 };
 
-export async function getFreeItems(uid: string, site: string): Promise<TItem[]> {
+export async function getFreeItems(uid: string, site: string, minSize: number): Promise<TItem[]> {
   log.log(`[Mysql] get free item, uid: [${uid}], site: [${site}]`);
   const [data]: any = await pool.query(`
     SELECT *
@@ -86,11 +86,12 @@ export async function getFreeItems(uid: string, site: string): Promise<TItem[]> 
         torrents.is_free = 1 AND
         torrents.free_until > NOW() AND
         torrents.uid = ? AND
-        torrents.site = ?
+        torrents.site = ? AND
+        size >= ?
     ) AS temp
     WHERE
       downloader_id IS NULL;
-    `, [uid, site]);
+    `, [uid, site, minSize]);
   log.log(`[Mysql] get free item: [${JSON.stringify(data)}]`);
   const freeItems: TItem[] = [];
   for (const item of data) {

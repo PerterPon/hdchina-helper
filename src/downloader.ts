@@ -44,8 +44,17 @@ export async function start(): Promise<void> {
 
 export async function main(): Promise<void> {
   await initTempFolder();
+
+  const configInfo = config.getConfig();
+  const userInfo: TPTUserInfo = config.userInfo;
+  const { rss, vip } = userInfo;
+  let freeFilterMinSize = 0;
+  if (true === vip && true === rss) {
+    const minSize = configInfo.minSize;
+    freeFilterMinSize = minSize;
+  }
   // 5.
-  const canDownloadItem: TItem[] = await mysql.getFreeItems(config.uid, config.site);
+  const canDownloadItem: TItem[] = await mysql.getFreeItems(config.uid, config.site, freeFilterMinSize);
 
   // 6. 
   const downloadSuccessItem: TItem[] = await downloadItem(canDownloadItem as any);
