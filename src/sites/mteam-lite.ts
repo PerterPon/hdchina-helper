@@ -161,3 +161,9 @@ export async function checkFreeItem(el: cheerio.CheerioAPI): Promise<boolean> {
 
   return null !== freeItem;
 }
+
+export async function getRssLink(): Promise<string> {
+  const { rssLink } = config.getConfig();
+  const userInfo: TPTUserInfo = config.userInfo;
+  return `${rssLink}&passkey=${userInfo.passkey}`;
+}

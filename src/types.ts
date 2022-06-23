@@ -35,6 +35,7 @@ export interface TPTUserInfo {
   increaseRate: number;
   done: boolean;
   scraperServer: number;
+  rss: boolean;
 }
 
 export interface TPTServer {

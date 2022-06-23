@@ -37,14 +37,14 @@ export async function getUserInfo(url: string): Promise<TPageUserInfo> {
 }
 
 export async function filterVIPItem(url: string): Promise<TItem[]> {
-  return await puppeMap[config.site].filterVIPItem(url);
-  // const userInfo: TPTUserInfo = config.userInfo;
-  // const { vip } = userInfo;
-  // if (true === vip) {
-  //   return await vipMap[config.site].filterVIPItem(url);
-  // } else {
-  //   return await puppeMap[config.site].filterVIPItem(url);
-  // }
+  const userInfo: TPTUserInfo = config.userInfo;
+  const { vip, rss } = userInfo;
+  const vipMethod = vipMap[config.site];
+  if (true === rss && true === vip && undefined !== vipMethod) {
+    return await vipMap[config.site].filterVIPItem(url);
+  } else {
+    return await puppeMap[config.site].filterVIPItem(url);
+  }
 }
 
 export async function filterFreeItem(url: string): Promise<TItem[]> {

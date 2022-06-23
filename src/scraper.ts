@@ -75,7 +75,7 @@ async function start(): Promise<void> {
 async function storeSiteData(): Promise<void> {
   log.log('storeSiteData');
   const configInfo = config.getConfig();
-  const userInfo: TPageUserInfo = await puppeteer.getUserInfo(configInfo.torrentPage[0]);
+  const userInfo: TPageUserInfo = await puppeteer.getUserInfo(configInfo.indexPage);
   const { shareRatio, downloadCount, uploadCount, magicPoint } = userInfo;
 
   const latestSiteData: TSiteData = await mysql.getLatestSiteData(config.uid, config.site) || {} as any;

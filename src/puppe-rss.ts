@@ -5,6 +5,9 @@ import axios from 'axios';
 import { TItem, TPTUserInfo } from './types';
 import * as config from './config';
 import * as utils from './utils';
+import * as log from './log';
+
+import { getCurrentSite } from './sites/basic';
 
 const rssContent: Map<string, any> = new Map();
 
@@ -28,6 +31,10 @@ export async function loadPage(url: string): Promise<any> {
 }
 
 export async function filterVIPItem(url: string): Promise<TItem[]> {
+  const site = getCurrentSite();
+  const rssLink = await site.getRssLink();
+  url = rssLink;
+  log.log(`[Puppe-rss] filterVIPItem, url: [${url}]`);
   const userInfo: TPTUserInfo = config.userInfo;
   const content = await loadPage(url);
 
