@@ -93,9 +93,10 @@ async function initTempFolder(): Promise<void> {
 
 async function downloadItem(items: TItem[]): Promise<TItem[]> {
   log.log(`downloadItem: [${JSON.stringify(items)}]`);
-  if (items.length > 10) {
-    log.message(`target download items: [${items.length}], reduce to [${5}]`);
-    items = items.splice(0, 5);
+  const maxDownloadNum = transmission.servers.length * 4;
+  if (items.length > maxDownloadNum) {
+    log.message(`target download items: [${items.length}], reduce to [${maxDownloadNum}]`);
+    items = items.splice(0, maxDownloadNum);
   }
   let downloadCount: number = 0;
   let existsTorrentCount: number = 0;

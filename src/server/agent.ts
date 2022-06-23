@@ -3,7 +3,7 @@ import * as mysql from '../mysql';
 import * as utils from '../utils';
 import * as path from 'path';
 import * as _ from 'lodash';
-import * as rimraf from 'rimraf';
+import * as fs from 'fs';
 
 import { exec, execFileSync, execSync } from 'child_process';
 
@@ -65,8 +65,16 @@ export async function deleteCrontab(params): Promise<any> {
   return newContent;
 }
 
-export async function deploy(): Promise<any> {
+export async function deploy(params): Promise<any> {
   const serverInfo: TPTServer = await getCurrentServerInfo();
+  const { config } = params;
+  if (config) {
+    const configYaml = decodeURIComponent(config);
+    const { projAddr } = serverInfo;
+    const yamlFile = path.join(projAddr, 'etc', 'default.yaml');
+    fs.writeFileSync(yamlFile, configYaml);
+  }
+
   const { projAddr } = serverInfo;
   let res = null;
   try {
