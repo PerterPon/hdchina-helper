@@ -56,7 +56,7 @@ export async function storeItem(uid: string, site: string, items: TItem[]): Prom
   }
 };
 
-export async function getFreeItems(uid: string, site: string, minSize: number): Promise<TItem[]> {
+export async function getFreeItems(uid: string, site: string, minSize: number = 0): Promise<TItem[]> {
   log.log(`[Mysql] get free item, uid: [${uid}], site: [${site}]`);
   const [data]: any = await pool.query(`
     SELECT *
