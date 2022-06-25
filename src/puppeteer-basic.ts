@@ -16,7 +16,8 @@ const puppeMap = {
   'audiences': puppeLite,
   'ourbits': puppeLite,
   'pterclub': puppeLite,
-  'pttime': puppeLite
+  'pttime': puppeLite,
+  'hdarea': puppeLite
 };
 
 const vipMap = {
