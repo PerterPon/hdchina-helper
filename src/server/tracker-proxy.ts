@@ -21,7 +21,8 @@ const siteTrackerMap = {
   'sjtu': 'tracker.sjtu.edu.cn',
   'audiences': 't.audiences.me',
   'ourbits': 'ourbits.club',
-  'pterclub': 'tracker.pterclub.com'
+  'pterclub': 'tracker.pterclub.com',
+  'pttime': 'www.pttime.org'
 };
 
 const app = http.createServer(async (req, res) => {

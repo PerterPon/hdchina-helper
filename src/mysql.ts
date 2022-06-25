@@ -50,6 +50,7 @@ export async function storeItem(uid: string, site: string, items: TItem[]): Prom
       size = VALUES(size),
       torrent_url = VALUES(torrent_url),
       free_until = VALUES(free_until),
+      site_id = VALUES(site_id),
       is_free = VALUES(is_free),
       publish_date = VALUES(publish_date);
     `, [uid, site, id, size, torrentUrl, Number(free), freeUntil, title, publishDate]);
