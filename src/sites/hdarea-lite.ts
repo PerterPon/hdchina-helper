@@ -20,7 +20,7 @@ export async function getUserInfo(torrentPage: cheerio.CheerioAPI): Promise<TPag
   };
 
   try {
-    const magicPointContent: string = await torrentPage('#info_block .bottom').text();
+    const magicPointContent: string = await torrentPage('#info_block').text();
     const [trash1, magicPoint] = magicPointContent.match(/魔力值\s*\[使用\]\:\s(.*)\s邀请/)  || ['', ''];
     const [trash2, shareRatio] = magicPointContent.match(/分享率： (\d*\.*\d*)\s*/) || ['', ''];
     const [trash3, uploadCount] = magicPointContent.match(/上传量： (.*)\s下载/)  || ['', ''];

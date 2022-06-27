@@ -91,7 +91,8 @@ export async function getFreeItems(uid: string, site: string, minSize: number = 
         size >= ?
     ) AS temp
     WHERE
-      downloader_id IS NULL;
+      downloader_id IS NULL
+    ORDER BY publish_date DESC;
     `, [uid, site, minSize]);
   log.log(`[Mysql] get free item: [${JSON.stringify(data)}]`);
   const freeItems: TItem[] = [];
