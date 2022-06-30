@@ -322,7 +322,7 @@ export async function getAllUser(): Promise<TPTUserInfo[]> {
 }
 
 function parseUserInfoFromItem(item): TPTUserInfo {
-  const { scraper_server, done, cookie, vip, site, uid, upload_count, nickname, increase_rate, paid, bind_server, cycle_time, rss_passkey, user_data_dir, site_data_only, vip_normal_item_count, proxy, proxy_addr, rss } = item;
+  const { scraper_server, done, cookie, vip, site, uid, upload_count, nickname, increase_rate, paid, bind_server, cycle_time, rss_passkey, site_data_only, vip_normal_item_count, proxy, proxy_addr, rss, min_size } = item;
   const servers: string[] = bind_server.split(',');
   const numServers: number[] = [];
   for (let i = 0; i < servers.length; i++) {
@@ -336,7 +336,6 @@ function parseUserInfoFromItem(item): TPTUserInfo {
     vip: Boolean(vip),
     serverIds: numServers,
     passkey: rss_passkey,
-    userDataDir: user_data_dir,
     siteDataOnly: Boolean(site_data_only),
     vipNormalItemCount: vip_normal_item_count,
     proxy: Boolean(proxy),
@@ -344,7 +343,8 @@ function parseUserInfoFromItem(item): TPTUserInfo {
     increaseRate: increase_rate,
     done: Boolean(done),
     scraperServer: scraper_server,
-    rss: Boolean(rss)
+    rss: Boolean(rss),
+    minSize: min_size
   };
   return userInfo;
 }

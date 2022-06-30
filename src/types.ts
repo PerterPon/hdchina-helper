@@ -27,7 +27,6 @@ export interface TPTUserInfo {
   vip: boolean;
   serverIds: number[];
   passkey: string;
-  userDataDir: string;
   siteDataOnly: boolean;
   vipNormalItemCount: number;
   proxy: boolean;
@@ -36,6 +35,7 @@ export interface TPTUserInfo {
   done: boolean;
   scraperServer: number;
   rss: boolean;
+  minSize: number;
 }
 
 export interface TPTServer {
