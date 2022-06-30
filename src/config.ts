@@ -55,8 +55,8 @@ export async function init(env?: string): Promise<TTBSConfig> {
     return listenConfig;
 }
 
-export function getConfig(): TTBSConfig {
-    return config[site];
+export function getConfig(tarSite?: string): TTBSConfig {
+    return config[tarSite || site];
 }
 
 export let site: string = 'hdchina';

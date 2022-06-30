@@ -4,6 +4,8 @@ import * as puppeteer from 'puppeteer';
 import axios, { AxiosResponse } from 'axios';
 import * as fs from 'fs';
 import * as qs from 'qs';
+import * as Cheerio from 'cheerio';
+import * as urlLib from 'url';
 
 import * as config from './config';
 import * as log from './log';
@@ -191,6 +193,16 @@ export async function timeout<T>(input: Promise<T>, time: number, errorMessage: 
     done = true;
     resolve(res);
   });
+}
+
+export function fetchNicknameAndUidFromPage(page: Cheerio.CheerioAPI, selector: string): {nickname: string; uid: string} {
+  const nickA = page(selector);
+  const $nickA = Cheerio.load(nickA[0]);
+  const nickname = $nickA.text();
+  const userInfoLink = $nickA('a').attr('href');
+  const infoLinkQueryItem = urlLib.parse(userInfoLink, true);
+  const uid = infoLinkQueryItem.query.id as string;
+  return { nickname, uid };
 }
 
 export const ajaxHeader = {

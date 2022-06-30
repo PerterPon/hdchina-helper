@@ -18,20 +18,24 @@ const pageResHeaders: Map<string, AxiosResponseHeaders> = new Map();
 
 let currentSite = null
 
-export async function init(): Promise<void> {
+export async function init(site: string): Promise<void> {
   log.log(`[Puppe-lite] init`);
-  currentSite = getCurrentSite();
+  currentSite = getCurrentSite(site);
 }
 
-export async function loadPage(url: string): Promise<cheerio.CheerioAPI> {
+export async function loadPage(url: string, cookie?: string): Promise<cheerio.CheerioAPI> {
   log.log(`[Puppe-lite] loadPage, url: [${url}]`);
   let page: cheerio.CheerioAPI = pageMap.get(url);
   if (undefined === page) {
-    const userInfo: TPTUserInfo = await mysql.getUserInfoByQuery({
-      nickname: config.nickname,
-      site: config.site
-    });
-    const { cookie } = userInfo;
+
+    if (false === _.isString(cookie)) {
+      const userInfo: TPTUserInfo = await mysql.getUserInfoByQuery({
+        nickname: config.nickname,
+        site: config.site
+      });
+      cookie = userInfo.cookie;
+    }
+
     const pageRes = await axios.get(url, {
       headers: {
         ...utils.htmlHeader,
@@ -47,9 +51,10 @@ export async function loadPage(url: string): Promise<cheerio.CheerioAPI> {
   return page;
 }
 
-export async function getUserInfo(url: string): Promise<TPageUserInfo> {
+export async function getUserInfo(url: string, cookie?: string): Promise<TPageUserInfo> {
   log.log(`[Puppe-lite] get user info`);
-  const page: cheerio.CheerioAPI = await loadPage(url);
+  const page: cheerio.CheerioAPI = await loadPage(url, cookie);
+  console.log(1111);
   const userInfo: TPageUserInfo = await currentSite.getUserInfo(page);
   return userInfo;
 }

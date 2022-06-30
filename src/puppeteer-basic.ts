@@ -25,7 +25,7 @@ const vipMap = {
 };
 
 export async function init(): Promise<void> {
-  await puppeMap[config.site].init();
+  await puppeMap[config.site].init(config.site);
 }
 
 export async function loadPage(url: string): Promise<any> {

@@ -2,6 +2,9 @@
 import { TPTServer, TPTUserInfo } from '../types';
 import { callRemoteServer } from '../server/basic';
 import * as mysql from '../mysql';
+import * as puppeLite from '../puppe-lite';
+import * as config from '../config';
+import { TPageUserInfo } from 'src/sites/basic';
 
 export async function init(): Promise<void> {
 
@@ -35,6 +38,9 @@ export async function updateScraper(params): Promise<void> {
     const nowServer: TPTServer = await findServer(userInfo.scraperServer);
     await callRemoteServer(nowServer, 'deleteCrontab', { uid, site });
   } catch (e) {}
+  if (-1 === Number(serverId)) {
+    return;
+  }
 
   const targetServer: TPTServer = await findServer(serverId);
 
@@ -58,6 +64,21 @@ export async function deleteUser(params): Promise<void> {
 
 export async function addUser(params): Promise<void> {
   await mysql.addUser(params);
+  const { cookie, site } = params;
+  const userInfo: TPageUserInfo = await getUserInfoBySiteAndCookie(cookie, site);
+  await mysql.updateUser({
+    nickname: userInfo.nickname,
+    uid: userInfo.uid
+  }, {
+    cookie
+  });
+}
+
+async function getUserInfoBySiteAndCookie(cookie: string, site: string): Promise<TPageUserInfo> {
+  await puppeLite.init(site);
+  const configInfo = config.getConfig(site);
+  const userInfo: TPageUserInfo = await puppeLite.getUserInfo(configInfo.indexPage, cookie);
+  return userInfo;
 }
 
 async function findServer(serverId: number): Promise<TPTServer> {

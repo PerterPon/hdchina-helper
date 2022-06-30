@@ -49,6 +49,9 @@ export async function getUserInfo(torrentPage: cheerio.CheerioAPI): Promise<TPag
     userInfo.magicPoint = magicPoint.replace(',', '').trim();
     userInfo.downloadCount = downloadNumberCount.toFixed(3);
     userInfo.uploadCount = uploadNumberCount.toFixed(3);
+
+    const nickAndUid = utils.fetchNicknameAndUidFromPage(torrentPage, '#info_block .bottom12:nth-child(1) .medium span a');
+    Object.assign(userInfo, nickAndUid);
   } catch (e) {
     log.log(`[SITE] [HDTIME] get user info: [${e.message}], [${e.stack}]`);
   }

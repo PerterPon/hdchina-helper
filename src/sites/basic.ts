@@ -5,6 +5,8 @@ export interface TPageUserInfo {
   uploadCount: string;
   downloadCount: string;
   magicPoint: string;
+  nickname?: string;
+  uid?: string;
 }
 
 import * as hdchina from './hdchina';
@@ -32,6 +34,6 @@ export const siteMap = {
   hdarea: hdareaLite
 };
 
-export function getCurrentSite() {
-  return siteMap[config.site];
+export function getCurrentSite(site?: string) {
+  return siteMap[site || config.site];
 }
