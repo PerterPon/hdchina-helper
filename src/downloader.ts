@@ -53,25 +53,25 @@ export async function main(): Promise<void> {
   //   freeFilterMinSize = minSize;
   // }
   // 5.
-  const canDownloadItem: TItem[] = await mysql.getFreeItems(config.uid, config.site, minSize);
+  // const canDownloadItem: TItem[] = await mysql.getFreeItems(config.uid, config.site, minSize);
 
-  // 6. 
-  const downloadSuccessItem: TItem[] = await downloadItem(canDownloadItem as any);
+  // // 6. 
+  // const downloadSuccessItem: TItem[] = await downloadItem(canDownloadItem as any);
 
-  // 7.
-  // await uploadItem(downloadSuccessItem);
+  // // 7.
+  // // await uploadItem(downloadSuccessItem);
 
-  const addSuccessItem: TItem[] = await addItemToTransmission(downloadSuccessItem);
+  // const addSuccessItem: TItem[] = await addItemToTransmission(downloadSuccessItem);
 
-  // 8.
-  await storeDownloadAction(addSuccessItem);
-  await utils.sleep(5 * 1000);
-  // 9. 
-  const downloadingItems: TItem[] = await getDownloadingItems();
-  // 10.
-  const beyondFreeItems: TItem[] = await filterBeyondFreeItems(downloadingItems);
-  // 11.
-  await removeItems(beyondFreeItems, 'out of date');
+  // // 8.
+  // await storeDownloadAction(addSuccessItem);
+  // await utils.sleep(5 * 1000);
+  // // 9. 
+  // const downloadingItems: TItem[] = await getDownloadingItems();
+  // // 10.
+  // const beyondFreeItems: TItem[] = await filterBeyondFreeItems(downloadingItems);
+  // // 11.
+  // await removeItems(beyondFreeItems, 'out of date');
   // 12.
   await reduceLeftSpace();
 
@@ -373,11 +373,11 @@ async function doReduceLeftSpace(serverId: number): Promise<void> {
     }
     const item = datedItems.shift();
     const { id, finished, size, title, serverId: itemServerId, transId } = item;
-    if ( true === finished ) {
+    // if ( true === finished ) {
       log.message(`remove item because of min left space: [${title}], size: [${filesize(size)}] trans id: [${id}] server id: [${itemServerId}]`);
       reducedTotal += size;
       await removeItems([item], 'out of space');
-    }
+    // }
   }
 
   if (0 < reducedTotal) {

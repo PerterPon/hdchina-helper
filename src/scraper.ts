@@ -43,10 +43,10 @@ async function start(): Promise<void> {
     await init();
     log.message(`[${utils.displayTime()}] version: [${version}] nickname: [${config.nickname}] site: [${config.site}], uid: [${config.uid}]`);
 
-    await storeSiteData();
+    // await storeSiteData();
     const userInfo: TPTUserInfo = config.userInfo;
     if (false === userInfo.siteDataOnly) {
-      await main();
+      // await main();
       await startDownloader();
     }
 
