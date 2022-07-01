@@ -17,7 +17,9 @@ const puppeMap = {
   'ourbits': puppeLite,
   'pterclub': puppeLite,
   'pttime': puppeLite,
-  'hdarea': puppeLite
+  'hdarea': puppeLite,
+  'discfan': puppeLite,
+  'piggo': puppeLite
 };
 
 const vipMap = {

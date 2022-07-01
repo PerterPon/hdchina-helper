@@ -23,7 +23,9 @@ const siteTrackerMap = {
   'ourbits': 'ourbits.club',
   'pterclub': 'tracker.pterclub.com',
   'pttime': 'www.pttime.org',
-  'hdarea': 'www.hdarea.co'
+  'hdarea': 'www.hdarea.co',
+  'discfan': 'discfan.net',
+  'piggo': 'piggo.me',
 };
 
 const app = http.createServer(async (req, res) => {

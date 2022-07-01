@@ -21,6 +21,8 @@ import * as ourbitsLite from './ourbits-lite';
 import * as pterclubLite from './pterclub-lite';
 import * as pttimeLite from './pttime-lite';
 import * as hdareaLite from './hdarea-lite';
+import * as discfanLite from './discfan-lite';
+import * as piggoLite from './piggo-lite';
 
 export const siteMap = {
   hdchina: hdchina,
@@ -31,7 +33,9 @@ export const siteMap = {
   ourbits: ourbitsLite,
   pterclub: pterclubLite,
   pttime: pttimeLite,
-  hdarea: hdareaLite
+  hdarea: hdareaLite,
+  discfan: discfanLite,
+  piggo: piggoLite
 };
 
 export function getCurrentSite(site?: string) {
