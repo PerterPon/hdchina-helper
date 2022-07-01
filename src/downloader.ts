@@ -48,30 +48,23 @@ export async function main(): Promise<void> {
   const configInfo = config.getConfig();
   const userInfo: TPTUserInfo = config.userInfo;
   const { minSize } = userInfo;
-  // if (true === vip && true === rss) {
-  //   const minSize = configInfo.minSize;
-  //   freeFilterMinSize = minSize;
-  // }
   // 5.
-  // const canDownloadItem: TItem[] = await mysql.getFreeItems(config.uid, config.site, minSize);
+  const canDownloadItem: TItem[] = await mysql.getFreeItems(config.uid, config.site, minSize);
 
-  // // 6. 
-  // const downloadSuccessItem: TItem[] = await downloadItem(canDownloadItem as any);
+  // 6. 
+  const downloadSuccessItem: TItem[] = await downloadItem(canDownloadItem as any);
 
-  // // 7.
-  // // await uploadItem(downloadSuccessItem);
+  const addSuccessItem: TItem[] = await addItemToTransmission(downloadSuccessItem);
 
-  // const addSuccessItem: TItem[] = await addItemToTransmission(downloadSuccessItem);
-
-  // // 8.
-  // await storeDownloadAction(addSuccessItem);
-  // await utils.sleep(5 * 1000);
-  // // 9. 
-  // const downloadingItems: TItem[] = await getDownloadingItems();
-  // // 10.
-  // const beyondFreeItems: TItem[] = await filterBeyondFreeItems(downloadingItems);
-  // // 11.
-  // await removeItems(beyondFreeItems, 'out of date');
+  // 8.
+  await storeDownloadAction(addSuccessItem);
+  await utils.sleep(5 * 1000);
+  // 9. 
+  const downloadingItems: TItem[] = await getDownloadingItems();
+  // 10.
+  const beyondFreeItems: TItem[] = await filterBeyondFreeItems(downloadingItems);
+  // 11.
+  await removeItems(beyondFreeItems, 'out of date');
   // 12.
   await reduceLeftSpace();
 
@@ -365,7 +358,7 @@ async function doReduceLeftSpace(serverId: number): Promise<void> {
   const { minSpaceLeft } = serverInfo;
   const allItems: TItem[] = await transmission.getAllItems(serverId);
   log.log(`server: [${serverId}] downloading item length: [${allItems.length}]`);
-  const datedItems: TItem[] = _.orderBy(allItems, ['activityDate']);
+  const datedItems: TItem[] = _.orderBy(allItems, ['size']);
   let reducedTotal: number = 0;
   while (freeSpace < minSpaceLeft) {
     if (0 === datedItems.length) {
