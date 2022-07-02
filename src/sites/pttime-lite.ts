@@ -44,7 +44,6 @@ export async function getUserInfo(torrentPage: cheerio.CheerioAPI): Promise<TPag
     userInfo.uploadCount = `${uploadNumberCount}`;
 
     const nickAndUid = utils.fetchNicknameAndUidFromPage(torrentPage, '#info_block .bottom .medium a');
-    console.log(nickAndUid, '=========');
     Object.assign(userInfo, nickAndUid);
   } catch (e) {
     log.log(`[SITE] [MTEAM] get user info: [${e.message}], [${e.stack}]`);
@@ -75,8 +74,6 @@ export async function getFreeTime2up(el: cheerio.CheerioAPI): Promise<Date> {
 }
 
 export async function getSiteId(el: cheerio.CheerioAPI, torrentUrl): Promise<string> {
-  // const idHref: string= el('.torrentname .embedded > table a').attr('href');
-  console.log('============', torrentUrl);
   const hrefItem = urlLib.parse(torrentUrl, true);
   return hrefItem.query.id as string;
 }

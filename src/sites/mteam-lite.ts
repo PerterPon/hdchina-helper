@@ -171,3 +171,27 @@ export async function getRssLink(): Promise<string> {
   const userInfo: TPTUserInfo = config.userInfo;
   return `${rssLink}&passkey=${userInfo.passkey}`;
 }
+
+export function getRssItem(items: any[], userInfo: TPTUserInfo): any {
+  const resData = [];
+  for (const item of items) {
+    const { title, link, pubDate, guid, enclosure } = item;
+    const freeTime: Date = new Date('2033-01-01');
+    const urlItem = urlLib.parse(link, true);
+    resData.push({
+      id: urlItem.query.id as string,
+      uid: userInfo.uid,
+      site: userInfo.site,
+      free: true,
+      freeUntil: freeTime,
+      publishDate: new Date(pubDate),
+      size: enclosure['@_length'],
+      title,
+      torrentUrl: enclosure['@_url'],
+      transHash: guid['#text'],
+      serverId: -1
+    });
+  }
+}
+
+

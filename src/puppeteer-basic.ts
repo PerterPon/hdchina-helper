@@ -22,8 +22,9 @@ const puppeMap = {
   'piggo': puppeLite
 };
 
-const vipMap = {
-  'mteam': puppeRss
+const rssMap = {
+  'mteam': puppeRss,
+  'piggo': puppeRss
 };
 
 export async function init(): Promise<void> {
@@ -43,14 +44,21 @@ export async function getUserInfo(url: string): Promise<TPageUserInfo> {
 export async function filterVIPItem(url: string): Promise<TItem[]> {
   const userInfo: TPTUserInfo = config.userInfo;
   const { vip, rss } = userInfo;
-  const vipMethod = vipMap[config.site];
-  if (true === rss && true === vip && undefined !== vipMethod) {
-    return await vipMap[config.site].filterVIPItem(url);
+  const rssMethod = rssMap[config.site];
+  if (true === rss && undefined !== rssMethod) {
+    return await rssMethod.filterRssItem(url);
   } else {
     return await puppeMap[config.site].filterVIPItem(url);
   }
 }
 
 export async function filterFreeItem(url: string): Promise<TItem[]> {
-  return await puppeMap[config.site].filterFreeItem(url);
+  const userInfo: TPTUserInfo = config.userInfo;
+  const { vip, rss } = userInfo;
+  const rssMethod = rssMap[config.site];
+  if (true === rss && undefined !== rssMethod) {
+    return rssMethod.filterRssItem(url);
+  } else {
+    return await puppeMap[config.site].filterFreeItem(url);
+  }
 }

@@ -293,7 +293,7 @@ export async function getUserInfoByQuery(query: any): Promise<TPTUserInfo> {
 
   const where = [];
   for (const key in query) {
-    sql += `AND ${key} = ?`;
+    sql += ` AND ${key} = ?`;
     where.push(query[key]);
   }
 
@@ -630,7 +630,7 @@ export async function getDownloaderByTime(time: Date, uid?: string): Promise<any
   FROM
     downloader
   WHERE
-    gmt_create > ? ${uid ? 'AND uid = ?' : ''}
+    gmt_create > ? ${uid ? ' AND uid = ?' : ''}
   ORDER BY gmt_create
   `, [time, uid]);
 
@@ -644,7 +644,7 @@ export async function getSiteDataByTime(time: Date, uid?: string): Promise<any[]
   FROM
     site_data
   WHERE
-    gmt_create > ? ${uid ? 'AND uid = ?' : ''}
+    gmt_create > ? ${uid ? ' AND uid = ?' : ''}
   ORDER BY gmt_create
   `, [time, uid]);
 
