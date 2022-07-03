@@ -192,6 +192,7 @@ export function getRssItem(items: any[], userInfo: TPTUserInfo): any {
       serverId: -1
     });
   }
+  return resData;
 }
 
 

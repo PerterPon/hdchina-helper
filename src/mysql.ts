@@ -26,9 +26,9 @@ export async function init(): Promise<void> {
   const _query = pool.query.bind(pool);
   pool.query = async function (sql, where) {
     try {
-      const res = await _query(sql, where);
       const finalSql = mysql.format(sql, where);
       log.log(finalSql);
+      const res = await _query(sql, where);
       return res;
     } catch (e) {
       const finalSql = mysql.format(sql, where);
