@@ -67,7 +67,9 @@ export async function getFreeTime(el: cheerio.CheerioAPI): Promise<Date> {
     return null;
   }
 
-  const freeTimeContainer: string = el('.pro_free').parent('b span').attr('title');
+  const parentHtml = el('.pro_free').parent().html();
+  const parentEl = cheerio.load(parentHtml);
+  const freeTimeContainer: string = parentEl('b span').attr('title');
   if (!freeTimeContainer) {
     return new Date('2023-01-01');
   } else {
@@ -82,7 +84,9 @@ export async function getFreeTime2up(el: cheerio.CheerioAPI): Promise<Date> {
     return null;
   }
 
-  const freeTimeContainer: string = el('.pro_free2up').parent('b span').attr('title');
+  const parentHtml = el('.pro_free2up').parent().html();
+  const parentEl = cheerio.load(parentHtml);
+  const freeTimeContainer: string = parentEl('b span').attr('title');
   if (!freeTimeContainer) {
     return new Date('2023-01-01');
   } else {
