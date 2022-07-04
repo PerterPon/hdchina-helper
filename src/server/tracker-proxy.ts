@@ -26,6 +26,7 @@ const siteTrackerMap = {
   'hdarea': 'www.hdarea.co',
   'discfan': 'discfan.net',
   'piggo': 'piggo.me',
+  'ptsbao': 'ptsbao.club'
 };
 
 const app = http.createServer(async (req, res) => {

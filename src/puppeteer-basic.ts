@@ -19,7 +19,8 @@ const puppeMap = {
   'pttime': puppeLite,
   'hdarea': puppeLite,
   'discfan': puppeLite,
-  'piggo': puppeLite
+  'piggo': puppeLite,
+  'ptsbao': puppeLite
 };
 
 const rssMap = {
