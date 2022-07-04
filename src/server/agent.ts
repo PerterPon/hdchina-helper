@@ -111,11 +111,11 @@ export async function deleteUser(params): Promise<string> {
 
   // 4. set done for user
   await mysql.updateUser({
+    done: 1
+  }, {
     uid: params.uid,
     site: params.site
-  }, {
-    done: 1
-  });
+  }, );
   return 'done';
 }
 
