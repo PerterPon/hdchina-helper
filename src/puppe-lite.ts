@@ -36,18 +36,17 @@ export async function loadPage(url: string, cookie?: string): Promise<cheerio.Ch
       cookie = userInfo.cookie;
     }
 
-    // const pageRes = await axios.get(url, {
-    //   headers: {
-    //     ...utils.htmlHeader,
-    //     cookie
-    //   }
-    // });
-    // const pageContent: string = pageRes.data;
-    const pageContent = html;
+    const pageRes = await axios.get(url, {
+      headers: {
+        ...utils.htmlHeader,
+        cookie
+      }
+    });
+    const pageContent: string = pageRes.data;
 
     page = cheerio.load(pageContent);
     pageMap.set(url, page);
-    pageResHeaders.set(url, {}); //pageRes.headers);
+    pageResHeaders.set(url, pageRes.headers);
   }
   return page;
 }
