@@ -92,19 +92,30 @@ export async function deleteUser(params): Promise<string> {
   const serverInfo: TPTServer = await getCurrentServerInfo();
   const targetFolder: string = path.join(serverInfo.fileDownloadPath, site, uid);
 
-  // 1. delete from client
+  // 1. deleteCrontab
+  await deleteCrontab(params);
+
+  // 2. delete from client
   try {
     await deleteFromClient(uid, site, serverInfo);
   } catch (e) {
     console.log(e);
   }
 
-  // 2. delete from disk
+  // 3. delete from disk
   try {
     execSync(`rm -rf ${targetFolder}`);
   } catch (e) {
     console.log(e);
   }
+
+  // 4. set done for user
+  await mysql.updateUser({
+    uid: params.uid,
+    site: params.site
+  }, {
+    done: 1
+  });
   return 'done';
 }
 
