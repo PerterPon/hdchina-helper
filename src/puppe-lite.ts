@@ -169,9 +169,14 @@ export async function filterFreeItem(url: string): Promise<TItem[]> {
 
     }
 
-    const torrentAnchor: cheerio.Cheerio<any> = $item(siteAnchor.torrentUrlAnchor);
-    let torrentUrl: string = torrentAnchor.parent().attr('href');
-    torrentUrl = `${configInfo.domain}/${torrentUrl}`;
+    let torrentUrl: string;
+    if (currentSite.getTorrentUrl) {
+      torrentUrl = await currentSite.getTorrentUrl($item);
+    } else {
+      const torrentAnchor: cheerio.Cheerio<any> = $item(siteAnchor.torrentUrlAnchor);
+      torrentUrl = torrentAnchor.parent().attr('href');
+      torrentUrl = `${configInfo.domain}/${torrentUrl}`;
+    }
     const id: string = await currentSite.getSiteId($item, torrentUrl);
 
     freeItems.push({

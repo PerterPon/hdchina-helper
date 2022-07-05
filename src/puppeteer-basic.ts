@@ -20,7 +20,8 @@ const puppeMap = {
   'hdarea': puppeLite,
   'discfan': puppeLite,
   'piggo': puppeLite,
-  'ptsbao': puppeLite
+  'ptsbao': puppeLite,
+  'hdsky': puppeLite
 };
 
 const rssMap = {
