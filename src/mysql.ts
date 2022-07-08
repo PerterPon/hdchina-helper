@@ -7,6 +7,7 @@ import * as log from './log';
 
 import { TPTUserInfo, TPTServer } from './types';
 import { UTF8Time } from './utils';
+import * as moment from "moment";
 
 export let pool: mysql.Pool = null;
 
@@ -59,6 +60,8 @@ export async function storeItem(uid: string, site: string, items: TItem[]): Prom
 
 export async function getFreeItems(uid: string, site: string, minSize: number = 0): Promise<TItem[]> {
   log.log(`[Mysql] get free item, uid: [${uid}], site: [${site}]`);
+  const yesterday = moment(UTF8Time()).subtract('hours', 24);
+  const torrentCreateTime = yesterday.toDate();
   const [data]: any = await pool.query(`
     SELECT *
     FROM (
@@ -88,12 +91,13 @@ export async function getFreeItems(uid: string, site: string, minSize: number = 
         torrents.free_until > NOW() AND
         torrents.uid = ? AND
         torrents.site = ? AND
-        size >= ?
+        size >= ? AND
+        torrents.gmt_create > ?
     ) AS temp
     WHERE
       downloader_id IS NULL
     ORDER BY publish_date DESC;
-    `, [uid, site, minSize]);
+    `, [uid, site, minSize, torrentCreateTime]);
   log.log(`[Mysql] get free item: [${JSON.stringify(data)}]`);
   const freeItems: TItem[] = [];
   for (const item of data) {
