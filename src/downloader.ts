@@ -144,7 +144,7 @@ async function downloadItem(items: TItem[]): Promise<TItem[]> {
       downloadSuccessItems.push(item);
     } catch (e) {
       downloadErrorCount++;
-      console.error(`[ERROR] download file: [${fileFullName}] with error: [${e.message}]`);
+      console.error(`[ERROR] download file: [${fileFullName}] with error: [${e.message} ${e.stack}]`);
       fs.removeSync(fileFullName);
     }
   }

@@ -27,7 +27,8 @@ const siteTrackerMap = {
   'discfan': 'discfan.net',
   'piggo': 'piggo.me',
   'ptsbao': 'ptsbao.club',
-  'hdsky': 'tracker.hdsky.me'
+  'hdsky': 'tracker.hdsky.me',
+  'lemonhd': 'announce.leaguehd.com'
 };
 
 const app = http.createServer(async (req, res) => {

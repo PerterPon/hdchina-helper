@@ -21,12 +21,14 @@ const puppeMap = {
   'discfan': puppeLite,
   'piggo': puppeLite,
   'ptsbao': puppeLite,
-  'hdsky': puppeLite
+  'hdsky': puppeLite,
+  'lemonhd': puppeLite
 };
 
 const rssMap = {
   'mteam': puppeRss,
-  'piggo': puppeRss
+  'piggo': puppeRss,
+  'lemonhd': puppeRss
 };
 
 export async function init(): Promise<void> {

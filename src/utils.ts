@@ -114,6 +114,9 @@ export async function getUserCookie(uid): Promise<puppeteer.SetCookie[]> {
   const cookies: puppeteer.SetCookie[] = [];
   const { domain } = configInfo.puppeteer.cookie;
   for (const item of cookieItems) {
+    if ('' === item.trim()) {
+      continue;
+    }
     const [name, value] = item.split('=');
     cookies.push({
       name: name.trim(),
