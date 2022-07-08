@@ -111,8 +111,8 @@ async function downloadItem(items: TItem[]): Promise<TItem[]> {
     const fileName: string = `${site}_${id}_${config.uid}.torrent`;
     if (true === fs.existsSync(fileFullName)) {
       existsTorrentCount++;
-      downloadSuccessItems.push(item);
-      continue;
+      // downloadSuccessItems.push(item);
+      // continue;
     }
 
     try {
