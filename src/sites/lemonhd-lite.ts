@@ -68,7 +68,6 @@ export async function getFreeTime(el: cheerio.CheerioAPI): Promise<Date> {
   }
 
   const freeTimeContainer: string = el('td:nth-child(3) > div:nth-of-type(3) span').attr('title');
-  console.log('=--------', freeTimeContainer);
   if (!freeTimeContainer) {
     return null;
   } else {
@@ -138,6 +137,7 @@ export async function getDownloadHeader(): Promise<any> {
     cookieString += `${cookie.name}=${cookie.value};`
   }
   return {
+    cookie: cookieString,
     ...utils.downloadHeader,
   }
 }
