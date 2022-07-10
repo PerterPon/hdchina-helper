@@ -61,74 +61,71 @@ export async function getUserInfo(torrentPage: cheerio.CheerioAPI): Promise<TPag
   return userInfo;
 }
 
-// export async function getFreeTime(el: cheerio.CheerioAPI): Promise<Date> {
-//   const freeEl = el('.pro_free');
-//   if (0 === freeEl.length) {
-//     return null;
-//   }
+export async function getFreeTime(el: cheerio.CheerioAPI): Promise<Date> {
+  const freeEl = el('td:nth-child(3) > div:nth-of-type(3) span');
+  if (0 === freeEl.length) {
+    return null;
+  }
 
-//   const parentHtml = el('.pro_free').parent().html();
-//   const parentEl = cheerio.load(parentHtml);
-//   const freeTimeContainer: string = parentEl('b span').attr('title');
-//   if (!freeTimeContainer) {
-//     return new Date('2023-01-01');
-//   } else {
-//     const [timeString] = freeTimeContainer.match(/\d\d\d\d-\d\d-\d\d\s\d\d:\d\d:\d\d/);
-//     return utils.parseCSTDate(timeString);
-//   }
-// }
+  const freeTimeContainer: string = el('td:nth-child(3) > div:nth-of-type(3) span').attr('title');
+  console.log('=--------', freeTimeContainer);
+  if (!freeTimeContainer) {
+    return null;
+  } else {
+    const [timeString] = freeTimeContainer.match(/\d\d\d\d-\d\d-\d\d\s\d\d:\d\d:\d\d/);
+    return utils.parseCSTDate(timeString);
+  }
+}
 
-// export async function getFreeTime2up(el: cheerio.CheerioAPI): Promise<Date> {
-//   const freeEl = el('.pro_free2up');
-//   if (0 === freeEl.length) {
-//     return null;
-//   }
+export async function getFreeTime2up(el: cheerio.CheerioAPI): Promise<Date> {
+  const freeEl = el('td:nth-child(3) > div:nth-of-type(3) span');
+  if (0 === freeEl.length) {
+    return null;
+  }
 
-//   const parentHtml = el('.pro_free2up').parent().html();
-//   const parentEl = cheerio.load(parentHtml);
-//   const freeTimeContainer: string = parentEl('b span').attr('title');
-//   if (!freeTimeContainer) {
-//     return new Date('2023-01-01');
-//   } else {
-//     const [timeString] = freeTimeContainer.match(/\d\d\d\d-\d\d-\d\d\s\d\d:\d\d:\d\d/);
-//     return utils.parseCSTDate(timeString);
-//   }
-// }
+  const freeTimeContainer: string = el('td:nth-child(3) > div:nth-of-type(3) span').attr('title');
+  console.log('=--------', freeTimeContainer);
+  if (!freeTimeContainer) {
+    return null;
+  } else {
+    const [timeString] = freeTimeContainer.match(/\d\d\d\d-\d\d-\d\d\s\d\d:\d\d:\d\d/);
+    return utils.parseCSTDate(timeString);
+  }
+}
 
-// export async function getSiteId(el: cheerio.CheerioAPI, torrentUrl): Promise<string> {
-//   const idHref: string= el('.download').parent().attr('href');
-//   const hrefItem = urlLib.parse(idHref, true);
-//   return hrefItem.query.id as string;
-// }
+export async function getSiteId(el: cheerio.CheerioAPI, torrentUrl): Promise<string> {
+  const idHref: string= el('.download2').parent().attr('href');
+  const hrefItem = urlLib.parse(idHref, true);
+  return hrefItem.query.id as string;
+}
 
-// export async function getTitle(el: cheerio.CheerioAPI): Promise<string> {
-//   const titleEl = el('.torrentname .embedded a b');
-//   if (null === titleEl) {
-//     return '';
-//   } 
-//   const title: any = titleEl.text();
-//   return title;
-// }
+export async function getTitle(el: cheerio.CheerioAPI): Promise<string> {
+  const titleEl = el('td:nth-child(3) > div > a > b');
+  if (null === titleEl) {
+    return '';
+  } 
+  const title: any = titleEl.text();
+  return title;
+}
 
-// export async function getSize(el: cheerio.CheerioAPI): Promise<number> {
-//   try {
-//     // const sizeString = await el.$eval('td:nth-child(5)', (el) => el.textContent);
-//     const sizeString = el('td:nth-child(7)').text();
-//     const [ sizeNumberString ] = sizeString.match(/\d*\.*\d*/);
-//     const sizeNumber: number = Number(sizeNumberString)
-//     let size: number = 0;
-//     if (-1 < sizeString.indexOf('GB')) {
-//       size = sizeNumber * 1024 * 1024 * 1024
-//     } else if (-1 < sizeString.indexOf('MB')) {
-//       size = sizeNumber * 1024 * 1024;
-//     } else if (-1 < sizeString.indexOf('TB')) {
-//       size = sizeNumber * 1024 * 1024 * 1024;
-//     }
-//     return size;
-//   } catch (e) {
-//     return 0;
-//   }
-// }
+export async function getSize(el: cheerio.CheerioAPI): Promise<number> {
+  try {
+    const sizeString = el('td:nth-child(6)').text();
+    const [ sizeNumberString ] = sizeString.match(/\d*\.*\d*/);
+    const sizeNumber: number = Number(sizeNumberString)
+    let size: number = 0;
+    if (-1 < sizeString.indexOf('GB')) {
+      size = sizeNumber * 1024 * 1024 * 1024
+    } else if (-1 < sizeString.indexOf('MB')) {
+      size = sizeNumber * 1024 * 1024;
+    } else if (-1 < sizeString.indexOf('TB')) {
+      size = sizeNumber * 1024 * 1024 * 1024;
+    }
+    return size;
+  } catch (e) {
+    return 0;
+  }
+}
 
 export async function getDownloadUrl(item: TItem): Promise<string> {
   return item.torrentUrl;
@@ -145,33 +142,30 @@ export async function getDownloadHeader(): Promise<any> {
   }
 }
 
-// export async function isDownloaded(el: cheerio.CheerioAPI): Promise<boolean> {
-//   // const peerActive = await el.$('.peer-active');
-//   const peerActive = await el('.peer-active');
-//   return 0 < peerActive.length;
-// }
+export async function isDownloaded(el: cheerio.CheerioAPI): Promise<boolean> {
+  const peerActive = el('.peer-active');
+  return 0 < peerActive.length;
+}
 
-// export async function publishDate(el: cheerio.CheerioAPI): Promise<Date> {
-//   // const dateString: string = await el.$eval('td:nth-child(4) span', (el) => el.getAttribute('title'));
-//   const dateString: string = await el('td:nth-child(6) span').attr('title');
-//   return utils.parseCSTDate(dateString);
-// }
+export async function publishDate(el: cheerio.CheerioAPI): Promise<Date> {
+  const dateString: string = el('td:nth-child(5) span').attr('title');
+  return utils.parseCSTDate(dateString);
+}
 
-// export async function isSticky(el: cheerio.CheerioAPI): Promise<boolean> {
-//   // const stickyFlag = await el.$('.sticky');
-//   const stickyFlag = await el('.sticky');
-//   return 0 < stickyFlag.length;
-// }
+export async function isSticky(el: cheerio.CheerioAPI): Promise<boolean> {
+  const stickyFlag = el('.sticky');
+  return 0 < stickyFlag.length;
+}
 
-// export async function checkFreeItem(el: cheerio.CheerioAPI): Promise<boolean> {
-//   const { siteAnchor } = config.getConfig();
-//   let freeItem = el(siteAnchor.freeItem1up);
-//   if (null === freeItem) {
-//     freeItem = el(siteAnchor.freeItem2up);
-//   }
+export async function checkFreeItem(el: cheerio.CheerioAPI): Promise<boolean> {
+  const { siteAnchor } = config.getConfig();
+  let freeItem = el(siteAnchor.freeItem1up);
+  if (null === freeItem) {
+    freeItem = el(siteAnchor.freeItem2up);
+  }
 
-//   return null !== freeItem;
-// }
+  return null !== freeItem;
+}
 
 export async function getRssLink(): Promise<string> {
   const { rssLink } = config.getConfig();
