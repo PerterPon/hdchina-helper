@@ -24,7 +24,7 @@ let cookieFileName: string = 'cookie';
 let storageFileName: string = 'storage';
 const pageMap: Map<string, puppeteer.Page> = new Map();
 
-export async function init(): Promise<void> {
+export async function init(headless: boolean = true): Promise<void> {
   log.log(`[Puppeteer] init`);
   if (browser !== null) {
     return;
@@ -32,7 +32,7 @@ export async function init(): Promise<void> {
   const userDataDir: string = await getUserDataDir();
   await mkdirp(userDataDir);
   browser = await puppeteer.launch({
-    headless: true,
+    headless: headless,
     executablePath: null,
     ignoreDefaultArgs: [],
     args: [
@@ -48,21 +48,28 @@ export async function init(): Promise<void> {
 
 }
 
-async function loadPage(url: string, force: boolean = false): Promise<puppeteer.Page> {
+export async function doLoadPage(url: string): Promise<puppeteer.Page> {
+  log.log(`[Puppeteer] doLoadPage, url: [${url}]`);
+  const page = await browser.newPage();
+  await setCookie(page);
+  pageMap.set(url, page);
+  page.goto(url, {
+    timeout: 600 * 1000
+  }).catch((e) => {
+    log.log(e);
+  });
+
+  return page;
+}
+
+export async function loadPage(url: string, force: boolean = false): Promise<puppeteer.Page> {
   log.log(`[Puppeteer] loadPage url: [${url}], force: [${force}]`);
   let page: puppeteer.Page = pageMap.get(url);
   const configInfo = config.getConfig();
   if (undefined === page || true === force) {
     log.log(`[Puppeteer] force lode page url: [${url}], force: [${force}]`);
 
-    page = await browser.newPage();
-    await setCookie(page);
-    pageMap.set(url, page);
-    page.goto(url, {
-      timeout: 600 * 1000
-    }).catch((e) => {
-      log.log(e);
-    });
+    page = await this.doLoadPage(url);
     log.log(`[Puppeteer] waiting for load page: [${url}]`);
     let loadPageError: Error = null;
     try {
