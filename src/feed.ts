@@ -74,31 +74,36 @@ async function startFeedTask(): Promise<void> {
   const { uid, site } = config;
   let i = 0;
   while (true) {
-    i++;
-    log.log(`start new cycle [${i}]!!`);
-    const latestInfo: TItem[] = await mysql.getLatestSiteInfo(uid, site, 1);
-    const baseSiteId: number = Number(_.get(latestInfo, '[0].id'));
-    if (true === _.isNaN(baseSiteId)) {
-      continue;
+    try {
+      i++;
+      log.log(`start new cycle [${i}]!!`);
+      const latestInfo: TItem[] = await mysql.getLatestSiteInfo(uid, site, 1);
+      const baseSiteId: number = Number(_.get(latestInfo, '[0].id'));
+      if (true === _.isNaN(baseSiteId)) {
+        continue;
+      }
+  
+      const tasks = [];
+      for (let i = 1; i <= DETECT_COUNT; i++) {
+        const siteId: number = baseSiteId + i;
+        const task = tryGetLatestTorrent(siteId, downloadHeaders);
+        tasks.push(task);
+      }
+  
+      await Promise.all(tasks);
+  
+      const addSuccessItems: TItem[] = await tryAddFreeItems(0);
+      if (0 < addSuccessItems.length) {
+        await tryAddTags2QB();
+      }
+  
+      log.log(`cycle: [${i}] add success count: [${addSuccessItems.length}] waiting for next cycle! latest site id: [${baseSiteId}]`);
+      log.log('----------------------------------------------------------');
+      log.log('----------------------------------------------------------');
+    } catch (e) {
+      log.log(e);
     }
 
-    const tasks = [];
-    for (let i = 1; i <= DETECT_COUNT; i++) {
-      const siteId: number = baseSiteId + i;
-      const task = tryGetLatestTorrent(siteId, downloadHeaders);
-      tasks.push(task);
-    }
-
-    await Promise.all(tasks);
-
-    const addSuccessItems: TItem[] = await tryAddFreeItems(0);
-    if (0 < addSuccessItems.length) {
-      await tryAddTags2QB();
-    }
-
-    log.log(`cycle: [${i}] add success count: [${addSuccessItems.length}] waiting for next cycle! latest site id: [${baseSiteId}]`);
-    log.log('----------------------------------------------------------');
-    log.log('----------------------------------------------------------');
     await utils.sleep(30 * 1000);
   }
 }
@@ -107,7 +112,11 @@ async function startSiteInfoTask(): Promise<void> {
   log.log(`startSiteInfoTask`);
   while(true) {
     await utils.sleep(10 * 60 * 1000);
-    await storeSiteData();
+    try {
+      await storeSiteData();
+    } catch (e) {
+      log.log(e);
+    }
   }
 }
 
