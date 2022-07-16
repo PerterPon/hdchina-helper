@@ -93,7 +93,8 @@ export async function filterVIPItem(url: string): Promise<TItem[]> {
         uid: config.uid,
         torrentUrl: torrentUrl,
         site: config.site,
-        serverId: -1
+        serverId: -1,
+        feed: false
       });
     } else {
       freeItems.push({
@@ -103,7 +104,8 @@ export async function filterVIPItem(url: string): Promise<TItem[]> {
         uid: config.uid,
         torrentUrl: torrentUrl,
         site: config.site,
-        serverId: -1
+        serverId: -1,
+        feed: false
       });
     }
   }
@@ -186,7 +188,8 @@ export async function filterFreeItem(url: string): Promise<TItem[]> {
       uid: config.uid,
       torrentUrl: torrentUrl,
       site: config.site,
-      serverId: -1
+      serverId: -1,
+      feed: false
     });
   }
   return freeItems;

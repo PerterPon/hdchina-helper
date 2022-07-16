@@ -228,7 +228,8 @@ export async function filterVIPItem(torrentPageUrl: string): Promise<TItem[]> {
         uid: config.uid,
         torrentUrl: torrentUrl,
         site: config.site,
-        serverId: -1
+        serverId: -1,
+        feed: false
       });
     } else {
       freeItems.push({
@@ -238,7 +239,8 @@ export async function filterVIPItem(torrentPageUrl: string): Promise<TItem[]> {
         uid: config.uid,
         torrentUrl: torrentUrl,
         site: config.site,
-        serverId: -1
+        serverId: -1,
+        feed: false
       });
     }
   }
@@ -324,7 +326,8 @@ export async function filterFreeItem(torrentPageUrl: string, retryTime: number =
       uid: config.uid,
       torrentUrl: torrentUrl,
       site: config.site,
-      serverId: -1
+      serverId: -1,
+      feed: false
     });
   }
   if (0 === freeItems.length && 0 === freeTarget.length) {
