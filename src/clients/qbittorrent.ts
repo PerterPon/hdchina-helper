@@ -56,12 +56,13 @@ export class QbittorrentClient implements IClient {
     }
   }
 
-  async addTorrentUrl(url: string, savePath: string, torrentHash: string, tag: string, retryTime: number = 0): Promise<{ id: string; }> {
-    log.log(`[QBittorrent] addTorrentUrl, url: [${url}] savePath: [${savePath}], torrentHash: [${torrentHash}], tag: [${tag}], retryTime: [${retryTime}]`);
+  async addTorrentUrl(url: string, savePath: string, torrentHash: string, tag: string, fileName: string, retryTime: number = 0): Promise<{ id: string; }> {
+    log.log(`[QBittorrent] addTorrentUrl, url: [${url}] savePath: [${savePath}], torrentHash: [${torrentHash}], tag: [${tag}], retryTime: [${retryTime}], filename: [${fileName}]`);
     try {
       const res = await this.client.addTorrentURL(url, {
         savepath: savePath,
-        tags: tag
+        tags: tag,
+        rename: fileName
       });
       return {
         id: torrentHash
@@ -73,7 +74,7 @@ export class QbittorrentClient implements IClient {
         log.log(`[Qbittorrent] add torrent error reached [${globalRetryTime}] times`);
         throw e;
       } else {
-        return await this.addTorrentUrl(url, savePath, torrentHash, tag, ++retryTime);
+        return await this.addTorrentUrl(url, savePath, torrentHash, tag, fileName, ++retryTime);
       }
     }
   }

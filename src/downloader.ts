@@ -257,11 +257,13 @@ async function doAddToTransmission(serverId: number, siteId: string, torrentHash
     fs.writeFileSync(fileFullName, fileContent);
   }
   const fileUrl: string = await oss.uploadTorrent(config.site, config.uid, siteId, fileFullName);
+  const fileName: string = `${config.site}/${config.uid}/${siteId}`;
+  const tag: string = `${config.site}/${config.uid}`;
   try {
-    res = await transmission.addTorrentUrl(`http://${fileUrl}`, serverId, siteId, torrentHash, `${config.site}/${config.uid}`);
+    res = await transmission.addTorrentUrl(`http://${fileUrl}`, serverId, siteId, torrentHash, tag, fileName);
     await utils.sleep(3 * 1000);
     // try add two times, sometimes just failed!
-    res = await transmission.addTorrentUrl(`http://${fileUrl}`, serverId, siteId, torrentHash, `${config.site}/${config.uid}`);
+    res = await transmission.addTorrentUrl(`http://${fileUrl}`, serverId, siteId, torrentHash, tag, fileName);
   } catch(e) {
     if ('invalid or corrupt torrent file' === e.message) {
       res = {

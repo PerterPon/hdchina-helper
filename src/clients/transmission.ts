@@ -39,7 +39,7 @@ export class TransmissionClient implements IClient {
     return res;
   }
 
-  async addTorrentUrl(url: string, savePath: string, torrentHash: string, tag: string): Promise<{ id: string; }> {
+  async addTorrentUrl(url: string, savePath: string, torrentHash: string, tag: string, fileName: string): Promise<{ id: string; }> {
     const res = await this.client.addUrl(url, {
       'download-dir': savePath
     });
