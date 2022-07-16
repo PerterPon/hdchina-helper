@@ -60,6 +60,12 @@ export async function deleteUser(params): Promise<void> {
     const res = await callRemoteServer(server, 'deleteUser', { uid, site });
     console.log(`delete user: [${uid}], site: [${site}] from server: [${server.ip}] with result: [${JSON.stringify(res)}]`);
   }
+
+  await mysql.updateUser({
+    done: 1
+  }, {
+    uid, site
+  }, );
 }
 
 export async function addUser(params): Promise<void> {
