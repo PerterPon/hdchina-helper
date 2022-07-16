@@ -43,21 +43,9 @@ export async function start(): Promise<void> {
 }
 
 export async function main(): Promise<void> {
-  await initTempFolder();
-
-  const configInfo = config.getConfig();
-  const userInfo: TPTUserInfo = config.userInfo;
-  const { minSize } = userInfo;
-  // 5.
-  const canDownloadItem: TItem[] = await mysql.getFreeItems(config.uid, config.site, minSize);
-
-  // 6. 
-  const downloadSuccessItem: TItem[] = await downloadItem(canDownloadItem as any);
-
-  const addSuccessItem: TItem[] = await addItemToTransmission(downloadSuccessItem);
+  await tryAddFreeItems();
 
   // 8.
-  await storeDownloadAction(addSuccessItem);
   await utils.sleep(5 * 1000);
   // 9. 
   const downloadingItems: TItem[] = await getDownloadingItems();
@@ -68,7 +56,27 @@ export async function main(): Promise<void> {
   // 12.
   await reduceLeftSpace();
 
-  log.log(`all task done!!!!\n`);
+  log.log(`all download task done!!!!\n`);
+}
+
+export async function tryAddFreeItems(minSize?: number): Promise<TItem[]> {
+  await initTempFolder();
+
+  const configInfo = config.getConfig();
+  const userInfo: TPTUserInfo = config.userInfo;
+  const { minSize: defaultMinSize } = userInfo;
+  // 5.
+  const canDownloadItem: TItem[] = await mysql.getFreeItems(config.uid, config.site, minSize || defaultMinSize);
+
+  // 6. 
+  const downloadSuccessItem: TItem[] = await downloadItem(canDownloadItem as any);
+
+  const addSuccessItem: TItem[] = await addItemToTransmission(downloadSuccessItem);
+
+  // 8.
+  await storeDownloadAction(addSuccessItem);
+
+  return addSuccessItem;
 }
 
 async function init(): Promise<void> {
