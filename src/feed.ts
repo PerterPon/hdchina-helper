@@ -89,9 +89,9 @@ async function startFeedTask(): Promise<void> {
         const task = tryGetLatestTorrent(siteId, downloadHeaders);
         tasks.push(task);
       }
-  
+
       await Promise.all(tasks);
-  
+
       const addSuccessItems: TItem[] = await tryAddFreeItems(0);
       if (0 < addSuccessItems.length) {
         await tryAddTags2QB();

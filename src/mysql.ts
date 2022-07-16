@@ -62,6 +62,7 @@ export async function getFreeItems(uid: string, site: string, minSize: number = 
   log.log(`[Mysql] get free item, uid: [${uid}], site: [${site}]`);
   const yesterday = moment(UTF8Time()).subtract('hours', 24);
   const torrentCreateTime = yesterday.toDate();
+  const feedTime = moment(UTF8Time()).subtract('minutes', 2).toDate();
   const [data]: any = await pool.query(`
     SELECT *
     FROM (
@@ -91,13 +92,15 @@ export async function getFreeItems(uid: string, site: string, minSize: number = 
         torrents.free_until > NOW() AND
         torrents.uid = ? AND
         torrents.site = ? AND
-        (size >= ? OR feed = 1) AND
-        torrents.gmt_create > ?
+        (
+          (feed = 1 AND  torrents.gmt_create > ?) OR
+          (size >= ? AND  torrents.gmt_create > ?)
+        )
     ) AS temp
     WHERE
       downloader_id IS NULL
     ORDER BY publish_date DESC;
-    `, [uid, site, minSize, torrentCreateTime]);
+    `, [uid, site, minSize, torrentCreateTime, feedTime]);
   log.log(`[Mysql] get free item: [${JSON.stringify(data)}]`);
   return assembleItems(data);
 }
