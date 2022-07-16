@@ -42,11 +42,11 @@ export async function init(): Promise<void> {
 export async function storeItem(uid: string, site: string, items: TItem[]): Promise<void> {
   log.log(`[Mysql] storeItem uid: [${uid}], items: [${JSON.stringify(items)}]`);
   for (const item of items) {
-    const { id, freeUntil, size, title, torrentUrl, free, transHash, publishDate } = item;
+    const { id, freeUntil, size, title, torrentUrl, free, transHash, publishDate, feed } = item;
     await pool.query(`
     INSERT INTO
-      torrents(gmt_create, gmt_modify, uid, site, site_id, size, torrent_url, is_free, free_until, title, publish_date)
-    VALUES(NOW(), NOW(), ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      torrents(gmt_create, gmt_modify, uid, site, site_id, size, torrent_url, is_free, free_until, title, publish_date, feed)
+    VALUES(NOW(), NOW(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON DUPLICATE KEY UPDATE
       size = VALUES(size),
       torrent_url = VALUES(torrent_url),
@@ -54,7 +54,7 @@ export async function storeItem(uid: string, site: string, items: TItem[]): Prom
       site_id = VALUES(site_id),
       is_free = VALUES(is_free),
       publish_date = VALUES(publish_date);
-    `, [uid, site, id, size, torrentUrl, Number(free), freeUntil, title, publishDate]);
+    `, [uid, site, id, size, torrentUrl, Number(free), freeUntil, title, publishDate, Number(feed) || 0]);
   }
 };
 
@@ -91,7 +91,7 @@ export async function getFreeItems(uid: string, site: string, minSize: number = 
         torrents.free_until > NOW() AND
         torrents.uid = ? AND
         torrents.site = ? AND
-        size >= ? AND
+        (size >= ? OR feed = 1) AND
         torrents.gmt_create > ?
     ) AS temp
     WHERE
@@ -118,7 +118,7 @@ export async function getLatestSiteInfo(uid: string, site: string, limit: number
 function assembleItems(originItem: any[]): TItem[] {
   const items: TItem[] = [];
   for (const item of originItem) {
-    const { server_id, site_id, uid, torrent_hash, site, size, title, is_free, free_until, torrent_url, publish_date } = item;
+    const { server_id, site_id, uid, torrent_hash, site, size, title, is_free, free_until, torrent_url, publish_date, feed } = item;
     items.push({
       id: site_id,
       site,
@@ -129,7 +129,8 @@ function assembleItems(originItem: any[]): TItem[] {
       torrentUrl: torrent_url,
       serverId: server_id,
       publishDate: publish_date,
-      free: Boolean(is_free)
+      free: Boolean(is_free),
+      feed: Boolean(feed)
     });
   }
   return items;
@@ -254,6 +255,7 @@ export async function getItemByHash(uid: string, site: string, hash: string[]): 
     torrents.torrent_hash as torrent_hash,
     torrents.free_until as free_until,
     torrents.is_free as is_free,
+    torrents.feed as feed,
     torrents.publish_date as publish_date,
     downloader.server_id as server_id
   FROM
@@ -271,7 +273,7 @@ export async function getItemByHash(uid: string, site: string, hash: string[]): 
   `, [uid, hash, site]);
   const items: TItem[] = [];
   for (const item of res) {
-    const { site_id, uid, site, is_free, title, size, torrent_url, torrent_hash, free_until, server_id, publish_date } = item;
+    const { site_id, uid, site, is_free, title, size, torrent_url, torrent_hash, free_until, server_id, publish_date, feed } = item;
     items.push({
       size, title,
       id: site_id,
@@ -283,6 +285,7 @@ export async function getItemByHash(uid: string, site: string, hash: string[]): 
       serverId: server_id,
       publishDate: publish_date,
       free: Boolean(is_free),
+      feed: Boolean(feed)
     });
   }
   return items;
@@ -528,6 +531,7 @@ export async function getItemByTransIdAndServerId(transId: number, serverId: num
     torrents.free_until as free_until,
     torrents.publish_date as publish_date,
     torrents.title as title,
+    torrents.feed as feed,
     downloader.server_id as server_id,
     downloader.torrent_hash as trans_hash
   FROM
@@ -544,14 +548,15 @@ export async function getItemByTransIdAndServerId(transId: number, serverId: num
     torrents.uid = ? AND
     torrents.site = ?;
   `, [serverId, transId, uid, site]);
-  const { trans_hash, id, torrent_url, is_free, size, free_until, publish_date, title } = res[0];
+  const { trans_hash, id, torrent_url, is_free, size, free_until, publish_date, title, feed } = res[0];
   return {
     uid, id, title, size, site, serverId,
     free: Boolean(is_free),
     freeUntil: new Date(free_until),
     publishDate: new Date(publish_date),
     torrentUrl: torrent_url,
-    transHash: trans_hash
+    transHash: trans_hash,
+    feed: Boolean(feed)
   }
 }
 
@@ -569,6 +574,7 @@ export async function getItemBySiteIds(uid: string, site: string, siteIds: strin
     torrents.free_until as free_until,
     torrents.publish_date as publish_date,
     torrents.title as title,
+    torrents.feed as feed,
     downloader.server_id as server_id,
     downloader.torrent_hash as trans_hash,
     downloader.trans_id as trans_id
@@ -587,7 +593,7 @@ export async function getItemBySiteIds(uid: string, site: string, siteIds: strin
   `, [uid, site, siteIds]);
   const items: TItem[] = [];
   for (const item of res) {
-    const { trans_hash, id, server_id, trans_id, torrent_url, is_free, size, free_until, publish_date, title } = item;
+    const { trans_hash, id, server_id, trans_id, torrent_url, is_free, size, free_until, publish_date, title, feed } = item;
     items.push({
       uid, id, title, size, site, 
       serverId: server_id,
@@ -596,7 +602,8 @@ export async function getItemBySiteIds(uid: string, site: string, siteIds: strin
       publishDate: new Date(publish_date),
       torrentUrl: torrent_url,
       transHash: trans_hash,
-      transId: trans_id
+      transId: trans_id,
+      feed: Boolean(feed)
     });
   }
   return items;

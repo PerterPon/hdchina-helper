@@ -141,6 +141,7 @@ async function tryGetLatestTorrent(siteId: number, headers: any): Promise<void> 
         free: true,
         transHash: '',
         publishDate: new Date(),
+        feed: true
       }] as any);
     }
   } catch (e) {

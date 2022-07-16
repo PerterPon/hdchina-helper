@@ -14,6 +14,7 @@ export interface TItem {
   transId?: string;
   finished?: boolean;
   activeDate?: Date;
+  feed: boolean;
 }
 
 export interface TPTUserInfo {
