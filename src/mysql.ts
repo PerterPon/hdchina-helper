@@ -118,6 +118,10 @@ export async function getFreeItems(uid: string, site: string, minSize: number = 
   return freeItems;
 }
 
+export async function getLatestSiteInfo(uid: string, site: string, limit: number = 10): Promise<item[]> {
+  log.log(`[Mysql] getLatestSiteInfo, uid: [${uid}], site: [${site}]`);
+}
+
 export async function storeDownloadAction(site: string, siteId: string, uid: string, transId: string, torrentHash: string, serverId: number): Promise<void> {
   log.log(`[Mysql] storeDownloadAction site: [${site}], site id: [${siteId}], uid: [${uid}], trans id: [${transId}], torrent hash: [${torrentHash}] server id: [${serverId}]`);
   await pool.query(`

@@ -195,4 +195,9 @@ export function getRssItem(items: any[], userInfo: TPTUserInfo): any {
   return resData;
 }
 
+export function assembleLink(siteId: string, passkey: string): string {
+  const configInfo = config.getConfig();
+  const { downloadUrl } = configInfo;
+  return `${downloadUrl}&passkey=${passkey}&id=${siteId}`
+}
 
