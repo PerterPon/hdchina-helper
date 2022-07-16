@@ -100,7 +100,7 @@ export async function getFreeItems(uid: string, site: string, minSize: number = 
     WHERE
       downloader_id IS NULL
     ORDER BY publish_date DESC;
-    `, [uid, site, minSize, torrentCreateTime, feedTime]);
+    `, [uid, site, feedTime, minSize, torrentCreateTime]);
   log.log(`[Mysql] get free item: [${JSON.stringify(data)}]`);
   return assembleItems(data);
 }
