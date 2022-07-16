@@ -21,8 +21,10 @@ import { TPageUserInfo } from './sites/basic';
 import { TItem, TPTServer, TPTUserInfo, TSiteData } from './types';
 import { createClientByServer, IClient } from './clients/basic';
 
-import { main as startDownloader } from './downloader';
+import { tryAddFreeItems } from './downloader';
 import { getCurrentSite } from './sites/basic';
+
+const DETECT_COUNT = 2;
 
 const program = new Command();
 
@@ -38,65 +40,102 @@ config.init();
 
 let tempFolder: string = null;
 
-async function start(): Promise<void> {
-  const version = utils.getVersion();
-  const site = getCurrentSite();
-  const downloadHeaders = site.getDownloadHeader();
-  while (true) {
-    const 
-  }
-}
-
-async function tryGetLatestTorrent(siteId: string, headers: any): Promise<void> {
-  const result: boolean = false;
-  const site = getCurrentSite();
-  const configInfo = config.getConfig();
-  const downloadLink = site.assembleLink(siteId, configInfo.passkey);
-
-  const res = await axios.get(downloadLink, {
-    responseType: 'stream',
-    headers
+async function init(): Promise<void> {
+  log.log(`init`);
+  await config.init();
+  await initTempFolder();
+  await mysql.init();
+  const ptUserInfo: TPTUserInfo = await mysql.getUserInfoByQuery({
+    nickname: config.nickname,
+    site: config.site
   });
-  if (200 === res.status) {
-    await mysql.storeItem(config.uid, config.site, [{ 
-      id: siteId, 
-      freeUntil: new Date('2024-01-01'), 
-      size: 0,
-      title: 'torrent from feed. :)',
-      torrentUrl: downloadLink, 
-      free: true,
-      transHash: '',
-      publishDate: new Date(),
-    }] as any);
+  config.setUid(ptUserInfo.uid);
+  config.setVip(ptUserInfo.vip);
+  config.setUserInfo(ptUserInfo);
+  await transmission.init(ptUserInfo.uid);
+  await oss.init();
+  await message.init();
+  await puppeteer.init();
+}
+
+async function start(): Promise<void> {
+  await init();
+  const version = utils.getVersion();
+  log.log(`start feeding! version: [${version}]`);
+
+  startFeedTask();
+  startSiteInfoTask();
+}
+
+async function startFeedTask(): Promise<void> {
+  log.log(`startFeedTask`);
+  const puppeSite = getCurrentSite();
+  const downloadHeaders = puppeSite.getDownloadHeader();
+  const { uid, site } = config;
+  let i = 0;
+  while (true) {
+    i++;
+    log.log(`start new cycle [${i}]!!`);
+    const latestInfo: TItem[] = await mysql.getLatestSiteInfo(uid, site, 1);
+    const baseSiteId: number = Number(_.get(latestInfo, '[0].id'));
+    if (true === _.isNaN(baseSiteId)) {
+      continue;
+    }
+
+    const tasks = [];
+    for (let i = 1; i <= DETECT_COUNT; i++) {
+      const siteId: number = baseSiteId + i;
+      const task = tryGetLatestTorrent(siteId, downloadHeaders);
+      tasks.push(task);
+    }
+
+    await Promise.all(tasks);
+
+    const addSuccessItems: TItem[] = await tryAddFreeItems(0);
+    if (0 < addSuccessItems.length) {
+      await tryAddTags2QB();
+    }
+
+    log.log(`cycle: [${i}] add success count: [${addSuccessItems.length}] waiting for next cycle! latest site id: [${baseSiteId}]`);
+    log.log('----------------------------------------------------------');
+    log.log('----------------------------------------------------------');
+    await utils.sleep(30 * 1000);
   }
 }
 
-async function start1(): Promise<void> {
-  const version = utils.getVersion();
-  try {
-    await init();
-    log.message(`[${utils.displayTime()}] version: [${version}] nickname: [${config.nickname}] site: [${config.site}], uid: [${config.uid}]`);
-
+async function startSiteInfoTask(): Promise<void> {
+  log.log(`startSiteInfoTask`);
+  while(true) {
+    await utils.sleep(10 * 60 * 1000);
     await storeSiteData();
-    const userInfo: TPTUserInfo = config.userInfo;
-    if (false === userInfo.siteDataOnly) {
-      await main();
-      await startDownloader();
-    }
+  }
+}
 
-    try {
-      await tryAddTags2QB();
-    } catch (e) {
-      log.log(e);
-    }
-  } catch(e) {
-    log.log(e.message);
-    log.log(e.stack);
-    log.message('[ERROR!]');
+async function tryGetLatestTorrent(siteId: number, headers: any): Promise<void> {
+  log.log(`tryGetLatestTorrent, site id: [${siteId}]`);
+  const site = getCurrentSite();
+  const downloadLink = site.assembleLink(siteId, config.userInfo.passkey);
 
-    await message.sendErrorMessage();
-    await utils.sleep(2 * 1000);
-    process.exit(1);
+  try {
+    const res = await axios.get(downloadLink, {
+      responseType: 'stream',
+      headers
+    });
+    if (200 === res.status) {
+      log.log(`got new site id, site id: [${siteId}]!!!`);
+      await mysql.storeItem(config.uid, config.site, [{ 
+        id: siteId,
+        freeUntil: new Date('2024-01-01'), 
+        size: 0,
+        title: 'torrent from feed. :)',
+        torrentUrl: downloadLink, 
+        free: true,
+        transHash: '',
+        publishDate: new Date(),
+      }] as any);
+    }
+  } catch (e) {
+    log.log(`tryGetLatestTorrent with status: [${e.response.status}]`);
   }
 }
 
@@ -163,24 +202,6 @@ async function main(): Promise<void> {
       log.log(`[WARN] ${e} ${e.stack}`);
     }
   }
-}
-
-async function init(): Promise<void> {
-  log.log(`init`);
-  await config.init();
-  await initTempFolder();
-  await mysql.init();
-  const ptUserInfo: TPTUserInfo = await mysql.getUserInfoByQuery({
-    nickname: config.nickname,
-    site: config.site
-  });
-  config.setUid(ptUserInfo.uid);
-  config.setVip(ptUserInfo.vip);
-  config.setUserInfo(ptUserInfo);
-  await transmission.init(ptUserInfo.uid);
-  await oss.init();
-  await message.init();
-  await puppeteer.init();
 }
 
 async function initTempFolder(): Promise<void> {

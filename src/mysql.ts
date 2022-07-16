@@ -99,10 +99,27 @@ export async function getFreeItems(uid: string, site: string, minSize: number = 
     ORDER BY publish_date DESC;
     `, [uid, site, minSize, torrentCreateTime]);
   log.log(`[Mysql] get free item: [${JSON.stringify(data)}]`);
-  const freeItems: TItem[] = [];
-  for (const item of data) {
+  return assembleItems(data);
+}
+
+export async function getLatestSiteInfo(uid: string, site: string, limit: number = 10): Promise<TItem[]> {
+  log.log(`[Mysql] getLatestSiteInfo, uid: [${uid}], site: [${site}]`);
+  const [data]: any = await pool.query(`
+    SELECT *
+    FROM
+      torrents
+    WHERE
+      uid = ? AND site = ?
+    ORDER BY site_id DESC;
+    `, [uid, site]);
+  return assembleItems(data);
+}
+
+function assembleItems(originItem: any[]): TItem[] {
+  const items: TItem[] = [];
+  for (const item of originItem) {
     const { server_id, site_id, uid, torrent_hash, site, size, title, is_free, free_until, torrent_url, publish_date } = item;
-    freeItems.push({
+    items.push({
       id: site_id,
       site,
       uid,
@@ -115,11 +132,7 @@ export async function getFreeItems(uid: string, site: string, minSize: number = 
       free: Boolean(is_free)
     });
   }
-  return freeItems;
-}
-
-export async function getLatestSiteInfo(uid: string, site: string, limit: number = 10): Promise<item[]> {
-  log.log(`[Mysql] getLatestSiteInfo, uid: [${uid}], site: [${site}]`);
+  return items;
 }
 
 export async function storeDownloadAction(site: string, siteId: string, uid: string, transId: string, torrentHash: string, serverId: number): Promise<void> {
