@@ -65,6 +65,7 @@ async function start(): Promise<void> {
 
   startFeedTask();
   startSiteInfoTask();
+  startRssAssist();
 }
 
 async function startFeedTask(): Promise<void> {
@@ -123,6 +124,29 @@ async function startSiteInfoTask(): Promise<void> {
       log.log(e);
     }
   }
+}
+
+async function startRssAssist(): Promise<void> {
+  log.log(`startRssAssist`);
+  const configInfo = config.getConfig();
+  const { torrentPage, needExtraFreeCheck, downloadingItemStatus } = configInfo;
+  while (true) {
+    await utils.sleep(15 * 60 * 1000);
+    try {
+      const freeItems: TItem[] = await puppeteer.filterVIPItem(torrentPage[0]);
+      log.log(`got free items: [${JSON.stringify(freeItems)}]`);
+      log.message(`free item count: [${freeItems.length}]`);
+      // 4. 
+      await mysql.storeItem(config.uid, config.site, freeItems); 
+      log.log(`complete rss assists, wait for another cycle!!`);
+      log.log(`||||||||||||||||||||||||||||||||||||||||||||||`);
+      log.log(`||||||||||||||||||||||||||||||||||||||||||||||`);
+    } catch (e) {
+      log.log(e);
+    }
+    await utils.sleep(15 * 60 * 1000);
+  }
+
 }
 
 async function tryGetLatestTorrent(siteId: number, headers: any): Promise<void> {
