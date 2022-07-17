@@ -144,7 +144,6 @@ async function startRssAssist(): Promise<void> {
     } catch (e) {
       log.log(e);
     }
-    await utils.sleep(15 * 60 * 1000);
   }
 
 }
