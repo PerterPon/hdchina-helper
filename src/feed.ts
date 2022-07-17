@@ -63,7 +63,7 @@ async function start(): Promise<void> {
   const version = utils.getVersion();
   log.log(`start feeding! version: [${version}]`);
 
-  startFeedTask();
+  // startFeedTask();
   startSiteInfoTask();
 }
 
@@ -111,12 +111,18 @@ async function startFeedTask(): Promise<void> {
 async function startSiteInfoTask(): Promise<void> {
   log.log(`startSiteInfoTask`);
   while(true) {
-    await utils.sleep(10 * 60 * 1000);
+    
     try {
+      const start: number = Date.now();
       await storeSiteData();
+      const end: number = Date.now();
+      log.log(`complete store site info! take time: [${end - start}]ms, wait for another cycle!`);
+      log.log('=================================================');
+      log.log('=================================================');
     } catch (e) {
       log.log(e);
     }
+    await utils.sleep(10 * 60 * 1000);
   }
 }
 
