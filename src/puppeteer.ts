@@ -69,7 +69,7 @@ export async function loadPage(url: string, force: boolean = false): Promise<pup
   if (undefined === page || true === force) {
     log.log(`[Puppeteer] force lode page url: [${url}], force: [${force}]`);
 
-    page = await this.doLoadPage(url);
+    page = await doLoadPage(url);
     log.log(`[Puppeteer] waiting for load page: [${url}]`);
     let loadPageError: Error = null;
     try {
