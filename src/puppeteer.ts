@@ -364,3 +364,7 @@ async function getUserDataDir(): Promise<string> {
   const userInfo: TPTUserInfo = config.userInfo;
   return path.join(config.tempFolder, 'puppeteer', userInfo.uid);
 }
+
+export async function flushCache(): Promise<void> {
+  pageMap.clear();
+}

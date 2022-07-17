@@ -54,7 +54,6 @@ export async function loadPage(url: string, cookie?: string): Promise<cheerio.Ch
 export async function getUserInfo(url: string, cookie?: string): Promise<TPageUserInfo> {
   log.log(`[Puppe-lite] get user info`);
   const page: cheerio.CheerioAPI = await loadPage(url, cookie);
-  console.log(1111);
   const userInfo: TPageUserInfo = await currentSite.getUserInfo(page);
   return userInfo;
 }
@@ -211,4 +210,9 @@ export async function getPHPSessionId(): Promise<string> {
   const phpSessionIdCookie: string = (headers['set-cookie'] || [])[0] || '';
   const [phpSessionId] = phpSessionIdCookie.split(';');
   return phpSessionId;
+}
+
+export async function flushCache(): Promise<void> {
+  pageMap.clear();
+  pageResHeaders.clear();
 }

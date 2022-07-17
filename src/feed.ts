@@ -116,6 +116,7 @@ async function startSiteInfoTask(): Promise<void> {
     try {
       const start: number = Date.now();
       await storeSiteData();
+      await puppeteer.flushCache();
       const end: number = Date.now();
       log.log(`complete store site info! take time: [${end - start}]ms, wait for another cycle!`);
       log.log('=================================================');

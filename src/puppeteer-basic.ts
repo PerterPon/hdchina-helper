@@ -66,3 +66,9 @@ export async function filterFreeItem(url: string): Promise<TItem[]> {
     return await puppeMap[config.site].filterFreeItem(url);
   }
 }
+
+export async function flushCache(): Promise<void> {
+  puppeLite.flushCache();
+  puppeRss.flushCache();
+  puppeteer.flushCache();
+}

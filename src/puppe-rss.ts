@@ -61,3 +61,7 @@ export async function filterRssItem(url: string): Promise<TItem[]> {
 
   return vipItems;
 }
+
+export async function flushCache(): Promise<void> {
+  
+}
