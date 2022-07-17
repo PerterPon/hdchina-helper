@@ -188,32 +188,6 @@ async function storeSiteData(): Promise<void> {
   });
 }
 
-async function main(): Promise<void> {
-  log.log(`main`);
-  // 3.
-  const configInfo = config.getConfig();
-  const { torrentPage, needExtraFreeCheck, downloadingItemStatus } = configInfo;
-  for (const pageUrl of torrentPage) {
-    try {
-      let freeItems: TItem[] = [];
-      if (true === config.vip) {
-        freeItems = await puppeteer.filterVIPItem(pageUrl);
-      } else {
-        freeItems = await puppeteer.filterFreeItem(pageUrl);
-      }
-      // if (true === needExtraFreeCheck) {
-      //   await checkItemFree(freeItems);
-      // }
-      log.log(`got free items: [${JSON.stringify(freeItems)}]`);
-      log.message(`free item count: [${freeItems.length}]`);
-      // 4. 
-      await mysql.storeItem(config.uid, config.site, freeItems);
-    } catch (e) {
-      log.log(`[WARN] ${e} ${e.stack}`);
-    }
-  }
-}
-
 async function initTempFolder(): Promise<void> {
   log.log(`initTempFolder`);
   const configInfo = config.getConfig();
@@ -248,9 +222,3 @@ async function tryAddTags2QB(): Promise<void> {
 }
 
 start();
-
-setTimeout(async () => {
-  log.message(`[${utils.displayTime()}] timeout!!!`);
-  await message.sendMessage()
-  process.exit(1);
-}, 600 * 1000);
