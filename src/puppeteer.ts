@@ -24,7 +24,7 @@ let cookieFileName: string = 'cookie';
 let storageFileName: string = 'storage';
 const pageMap: Map<string, puppeteer.Page> = new Map();
 
-export async function init(headless: boolean = true): Promise<void> {
+export async function init(site: string, headless: boolean = true): Promise<void> {
   log.log(`[Puppeteer] init`);
   if (browser !== null) {
     return;

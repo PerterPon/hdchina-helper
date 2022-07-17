@@ -54,7 +54,7 @@ async function init(): Promise<void> {
   config.setUid(ptUserInfo.uid);
   config.setVip(ptUserInfo.vip);
   config.setUserInfo(ptUserInfo);
-  await puppeteer.init(false);
+  await puppeteer.init(config.site, false);
 }
 
 async function initTempFolder(): Promise<void> {
