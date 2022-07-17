@@ -63,5 +63,5 @@ export async function filterRssItem(url: string): Promise<TItem[]> {
 }
 
 export async function flushCache(): Promise<void> {
-  
+  rssContent.clear();
 }
