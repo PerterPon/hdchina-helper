@@ -52,10 +52,17 @@ async function init(): Promise<void> {
   config.setUid(ptUserInfo.uid);
   config.setVip(ptUserInfo.vip);
   config.setUserInfo(ptUserInfo);
-  await transmission.init(ptUserInfo.uid);
+  await initTransmission();
   await oss.init();
   await message.init();
   await puppeteer.init();
+}
+
+async function initTransmission(): Promise<void> {
+  for (const server of transmission.servers) {
+    transmission.servers.shift();
+  }
+  await transmission.init(config.uid);
 }
 
 async function start(): Promise<void> {
@@ -66,6 +73,7 @@ async function start(): Promise<void> {
   startFeedTask();
   startSiteInfoTask();
   startRssAssist();
+  startRefreshTransmissionLoginSession();
 }
 
 async function startFeedTask(): Promise<void> {
@@ -147,6 +155,18 @@ async function startRssAssist(): Promise<void> {
     }
   }
 
+}
+
+async function startRefreshTransmissionLoginSession(): Promise<void> {
+  log.log('startRefreshTransmissionLoginSession');
+  while (true) {
+    await utils.sleep(0.5 * 60 * 60 * 1000);
+    try {
+      await initTransmission();
+    } catch (e) {
+      log.log(e);
+    }
+  }
 }
 
 async function tryGetLatestTorrent(siteId: number, headers: any): Promise<void> {
