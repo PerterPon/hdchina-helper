@@ -73,7 +73,7 @@ async function start(): Promise<void> {
   startFeedTask();
   startSiteInfoTask();
   startRssAssist();
-  startRefreshTransmissionLoginSession();
+  // startRefreshTransmissionLoginSession();
 }
 
 async function startFeedTask(): Promise<void> {
@@ -271,3 +271,7 @@ async function tryAddTags2QB(): Promise<void> {
 }
 
 start();
+
+setTimeout(() => {
+  process.exit(0);
+}, 22 * 60 * 1000);
