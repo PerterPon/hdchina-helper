@@ -89,12 +89,12 @@ export async function startWatchNetSpeed(): Promise<void> {
     const netInfo: TNetUsage = parseProcNet();
     receiveArr.push(netInfo.receive);
     if (receiveArr.length > 100) {
-      receiveArr.unshift();
+      receiveArr.shift();
     }
 
     sendArr.push(netInfo.send);
     if (sendArr.length > 100) {
-      sendArr.unshift();
+      sendArr.shift();
     }
 
     // store every 5 min
