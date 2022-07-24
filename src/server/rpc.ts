@@ -88,12 +88,12 @@ export async function startWatchNetSpeed(): Promise<void> {
     await sleep(SPEED_MONITOR_INTERVAL * 1000);
     const netInfo: TNetUsage = parseProcNet();
     receiveArr.push(netInfo.receive);
-    if (receiveArr.length > 100) {
+    if (receiveArr.length > 200) {
       receiveArr.shift();
     }
 
     sendArr.push(netInfo.send);
-    if (sendArr.length > 100) {
+    if (sendArr.length > 200) {
       sendArr.shift();
     }
 
