@@ -28,7 +28,8 @@ const siteTrackerMap = {
   'piggo': 'piggo.me',
   'ptsbao': 'ptsbao.club',
   'hdsky': 'tracker.hdsky.me',
-  'lemonhd': 'announce.leaguehd.com'
+  'lemonhd': 'announce.leaguehd.com',
+  'chdbits': 'chdbits.co'
 };
 
 const app = http.createServer(async (req, res) => {

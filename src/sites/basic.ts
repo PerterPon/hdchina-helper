@@ -26,6 +26,7 @@ import * as piggoLite from './piggo-lite';
 import * as ptsbaoLite from './ptsbao-lite';
 import * as hdskyLite from './hdsky-lite';
 import * as lemonhdLite from './lemonhd-lite';
+import * as chdbitsLite from './chdbits-lite';
 
 export const siteMap = {
   hdchina: hdchina,
@@ -41,7 +42,8 @@ export const siteMap = {
   piggo: piggoLite,
   ptsbao: ptsbaoLite,
   hdsky: hdskyLite,
-  lemonhd: lemonhdLite
+  lemonhd: lemonhdLite,
+  chdbits: chdbitsLite
 };
 
 export function getCurrentSite(site?: string) {

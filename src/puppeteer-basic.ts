@@ -22,7 +22,8 @@ const puppeMap = {
   'piggo': puppeLite,
   'ptsbao': puppeLite,
   'hdsky': puppeLite,
-  'lemonhd': puppeLite
+  'lemonhd': puppeLite,
+  'chdbits': puppeLite
 };
 
 const rssMap = {
