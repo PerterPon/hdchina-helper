@@ -22,10 +22,10 @@ export async function getUserInfo(torrentPage: cheerio.CheerioAPI): Promise<TPag
 
   try {
     const magicPointContent: string = torrentPage('#info_block').text();
-    const [trash1, magicPoint] = magicPointContent.match(/魔力值\s\[使用\]:\s(.*)\s邀请/)  || ['', ''];
-    const [trash2, shareRatio] = magicPointContent.match(/分享率： (\d*\.*\d*)\s/) || ['', ''];
-    const [trash3, uploadCount] = magicPointContent.match(/上传量： (.*)\s下/)  || ['', ''];
-    const [trash4, downloadCount] = magicPointContent.match(/下载量： (.*) 当前活动/)  || ['', ''];
+    const [trash1, magicPoint] = magicPointContent.match(/魔力值 \[使用\]: (.*)\s*\[簽到/)  || ['', ''];
+    const [trash2, shareRatio] = magicPointContent.match(/分享率： (\d*\.*\d*)\s*/) || ['', ''];
+    const [trash3, uploadCount] = magicPointContent.match(/上傳量： (.*)\s*下/)  || ['', ''];
+    const [trash4, downloadCount] = magicPointContent.match(/下載量： (.*) 當/)  || ['', ''];
     let uploadNumberCount = 0;
     let downloadNumberCount = 0;
     if (-1 < uploadCount.indexOf('GB')) {
@@ -54,7 +54,7 @@ export async function getUserInfo(torrentPage: cheerio.CheerioAPI): Promise<TPag
     const nickAndUid = utils.fetchNicknameAndUidFromPage(torrentPage, '#info_block .bottom a');
     Object.assign(userInfo, nickAndUid);
   } catch (e) {
-    log.log(`[SITE] [HDTIME] get user info: [${e.message}], [${e.stack}]`);
+    log.log(`[SITE] [NICEPT] get user info: [${e.message}], [${e.stack}]`);
   }
   return userInfo;
 }
@@ -66,7 +66,7 @@ export async function getFreeTime(el: cheerio.CheerioAPI): Promise<Date> {
   }
 
   const freeElHtml = freeEl.parent().html();
-  const freeTimeContainer: string = cheerio.load(freeElHtml)('span').attr('title');
+  const freeTimeContainer: string = cheerio.load(freeElHtml)('font span').attr('title');
   if (false === _.isString(freeTimeContainer) || 0 === freeTimeContainer.trim().length) {
     return new Date('2024-01-01')
   }
@@ -81,7 +81,7 @@ export async function getFreeTime2up(el: cheerio.CheerioAPI): Promise<Date> {
   }
 
   const freeElHtml = freeEl.parent().html();
-  const freeTimeContainer: string = cheerio.load(freeElHtml)('span').attr('title');
+  const freeTimeContainer: string = cheerio.load(freeElHtml)('font span').attr('title');
   if (false === _.isString(freeTimeContainer) || 0 === freeTimeContainer.trim().length) {
     return new Date('2024-01-01')
   }
@@ -162,5 +162,6 @@ export async function checkFreeItem(el: cheerio.CheerioAPI): Promise<boolean> {
   if (0 === freeItem.length) {
     freeItem = el(siteAnchor.freeItem2up);
   }
+
   return 0 < freeItem.length
 }

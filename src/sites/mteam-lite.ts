@@ -160,11 +160,11 @@ export async function isSticky(el: cheerio.CheerioAPI): Promise<boolean> {
 export async function checkFreeItem(el: cheerio.CheerioAPI): Promise<boolean> {
   const { siteAnchor } = config.getConfig();
   let freeItem = el(siteAnchor.freeItem1up);
-  if (null === freeItem) {
+  if (0 === freeItem.length) {
     freeItem = el(siteAnchor.freeItem2up);
   }
 
-  return null !== freeItem;
+  return 0 < freeItem.length
 }
 
 export async function getRssLink(): Promise<string> {

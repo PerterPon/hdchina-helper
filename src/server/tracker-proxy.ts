@@ -29,7 +29,8 @@ const siteTrackerMap = {
   'ptsbao': 'ptsbao.club',
   'hdsky': 'tracker.hdsky.me',
   'lemonhd': 'announce.leaguehd.com',
-  'chdbits': 'chdbits.co'
+  'chdbits': 'chdbits.co',
+  'nicept': 'www.nicept.net'
 };
 
 const app = http.createServer(async (req, res) => {

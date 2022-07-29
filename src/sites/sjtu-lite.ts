@@ -131,6 +131,10 @@ export async function isSticky(el: cheerio.CheerioAPI): Promise<boolean> {
 
 export async function checkFreeItem(el: cheerio.CheerioAPI): Promise<boolean> {
   const { siteAnchor } = config.getConfig();
-  console.log(el().html());
-  return 0 < el(siteAnchor.freeItem1up).length;
+  let freeItem = el(siteAnchor.freeItem1up);
+  if (0 === freeItem.length) {
+    freeItem = el(siteAnchor.freeItem2up);
+  }
+
+  return 0 < freeItem.length
 }
